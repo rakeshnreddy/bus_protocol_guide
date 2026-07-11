@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { search, buildSearchIndex } from '../lib/search';
 import type { SearchDocument } from '../lib/search';
 import './SearchBar.css';
 
@@ -14,15 +13,19 @@ export default function SearchBar() {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    buildSearchIndex();
+    import('../lib/search').then(({ buildSearchIndex }) => {
+      buildSearchIndex();
+    });
   }, []);
 
   useEffect(() => {
     if (query.trim()) {
-      const hits = search(query);
-      setResults(hits);
-      setIsOpen(hits.length > 0);
-      setSelectedIndex(-1);
+      import('../lib/search').then(({ search }) => {
+        const hits = search(query);
+        setResults(hits);
+        setIsOpen(hits.length > 0);
+        setSelectedIndex(-1);
+      });
     } else {
       setResults([]);
       setIsOpen(false);

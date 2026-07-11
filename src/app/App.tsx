@@ -1,26 +1,35 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Home from '../pages/Home';
-import Foundations from '../pages/Foundations';
-import AHB from '../pages/AHB';
-import AXI from '../pages/AXI';
-import Glossary from '../pages/Glossary';
-import Visuals from '../pages/Visuals';
-import LessonPage from '../pages/LessonPage';
-import DevVisuals from '../pages/DevVisuals';
 import SearchBar from '../components/SearchBar';
-import AHBSignals from '../pages/reference/AHBSignals';
-import AXISignals from '../pages/reference/AXISignals';
-import BurstRules from '../pages/reference/BurstRules';
-import OrderingRules from '../pages/reference/OrderingRules';
-import SpecRules from '../pages/reference/SpecRules';
-import { getLessonsByProtocol } from '../lib/loaders';
+import { RouteErrorBoundary } from '../components/routing/RouteErrorBoundary';
+import { RouteLoadingFallback } from '../components/routing/RouteLoadingFallback';
 
 import '../styles/global.css';
 
+const Foundations = React.lazy(() => import('../pages/Foundations'));
+const AHB = React.lazy(() => import('../pages/AHB'));
+const AXI = React.lazy(() => import('../pages/AXI'));
+const Glossary = React.lazy(() => import('../pages/Glossary'));
+const Visuals = React.lazy(() => import('../pages/Visuals'));
+const LessonPage = React.lazy(() => import('../pages/LessonPage'));
+const DevVisuals = React.lazy(() => import('../pages/DevVisuals'));
+const AHBSignals = React.lazy(() => import('../pages/reference/AHBSignals'));
+const AXISignals = React.lazy(() => import('../pages/reference/AXISignals'));
+const BurstRules = React.lazy(() => import('../pages/reference/BurstRules'));
+const OrderingRules = React.lazy(() => import('../pages/reference/OrderingRules'));
+const SpecRules = React.lazy(() => import('../pages/reference/SpecRules'));
+
 const AppShell = ({ children }: { children: React.ReactNode }) => {
-  const lessonsByProtocol = getLessonsByProtocol();
+  const [lessonsByProtocol, setLessonsByProtocol] = React.useState<Record<string, any[]>>({});
+
+  React.useEffect(() => {
+    import('../lib/loaders').then(({ getLessonsByProtocol }) => {
+      setLessonsByProtocol(getLessonsByProtocol());
+    });
+  }, []);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const location = useLocation();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => setIsSidebarOpen(false);
@@ -83,7 +92,11 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
           </div>
         </aside>
         <main className="main-content">
-          {children}
+          <RouteErrorBoundary resetKey={location.pathname}>
+            <React.Suspense fallback={<RouteLoadingFallback />}>
+              {children}
+            </React.Suspense>
+          </RouteErrorBoundary>
         </main>
       </div>
     </div>
