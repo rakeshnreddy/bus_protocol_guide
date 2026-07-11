@@ -1,0 +1,25 @@
+{
+  "id": "wf-ahb-bug-decoder-glitch",
+  "title": "Bug Case Study: Decoder Glitch",
+  "type": "waveform",
+  "cycleCount": 5,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": [] },
+    { "name": "HADDR", "type": "control", "values": ["0x10", "0x20", "0x20", "0x30", "0x30"] },
+    { "name": "HSEL_S1", "type": "control", "values": ["1", "0", "0", "0", "0"] },
+    { "name": "HSEL_S2", "type": "control", "color": "red", "values": ["0", "0 (Glitch 1)", "1", "0", "0"] },
+    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Combinatorial decoding logic evaluates the new HADDR (0x20)."
+    }
+  ],
+  "violations": [
+    {
+      "cycle": 1,
+      "message": "BUG: HSEL_S2 glitches high for a brief moment before settling to 0. If Slave 2 uses an asynchronous latch instead of a flip-flop, it might mistakenly accept this transfer!"
+    }
+  ]
+}

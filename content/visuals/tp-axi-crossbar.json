@@ -1,0 +1,24 @@
+{
+  "id": "tp-axi-crossbar",
+  "title": "AXI Crossbar Interconnect",
+  "type": "topology",
+  "nodes": [
+    { "id": "m1", "label": "Master 0 (CPU)", "role": "master" },
+    { "id": "m2", "label": "Master 1 (DMA)", "role": "master" },
+    { "id": "xbar", "label": "AXI Crossbar\n(ID Extender & Router)", "role": "arbiter" },
+    { "id": "s1", "label": "Slave 0 (SRAM)", "role": "slave" },
+    { "id": "s2", "label": "Slave 1 (Flash)", "role": "slave" }
+  ],
+  "edges": [
+    { "from": "m1", "to": "xbar", "label": "AWID: 0x1", "color": "blue" },
+    { "from": "m2", "to": "xbar", "label": "AWID: 0x1", "color": "green" },
+    { "from": "xbar", "to": "s1", "label": "AWID: 0x01 (M0)\nAWID: 0x11 (M1)", "color": "purple" },
+    { "from": "xbar", "to": "s2", "label": "", "color": "gray" }
+  ],
+  "highlightPaths": [
+    {
+      "name": "ID Extension",
+      "path": ["m1", "xbar", "s1"]
+    }
+  ]
+}

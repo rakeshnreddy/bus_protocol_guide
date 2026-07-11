@@ -1,0 +1,242 @@
+.exercise-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.exercise-prompt {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.exercise-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.exercise-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.exercise-option:hover {
+  border-color: #cbd5e1;
+}
+
+.exercise-option.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.exercise-option.correct {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.exercise-option.incorrect {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.exercise-option input[type="radio"] {
+  margin-top: 0.25rem;
+}
+
+.option-text {
+  color: #334155;
+  line-height: 1.4;
+}
+
+.exercise-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.exercise-btn:hover {
+  background: #2563eb;
+}
+
+.exercise-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.exercise-explanation {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 6px;
+}
+
+.exercise-explanation p {
+  margin-top: 0;
+}
+
+.exercise-explanation p:last-child {
+  margin-bottom: 0;
+}
+
+.success-bg {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.error-bg {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* Checklist styles */
+.checklist-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.checklist-title {
+  margin: 0;
+  color: #0f172a;
+}
+
+.checklist-progress {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.checklist-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.checklist-progress-fill {
+  height: 100%;
+  background: #10b981;
+  transition: width 0.3s ease;
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.checklist-item:hover {
+  background: #f1f5f9;
+}
+
+.checklist-item.checked {
+  opacity: 0.7;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  cursor: pointer;
+}
+
+.checklist-desc {
+  color: #334155;
+  line-height: 1.5;
+}
+
+.checklist-item.checked .checklist-desc {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+/* Glossary Tooltip inline */
+.glossary-term-inline {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.glossary-term-inline .term-text {
+  border-bottom: 1.5px dotted #3b82f6;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.glossary-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 280px;
+  background-color: #1e293b;
+  color: #f8fafc;
+  text-align: left;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 0.85rem;
+  z-index: 50;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity 0.2s, bottom 0.2s;
+}
+
+.glossary-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+.glossary-tooltip.is-open,
+.glossary-term-inline:hover .glossary-tooltip {
+  visibility: visible;
+  opacity: 1;
+  bottom: 120%;
+}

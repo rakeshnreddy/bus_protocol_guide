@@ -1,0 +1,46 @@
+{
+  "id": "checklist-ahb-expert",
+  "title": "AHB Expert Verification Checklist",
+  "items": [
+    {
+      "id": "chk-ahb-htrans",
+      "label": "HTRANS Legality",
+      "description": "Have you verified that HTRANS never transitions from BUSY to IDLE directly during a burst, and that a master does not change control signals while HREADY is low?"
+    },
+    {
+      "id": "chk-ahb-wrap",
+      "label": "Wrap Boundary Calculation",
+      "description": "Does the slave correctly calculate the wrap boundary for WRAP4, WRAP8, and WRAP16 bursts, returning the address to the lower bound rather than overflowing?"
+    },
+    {
+      "id": "chk-ahb-ready-comb",
+      "label": "No Combinatorial HREADY Loops",
+      "description": "Have you ensured that there are no combinatorial paths from HREADYIN to HREADYOUT in the slaves that could cause a combinatorial loop across the interconnect?"
+    },
+    {
+      "id": "chk-ahb-error-two-cycle",
+      "label": "Two-Cycle ERROR Response",
+      "description": "Do all slaves correctly hold HRESP=ERROR and HREADY=0 for the first cycle, and HRESP=ERROR and HREADY=1 for the second cycle when asserting an error?"
+    },
+    {
+      "id": "chk-ahb-master-abort",
+      "label": "Master Error Abort",
+      "description": "Do all masters correctly abort the current burst by driving HTRANS=IDLE upon receiving a two-cycle ERROR response?"
+    },
+    {
+      "id": "chk-ahb-arb-starvation",
+      "label": "Arbitration Fairness",
+      "description": "Under high traffic conditions, does the Arbiter (or interconnect matrix) guarantee that lower-priority masters eventually receive a grant (no starvation)?"
+    },
+    {
+      "id": "chk-ahb-exclusive",
+      "label": "Exclusive Access Monitor",
+      "description": "If using AHB5, does the Exclusive Monitor correctly track addresses per master ID and correctly clear the monitor state when a different master writes to the watched address?"
+    },
+    {
+      "id": "chk-ahb-trustzone",
+      "label": "Secure Isolation (HNONSEC)",
+      "description": "If using AHB5, do secure slaves explicitly reject Non-Secure (HNONSEC=1) transfers with an ERROR response, even if the address falls within their memory map?"
+    }
+  ]
+}

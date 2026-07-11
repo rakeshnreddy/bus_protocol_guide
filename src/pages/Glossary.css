@@ -1,0 +1,149 @@
+.glossary-page {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.glossary-header {
+  margin-bottom: 2rem;
+}
+
+.glossary-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.glossary-filters {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.glossary-filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.glossary-filter-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.glossary-filter-btn.active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.glossary-group {
+  margin-bottom: 3rem;
+}
+
+.glossary-letter {
+  font-size: 2rem;
+  color: #2563eb;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.glossary-term-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  scroll-margin-top: 100px; /* For anchor links */
+}
+
+/* Highlight the term if navigated to via hash */
+.glossary-term-card:target {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.glossary-term-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.glossary-term-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.glossary-expanded-form {
+  font-size: 1rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.glossary-definition {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #334155;
+  margin-bottom: 1.5rem;
+}
+
+.glossary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 1rem;
+}
+
+.glossary-meta-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.glossary-meta-label {
+  font-weight: 600;
+  color: #475569;
+  min-width: 100px;
+}
+
+.glossary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.glossary-tag {
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.glossary-related-link {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.glossary-related-link:hover {
+  text-decoration: underline;
+}
+
+.no-results {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+  font-size: 1.125rem;
+}

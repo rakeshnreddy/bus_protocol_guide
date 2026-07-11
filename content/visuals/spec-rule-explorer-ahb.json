@@ -1,0 +1,7 @@
+{
+  "id": "spec-rule-explorer-ahb",
+  "type": "spec-rule-explorer",
+  "title": "AHB Spec Rule Explorer",
+  "description": "Interactive, filterable index of AHB specification rules.",
+  "defaultProtocol": "ahb"
+}

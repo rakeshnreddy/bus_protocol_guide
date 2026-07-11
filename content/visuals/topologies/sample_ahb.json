@@ -1,0 +1,54 @@
+{
+  "id": "tp-basic-ahb",
+  "type": "topology",
+  "title": "Basic Multi-Master AHB System",
+  "nodes": [
+    {
+      "id": "m1",
+      "label": "Master 1 (CPU)",
+      "type": "master"
+    },
+    {
+      "id": "m2",
+      "label": "Master 2 (DMA)",
+      "type": "master"
+    },
+    {
+      "id": "arb",
+      "label": "Arbiter/Decoder",
+      "type": "arbiter"
+    },
+    {
+      "id": "s1",
+      "label": "Slave 1 (SRAM)",
+      "type": "slave"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-m1-arb",
+      "source": "m1",
+      "target": "arb",
+      "label": "Request/Grant"
+    },
+    {
+      "id": "e-m2-arb",
+      "source": "m2",
+      "target": "arb",
+      "label": "Request/Grant"
+    },
+    {
+      "id": "e-arb-s1",
+      "source": "arb",
+      "target": "s1",
+      "label": "Bus Matrix"
+    }
+  ],
+  "highlightedPath": ["m1", "e-m1-arb", "arb", "e-arb-s1", "s1"],
+  "annotations": [
+    {
+      "nodeId": "arb",
+      "message": "Central multiplexer routing the selected master to the slave."
+    }
+  ]
+}

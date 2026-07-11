@@ -1,0 +1,119 @@
+{
+  "id": "sig-ahb-full",
+  "title": "AHB Signal Reference",
+  "type": "signal-explorer",
+  "signals": [
+    {
+      "name": "HCLK",
+      "expansion": "Bus Clock",
+      "role": "clock",
+      "description": "Master clock for the AHB system. All signal timings are related to the rising edge of HCLK.",
+      "relatedTermId": "HCLK"
+    },
+    {
+      "name": "HRESETn",
+      "expansion": "Reset",
+      "role": "control",
+      "description": "Active-low reset signal. Asserted asynchronously, de-asserted synchronously.",
+      "relatedTermId": "HRESETn"
+    },
+    {
+      "name": "HADDR",
+      "expansion": "Address",
+      "role": "control",
+      "description": "The 32-bit (or larger) system address bus. Driven by the master.",
+      "relatedTermId": "HADDR"
+    },
+    {
+      "name": "HTRANS",
+      "expansion": "Transfer Type",
+      "role": "control",
+      "description": "Indicates the type of the current transfer: IDLE, BUSY, NONSEQ, or SEQ.",
+      "relatedTermId": "HTRANS"
+    },
+    {
+      "name": "HWRITE",
+      "expansion": "Write Control",
+      "role": "control",
+      "description": "Direction of transfer. 1 = Write, 0 = Read.",
+      "relatedTermId": "HWRITE"
+    },
+    {
+      "name": "HSIZE",
+      "expansion": "Transfer Size",
+      "role": "control",
+      "description": "Indicates the size of the transfer (Byte, Halfword, Word, etc.).",
+      "relatedTermId": "HSIZE"
+    },
+    {
+      "name": "HBURST",
+      "expansion": "Burst Type",
+      "role": "control",
+      "description": "Indicates if the transfer forms part of a burst (SINGLE, INCR, WRAP4, etc.).",
+      "relatedTermId": "HBURST"
+    },
+    {
+      "name": "HPROT",
+      "expansion": "Protection Control",
+      "role": "control",
+      "description": "Provides information about the access (privileged, cacheable, etc.).",
+      "relatedTermId": "HPROT"
+    },
+    {
+      "name": "HWDATA",
+      "expansion": "Write Data",
+      "role": "data",
+      "description": "The write data bus, driven by the master during write transfers.",
+      "relatedTermId": "HWDATA"
+    },
+    {
+      "name": "HRDATA",
+      "expansion": "Read Data",
+      "role": "data",
+      "description": "The read data bus, driven by the slave during read transfers.",
+      "relatedTermId": "HRDATA"
+    },
+    {
+      "name": "HREADY",
+      "expansion": "Transfer Ready",
+      "role": "control",
+      "description": "Driven by the slave to indicate transfer completion (1) or request wait states (0).",
+      "relatedTermId": "HREADY"
+    },
+    {
+      "name": "HRESP",
+      "expansion": "Transfer Response",
+      "role": "control",
+      "description": "Provides the status of the transfer: OKAY (0) or ERROR (1).",
+      "relatedTermId": "HRESP"
+    },
+    {
+      "name": "HSEL",
+      "expansion": "Slave Select",
+      "role": "control",
+      "description": "Driven by the decoder to select a specific slave for the transfer.",
+      "relatedTermId": "AHB"
+    },
+    {
+      "name": "HEXCL",
+      "expansion": "Exclusive Transfer",
+      "role": "control",
+      "description": "AHB5 signal indicating an exclusive access sequence.",
+      "relatedTermId": "HEXCL"
+    },
+    {
+      "name": "HEXOKAY",
+      "expansion": "Exclusive Okay",
+      "role": "control",
+      "description": "AHB5 response from slave indicating exclusive write success.",
+      "relatedTermId": "HEXOKAY"
+    },
+    {
+      "name": "HNONSEC",
+      "expansion": "Non-Secure Transfer",
+      "role": "control",
+      "description": "AHB5 signal indicating the TrustZone security level.",
+      "relatedTermId": "HNONSEC"
+    }
+  ]
+}

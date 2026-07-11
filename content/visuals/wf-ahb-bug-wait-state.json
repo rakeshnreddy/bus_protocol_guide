@@ -1,0 +1,25 @@
+{
+  "id": "wf-ahb-bug-wait-state",
+  "title": "Bug Case Study: Wait State Data Loss",
+  "type": "waveform",
+  "cycleCount": 5,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": [] },
+    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "control", "values": ["0x10", "0x14", "0x18", "0x00", "0x00"] },
+    { "name": "HWDATA", "type": "data", "values": ["-", "D(0x10)", "D(0x14)", "D(0x14)", "D(0x18)"] },
+    { "name": "HREADY", "type": "control", "color": "orange", "values": ["1", "1", "0", "1", "1"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 2,
+      "message": "Slave drives HREADY=0 to stall the data phase for 0x14."
+    }
+  ],
+  "violations": [
+    {
+      "cycle": 3,
+      "message": "BUG: The master advanced HWDATA to D(0x18) even though HREADY was 0 in cycle 2. The master dropped D(0x14) permanently!"
+    }
+  ]
+}

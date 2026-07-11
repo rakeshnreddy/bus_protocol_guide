@@ -1,0 +1,398 @@
+[
+  {
+    "id": "AXI3",
+    "term": "AXI3",
+    "definition": "The third generation of the AMBA AXI protocol, featuring five independent channels, out-of-order completion, and bursts up to 16 beats. Includes the WID signal for write data interleaving.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AXI4",
+    "term": "AXI4",
+    "definition": "The fourth generation of the AMBA AXI protocol. Expands bursts up to 256 beats, removes the WID signal (forbidding write data interleaving), and adds QoS and Region support.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AXI4-Lite",
+    "term": "AXI4-Lite",
+    "definition": "A simplified subset of AXI4 designed for basic control registers. Removes burst capability, exclusive accesses, and most sideband attributes. All transactions are exactly one beat.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AXI-Stream",
+    "term": "AXI-Stream",
+    "definition": "A non-memory-mapped variant of AXI designed for high-speed, continuous data streams (like video or networking). Uses only a ready/valid handshake and payload; has no address channel.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Transaction",
+    "term": "Transaction",
+    "definition": "A complete operation (read or write) on a bus, encompassing the initial address phase, the transfer of the data payload (burst), and the final response.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Burst",
+    "term": "Burst",
+    "definition": "The entire data payload associated with a single address request in a transaction.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Beat",
+    "term": "Beat",
+    "definition": "A single data transfer within a burst. If the data bus is 4 bytes wide, a 64-byte burst takes 16 beats to complete.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Handshake",
+    "term": "Handshake",
+    "definition": "The two-way VALID/READY mechanism used by AXI to transfer information. The transfer only occurs when both VALID (from source) and READY (from destination) are HIGH on a rising clock edge.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Outstanding Transaction",
+    "term": "Outstanding Transaction",
+    "definition": "A transaction for which the address has been issued, but the final data/response has not yet been received. AXI supports multiple outstanding transactions simultaneously to achieve high throughput.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Write Address Channel",
+    "term": "Write Address Channel (AW)",
+    "definition": "The independent channel used by a master to initiate a write transaction and provide control attributes. (AWVALID, AWREADY, AWADDR, etc.)",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Write Data Channel",
+    "term": "Write Data Channel (W)",
+    "definition": "The independent channel used by a master to transfer the write payload to the slave. (WVALID, WREADY, WDATA, etc.)",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Write Response Channel",
+    "term": "Write Response Channel (B)",
+    "definition": "The independent channel used by a slave to confirm the success or failure of a completed write transaction. (BVALID, BREADY, BRESP, etc.)",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Read Address Channel",
+    "term": "Read Address Channel (AR)",
+    "definition": "The independent channel used by a master to initiate a read transaction and provide control attributes. (ARVALID, ARREADY, ARADDR, etc.)",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Read Data Channel",
+    "term": "Read Data Channel (R)",
+    "definition": "The independent channel used by a slave to return the requested read payload and status to the master. (RVALID, RREADY, RDATA, etc.)",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWVALID",
+    "term": "AWVALID",
+    "definition": "Write Address Valid (Master -> Slave). Indicates that valid write address and control information is available.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWREADY",
+    "term": "AWREADY",
+    "definition": "Write Address Ready (Slave -> Master). Indicates that the slave is ready to accept a write address.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWADDR",
+    "term": "AWADDR",
+    "definition": "Write Address. The initial physical memory address for the write burst.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWLEN",
+    "term": "AWLEN",
+    "definition": "Write Burst Length. Defines the exact number of beats in a write burst. Length = AWLEN + 1.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWSIZE",
+    "term": "AWSIZE",
+    "definition": "Write Burst Size. Defines the size in bytes of each data beat within the write burst (encoded as a power of 2).",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWBURST",
+    "term": "AWBURST",
+    "definition": "Write Burst Type. Determines how the address is calculated for subsequent beats in the write burst (FIXED, INCR, WRAP).",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWLOCK",
+    "term": "AWLOCK",
+    "definition": "Write Lock Type. Provides information about the atomic characteristics of the write transaction.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWCACHE",
+    "term": "AWCACHE",
+    "definition": "Write Cache Type. Specifies the memory type and how the write transaction must progress through the interconnect.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWPROT",
+    "term": "AWPROT",
+    "definition": "Write Protection Type. Specifies the privilege level and secure nature of the write transaction.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWQOS",
+    "term": "AWQOS",
+    "definition": "Write Quality of Service (AXI4 only). Used to prioritize write transactions within a system interconnect.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWREGION",
+    "term": "AWREGION",
+    "definition": "Write Region Identifier (AXI4 only). Permits a single slave interface to manage multiple logical regions of memory.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AWID",
+    "term": "AWID",
+    "definition": "Write Address ID. The identification tag for the write address group. Used for out-of-order tracking.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WVALID",
+    "term": "WVALID",
+    "definition": "Write Valid (Master -> Slave). Indicates that valid write data is available.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WREADY",
+    "term": "WREADY",
+    "definition": "Write Ready (Slave -> Master). Indicates that the slave can accept the write data.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WDATA",
+    "term": "WDATA",
+    "definition": "Write Data. The actual data payload to be written.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WSTRB",
+    "term": "WSTRB",
+    "definition": "Write Strobes. One bit per byte lane in WDATA. Indicates which byte lanes contain valid data.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WLAST",
+    "term": "WLAST",
+    "definition": "Write Last. Asserted HIGH by the master during the final beat of a write burst.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "WID",
+    "term": "WID",
+    "definition": "Write Data ID (AXI3 only). An identification tag for the write data beat, allowing data interleaving. Removed in AXI4.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "BVALID",
+    "term": "BVALID",
+    "definition": "Write Response Valid (Slave -> Master). Indicates that a valid write response is available.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "BREADY",
+    "term": "BREADY",
+    "definition": "Write Response Ready (Master -> Slave). Indicates that the master can accept a write response.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "BRESP",
+    "term": "BRESP",
+    "definition": "Write Response. A 2-bit status code indicating the success or failure of the entire write transaction (OKAY, EXOKAY, SLVERR, DECERR).",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "BID",
+    "term": "BID",
+    "definition": "Response ID. The identification tag for the write response, matching the original AWID.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARVALID",
+    "term": "ARVALID",
+    "definition": "Read Address Valid (Master -> Slave). Indicates that valid read address and control information is available.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARREADY",
+    "term": "ARREADY",
+    "definition": "Read Address Ready (Slave -> Master). Indicates that the slave is ready to accept a read address.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARADDR",
+    "term": "ARADDR",
+    "definition": "Read Address. The initial physical memory address for the read burst.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARLEN",
+    "term": "ARLEN",
+    "definition": "Read Burst Length. Defines the exact number of beats in a read burst. Length = ARLEN + 1.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARSIZE",
+    "term": "ARSIZE",
+    "definition": "Read Burst Size. Defines the size in bytes of each data beat within the read burst (encoded as a power of 2).",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARBURST",
+    "term": "ARBURST",
+    "definition": "Read Burst Type. Determines how the address is calculated for subsequent beats in the read burst (FIXED, INCR, WRAP).",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARLOCK",
+    "term": "ARLOCK",
+    "definition": "Read Lock Type. Provides information about the atomic characteristics of the read transaction.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARCACHE",
+    "term": "ARCACHE",
+    "definition": "Read Cache Type. Specifies the memory type and how the read transaction must progress through the interconnect.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARPROT",
+    "term": "ARPROT",
+    "definition": "Read Protection Type. Specifies the privilege level and secure nature of the read transaction.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARQOS",
+    "term": "ARQOS",
+    "definition": "Read Quality of Service (AXI4 only). Used to prioritize read transactions within a system interconnect.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARREGION",
+    "term": "ARREGION",
+    "definition": "Read Region Identifier (AXI4 only). Permits a single slave interface to manage multiple logical regions of memory.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARID",
+    "term": "ARID",
+    "definition": "Read Address ID. The identification tag for the read address group. Used for out-of-order tracking.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RVALID",
+    "term": "RVALID",
+    "definition": "Read Valid (Slave -> Master). Indicates that valid read data is available.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RREADY",
+    "term": "RREADY",
+    "definition": "Read Ready (Master -> Slave). Indicates that the master can accept the read data.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RDATA",
+    "term": "RDATA",
+    "definition": "Read Data. The returned data payload from the slave.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RRESP",
+    "term": "RRESP",
+    "definition": "Read Response. A 2-bit status code provided with every beat of read data, indicating success or failure.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RLAST",
+    "term": "RLAST",
+    "definition": "Read Last. Asserted HIGH by the slave during the final beat of a read burst.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "RID",
+    "term": "RID",
+    "definition": "Read ID. The identification tag for the read data group, matching the original ARID.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AxCACHE",
+    "term": "AxCACHE",
+    "definition": "Generic term for the 4-bit ARCACHE or AWCACHE signal, which defines memory type (bufferable/cacheable) and basic ordering constraints.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AxPROT",
+    "term": "AxPROT",
+    "definition": "Generic term for the 3-bit ARPROT or AWPROT signal, defining privilege (User/Privileged), security (Secure/Non-secure), and instruction vs. data access.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AxQOS",
+    "term": "AxQOS",
+    "definition": "Generic term for the 4-bit ARQOS or AWQOS signal (AXI4 only), used for Quality of Service prioritization in interconnects.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "AxREGION",
+    "term": "AxREGION",
+    "definition": "Generic term for the 4-bit ARREGION or AWREGION signal (AXI4 only), used to identify logical decode regions for a slave.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Out-of-Order Completion",
+    "term": "Out-of-Order Completion",
+    "definition": "The ability for a slave to return data or responses in a different order than the requests were received, improving throughput by not stalling on long-latency requests. Only permitted for transactions with different IDs.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ID-Based Ordering",
+    "term": "ID-Based Ordering",
+    "definition": "The core AXI ordering rule: transactions with the same ID must complete in the exact order they were issued. Transactions with different IDs have no ordering guarantees.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "4KB Boundary Rule",
+    "term": "4KB Boundary Rule",
+    "definition": "A fundamental AXI constraint stating that a single burst transaction must not cross a 4KB address boundary (where the lower 12 bits are zero). Prevents transactions from spanning across different physical memory pages or slave decode regions.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "Crossbar",
+    "term": "Crossbar",
+    "definition": "An interconnect architecture that uses a matrix of switches to allow multiple masters to communicate with multiple slaves simultaneously, provided they are not targeting the same slave.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "QoS",
+    "term": "QoS (Quality of Service)",
+    "definition": "In AXI4, the AxQOS signals allow masters to indicate the priority of a transaction. Interconnect arbiters use these signals to prioritize critical traffic (like real-time video) over bulk data transfers.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ACLK",
+    "term": "ACLK",
+    "definition": "Global clock signal. All signals are sampled on the rising edge of ACLK.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "ARESETn",
+    "term": "ARESETn",
+    "definition": "Global reset signal. Active-LOW. Must be driven synchronously for de-assertion.",
+    "protocols": ["axi"]
+  },
+  {
+    "id": "EXOKAY",
+    "term": "EXOKAY",
+    "definition": "Exclusive Access Okay. A response indicating that an exclusive access (read or write) was successful. Illegal for FIXED bursts.",
+    "protocols": ["axi"]
+  }
+]

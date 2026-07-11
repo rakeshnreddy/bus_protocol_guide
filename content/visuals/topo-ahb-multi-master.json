@@ -1,0 +1,54 @@
+{
+  "id": "topo-ahb-multi-master",
+  "title": "AHB Multi-Master System",
+  "description": "An AHB system featuring two masters, an arbiter, a decoder, and three slaves. The highlighted path shows Master 1 successfully being granted the bus to access Slave 2.",
+  "type": "topology",
+  "nodes": [
+    {
+      "id": "m1",
+      "label": "Master 1 (CPU)",
+      "type": "master"
+    },
+    {
+      "id": "m2",
+      "label": "Master 2 (DMA)",
+      "type": "master"
+    },
+    {
+      "id": "arb",
+      "label": "Arbiter",
+      "type": "arbiter"
+    },
+    {
+      "id": "dec",
+      "label": "Address Decoder",
+      "type": "arbiter"
+    },
+    {
+      "id": "s1",
+      "label": "Slave 1 (ROM)",
+      "type": "slave"
+    },
+    {
+      "id": "s2",
+      "label": "Slave 2 (SRAM)",
+      "type": "slave"
+    },
+    {
+      "id": "s3",
+      "label": "Slave 3 (Bridge)",
+      "type": "slave"
+    }
+  ],
+  "edges": [
+    { "source": "m1", "target": "arb", "label": "HBUSREQ1", "active": true },
+    { "source": "arb", "target": "m1", "label": "HGRANT1", "active": true },
+    { "source": "m2", "target": "arb", "label": "HBUSREQ2" },
+    { "source": "arb", "target": "m2", "label": "HGRANT2" },
+    { "source": "m1", "target": "dec", "label": "HADDR (M1)", "active": true },
+    { "source": "m2", "target": "dec", "label": "HADDR (M2)" },
+    { "source": "dec", "target": "s1", "label": "HSEL1" },
+    { "source": "dec", "target": "s2", "label": "HSEL2", "active": true },
+    { "source": "dec", "target": "s3", "label": "HSEL3" }
+  ]
+}

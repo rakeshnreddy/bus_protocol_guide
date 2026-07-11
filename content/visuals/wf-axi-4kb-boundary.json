@@ -1,0 +1,26 @@
+{
+  "id": "wf-axi-4kb-boundary",
+  "title": "4KB Boundary Rule",
+  "type": "waveform",
+  "cycleCount": 5,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "AWADDR", "type": "data", "color": "orange", "values": ["-", "0x0FF8", "0x0FF8", "-", "-"] },
+    { "name": "AWLEN", "type": "data", "color": "orange", "values": ["-", "3 (4 beats)", "1 (2 beats)", "-", "-"] },
+    { "name": "AWSIZE", "type": "data", "color": "orange", "values": ["-", "2 (4 bytes)", "2 (4 bytes)", "-", "-"] },
+    { "name": "Status", "type": "data", "color": "red", "values": ["-", "ILLEGAL", "LEGAL", "-", "-"] }
+  ],
+  "violations": [
+    { "cycle": 2, "signal": "Status", "rule": "Burst crosses 4KB boundary (0x0FF8 + 4*4 = 0x1008)" }
+  ],
+  "annotations": [
+    {
+      "cycle": 2,
+      "message": "Illegal Burst: Starts at 0x0FF8 with 4 beats of 4 bytes. 0x0FF8, 0x0FFC, 0x1000, 0x1004. It crosses 0x1000 (4KB boundary)!"
+    },
+    {
+      "cycle": 3,
+      "message": "Legal Alternative: Break it into two bursts. First burst is 2 beats (0x0FF8, 0x0FFC). Second burst starts at 0x1000."
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "dv-mindset",
+    "title": "Senior DV Protocol Checklist",
+    "description": "A mindset checklist for finding corner-case bugs in protocol implementations.",
+    "items": [
+      {
+        "id": "dv-1",
+        "text": "Did I test 0-delay handshakes (READY high before VALID)?",
+        "completed": false
+      },
+      {
+        "id": "dv-2",
+        "text": "Did I test maximum backpressure (slave holds READY low for 1000+ cycles)?",
+        "completed": false
+      },
+      {
+        "id": "dv-3",
+        "text": "Did I test single-cycle backpressure (READY toggling every other cycle)?",
+        "completed": false
+      },
+      {
+        "id": "dv-4",
+        "text": "Does the master legally hold all DATA and control signals stable while stalled?",
+        "completed": false
+      },
+      {
+        "id": "dv-5",
+        "text": "Did I test back-to-back bursts with no idle cycles between them?",
+        "completed": false
+      },
+      {
+        "id": "dv-6",
+        "text": "Does the system maintain forward progress (no livelock/deadlock) under heavy contention?",
+        "completed": false
+      },
+      {
+        "id": "dv-7",
+        "text": "Are error responses (like SLVERR) handled gracefully by the master?",
+        "completed": false
+      }
+    ]
+  }
+]

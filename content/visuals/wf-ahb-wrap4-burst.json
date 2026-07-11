@@ -1,0 +1,67 @@
+{
+  "id": "wf-ahb-wrap4-burst",
+  "title": "AHB WRAP4 Burst",
+  "description": "A 4-beat wrapping burst (WRAP4). The starting address is 0x38. Since it's a WRAP4 of Words (4 bytes), the boundary is 4 * 4 = 16 bytes (0x10). The burst wraps at the 16-byte boundary.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
+    },
+    {
+      "name": "HBURST",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4", "WRAP4"]
+    },
+    {
+      "name": "HSIZE",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word"]
+    },
+    {
+      "name": "HADDR",
+      "type": "data",
+      "color": "var(--color-secondary)",
+      "values": ["---", "---", "0x38", "0x38", "0x3C", "0x3C", "0x30", "0x30", "0x34", "0x34", "---", "---", "---", "---"]
+    },
+    {
+      "name": "HWDATA",
+      "type": "data",
+      "color": "var(--color-success)",
+      "values": ["---", "---", "---", "---", "D0", "D0", "D1", "D1", "D2", "D2", "D3", "D3", "---", "---"]
+    },
+    {
+      "name": "HREADY",
+      "type": "control",
+      "color": "var(--color-success)",
+      "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
+    }
+  ],
+  "cycleCount": 7,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HADDR",
+      "message": "Starting address is 0x38."
+    },
+    {
+      "cycle": 2,
+      "signalName": "HADDR",
+      "message": "Address increments to 0x3C."
+    },
+    {
+      "cycle": 3,
+      "signalName": "HADDR",
+      "message": "The address wraps! The 16-byte boundary starting at 0x30 goes from 0x30 to 0x3F. After 0x3C, it wraps back down to 0x30."
+    }
+  ]
+}

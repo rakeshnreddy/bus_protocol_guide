@@ -1,0 +1,46 @@
+{
+  "id": "axi-expert",
+  "title": "AXI Expert DV Checklist",
+  "items": [
+    {
+      "id": "axi-chk-1",
+      "text": "Are READY and VALID independent? (Does the design ever wait for READY before asserting VALID?)",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-2",
+      "text": "Are AWID and ARID matched perfectly by the corresponding BID and RID from the slave?",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-3",
+      "text": "Do transactions with the SAME ID always complete in the exact order they were issued?",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-4",
+      "text": "Are you correctly verifying that there is NO required ordering between transactions with DIFFERENT IDs?",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-5",
+      "text": "Does the design guarantee that NO burst ever crosses a 4KB boundary?",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-6",
+      "text": "Are WLAST and RLAST asserted on the exact beat specified by AxLEN? (Not early, not late?)",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-7",
+      "text": "Are your scoreboards keyed by ID (and tracking out-of-order returns), rather than by Address?",
+      "checked": false
+    },
+    {
+      "id": "axi-chk-8",
+      "text": "Are WRAP bursts strictly aligned to their AxSIZE, and are their lengths strictly 2, 4, 8, or 16?",
+      "checked": false
+    }
+  ]
+}

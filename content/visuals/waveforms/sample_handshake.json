@@ -1,0 +1,41 @@
+{
+  "id": "wf-foundations-handshake",
+  "type": "waveform",
+  "title": "Ready/Valid Handshake",
+  "cycleCount": 4,
+  "signals": [
+    {
+      "name": "CLK",
+      "type": "clock",
+      "values": ["P", "P", "P", "P"]
+    },
+    {
+      "name": "VALID",
+      "type": "control",
+      "color": "#3b82f6",
+      "values": ["0", "1", "1", "0"]
+    },
+    {
+      "name": "READY",
+      "type": "control",
+      "color": "#10b981",
+      "values": ["0", "0", "1", "0"]
+    },
+    {
+      "name": "DATA",
+      "type": "data",
+      "color": "#8b5cf6",
+      "values": ["INV", "D0", "D0", "INV"]
+    }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Source asserts VALID and puts D0 on the bus."
+    },
+    {
+      "cycle": 2,
+      "message": "Destination asserts READY. Handshake completes on the rising edge."
+    }
+  ]
+}

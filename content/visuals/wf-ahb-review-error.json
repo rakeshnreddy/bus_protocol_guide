@@ -1,0 +1,23 @@
+{
+  "id": "wf-ahb-review-error",
+  "title": "Waveform Review: Two-Cycle Error",
+  "type": "waveform",
+  "cycleCount": 6,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": [] },
+    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "control", "values": ["0x0", "0x4", "0x8", "0x8", "0x0", "0x0"] },
+    { "name": "HREADY", "type": "control", "values": ["1", "1", "0", "1", "1", "1"] },
+    { "name": "HRESP", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "0", "0"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 2,
+      "message": "Slave detects an error on address 0x4."
+    },
+    {
+      "cycle": 3,
+      "message": "Master responds to HREADY=1 by transitioning to IDLE, canceling the burst."
+    }
+  ]
+}

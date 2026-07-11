@@ -1,0 +1,112 @@
+[
+  {
+    "id": "ex-axi-channels-1",
+    "title": "Missing Channel Activity",
+    "prompt": "You are debugging a hung write transaction in an AXI simulation. You see `AWVALID` and `AWREADY` both go high, and you see `WVALID`, `WREADY`, and `WLAST` all go high for the data payload. However, the master state machine is completely stalled. Which channel is likely missing activity, causing the hang?",
+    "type": "multiple-choice",
+    "options": [
+      "Read Address (AR) channel, because every write must be verified by a read.",
+      "Write Response (B) channel, because the master is waiting for `BVALID` to confirm the write completed.",
+      "Read Data (R) channel, because the slave needs to send the old data back before overwriting it.",
+      "Write Data (W) channel, because the WID signal is missing."
+    ],
+    "correctOptionIndex": 1,
+    "expectedTakeaway": "Correct! A write transaction is not complete until the slave sends a response on the B channel. If the master is waiting for `BVALID` and the slave never sends it, the master will stall."
+  },
+  {
+    "id": "ex-axi-channels-2",
+    "title": "Channel Independence",
+    "prompt": "True or False: In AXI, the master MUST wait for `AWREADY` to be asserted by the slave before it is allowed to assert `WVALID` on the Write Data channel.",
+    "type": "multiple-choice",
+    "options": [
+      "True. Data cannot be sent until the address is accepted.",
+      "False. The AW and W channels are completely independent. A master can assert `WVALID` before, during, or after asserting `AWVALID`."
+    ],
+    "correctOptionIndex": 1,
+    "expectedTakeaway": "Correct! This is one of the hardest concepts for engineers transitioning from AHB. The write address and write data channels are structurally independent. While it's common to send the address first, it is perfectly legal to send the data first!"
+  },
+  {
+    "id": "ex-axi-ordering",
+    "title": "Legal Completion Orders",
+    "prompt": "A master issues three read requests in this order: Request A (ID: 0), Request B (ID: 1), Request C (ID: 0). Which of the following is a completely LEGAL order for the slave to return the data?",
+    "type": "multiple-choice",
+    "options": [
+      "B, C, A",
+      "C, A, B",
+      "A, B, C",
+      "C, B, A"
+    ],
+    "correctOptionIndex": 2,
+    "expectedTakeaway": "Correct! Transactions with the SAME ID must complete in order. Because A and C both have ID: 0, A must complete before C. B has a different ID, so it can complete anywhere (before A, between A and C, or after C). A, B, C is legal."
+  },
+  {
+    "id": "ex-axi-deadlock",
+    "title": "Deadlock Risk Identification",
+    "prompt": "You are designing an AXI Master. To save buffer space, you write a state machine rule that says: 'Do not assert BREADY to accept a write response until the WLAST beat of data has been successfully sent to the slave.' Is this a safe design?",
+    "type": "multiple-choice",
+    "options": [
+      "Yes. The slave can't send a response until it gets WLAST anyway.",
+      "No. This explicitly violates the spec rule that VALID must not depend on READY.",
+      "No. This creates a circular dependency if the slave is waiting for BREADY before it accepts WLAST.",
+      "Yes. This is a common and efficient way to manage buffers."
+    ],
+    "correctOptionIndex": 2,
+    "expectedTakeaway": "Correct! While the slave can't send BVALID until it receives WLAST, if the slave is designed to stall WREADY until it sees BREADY=1 (which is legal for a slave!), your master will permanently deadlock the bus."
+  },
+  {
+    "id": "ex-axi-4kb-calc",
+    "title": "4KB Boundary Check",
+    "prompt": "A master wants to perform a 16-beat INCR burst. The size of each beat is 4 bytes (32-bit). The starting address is `0x0FD0`. Does this burst cross a 4KB boundary?",
+    "type": "multiple-choice",
+    "options": [
+      "No. It ends at 0x0FFC.",
+      "No. It ends at 0x1000, which is perfectly on the boundary.",
+      "Yes. The total size is 64 bytes. 0x0FD0 + 64 = 0x1010, which crosses the 0x1000 boundary.",
+      "Yes. Any burst longer than 8 beats automatically crosses a boundary."
+    ],
+    "correctOptionIndex": 2,
+    "expectedTakeaway": "Correct! 16 beats * 4 bytes/beat = 64 bytes total. Start address 0x0FD0 + 0x40 (64 in hex) = 0x1010. Since 0x1010 > 0x1000, this burst crosses the 4KB boundary and is ILLEGAL. The master must split it."
+  },
+  {
+    "id": "ex-axi-variant-selection",
+    "title": "AXI Variant Selection",
+    "prompt": "You are designing an IP block that reads raw sensor data (a continuous flow of 16-bit values) and sends it directly to a digital signal processor (DSP). There are no memory addresses involved; it's a pure FIFO-like data pipe. Which AXI variant is most appropriate?",
+    "type": "multiple-choice",
+    "options": [
+      "AXI4 Full (for maximum performance)",
+      "AXI4-Lite (because it's simple)",
+      "AXI-Stream",
+      "AXI3 (for write interleaving)"
+    ],
+    "correctOptionIndex": 2,
+    "expectedTakeaway": "Correct! AXI-Stream is designed exactly for this use case. It strips away the address and response channels entirely, leaving just a high-speed, unidirectional data pipe using TVALID and TREADY."
+  },
+  {
+    "id": "ex-axi-ordering-scenario",
+    "title": "Ordering Scenario",
+    "prompt": "Master issues Write A (AWID=3), Write B (AWID=5), and Write C (AWID=3) in that exact order. Which of the following is a completely LEGAL order for the BVALID responses to return?",
+    "type": "multiple-choice",
+    "options": [
+      "A, C, B",
+      "C, A, B",
+      "B, C, A",
+      "They must return simultaneously."
+    ],
+    "correctOptionIndex": 0,
+    "expectedTakeaway": "Correct! Because A and C share the same AWID (3), A must complete before C. Write B (AWID=5) has a different ID, so it can complete anywhere in the sequence. A, C, B is legal. C, A, B is illegal because C cannot beat A."
+  },
+  {
+    "id": "ex-axi-waveform-debug",
+    "title": "Waveform Debug Interpretation",
+    "prompt": "You are looking at a waveform. WVALID is high, WREADY is low. BVALID is high, BREADY is low. AWVALID is high, AWREADY is low. The system has been stalled in this exact state for 10,000 cycles. What is the most likely root cause?",
+    "type": "multiple-choice",
+    "options": [
+      "The slave is slow to process data.",
+      "The master forgot to assert WLAST.",
+      "A circular combinatorial backpressure deadlock between the master and slave.",
+      "The interconnect dropped the AWID."
+    ],
+    "correctOptionIndex": 2,
+    "expectedTakeaway": "Correct! When multiple channels are permanently stalled with VALID high and READY low on both sides of the interface, it almost always points to a circular dependency in the RTL (e.g., Master waiting for BVALID before asserting WVALID, while Slave waits for WVALID before asserting BREADY)."
+  }
+]

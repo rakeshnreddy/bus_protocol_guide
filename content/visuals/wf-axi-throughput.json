@@ -1,0 +1,27 @@
+{
+  "id": "wf-axi-throughput",
+  "title": "Throughput Comparison: AHB vs AXI",
+  "type": "waveform",
+  "cycleCount": 11,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "AHB_ADDR", "type": "data", "color": "orange", "values": ["-", "A1", "A2", "A3", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "AHB_DATA", "type": "data", "color": "blue", "values": ["-", "-", "D1", "D2", "Wait", "D3", "-", "-", "-", "-", "-"] },
+    { "name": "AXI_AW", "type": "data", "color": "green", "values": ["-", "AW1", "AW2", "AW3", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "AXI_W", "type": "data", "color": "purple", "values": ["-", "W1", "W2", "Wait", "W3", "-", "-", "-", "-", "-", "-"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Both protocols initiate requests."
+    },
+    {
+      "cycle": 4,
+      "message": "AHB suffers a wait state on data. Because Address and Data share the pipeline, Address A3's data (D3) is stalled."
+    },
+    {
+      "cycle": 5,
+      "message": "In AXI, the Address channel (AW) finished firing off all three addresses back in cycle 3. The stall on W data only affects the W channel."
+    }
+  ]
+}

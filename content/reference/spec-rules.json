@@ -1,0 +1,124 @@
+{
+  "rules": [
+    {
+      "id": "ahb-wait-state-data-loss",
+      "protocol": "ahb",
+      "category": "timing",
+      "severity": "critical",
+      "statement": "A master MUST hold HWDATA and control signals stable while HREADY is LOW.",
+      "bugPattern": {
+        "symptom": "Data is permanently lost. The slave samples the wrong data when it finally raises HREADY.",
+        "rootCause": "The RTL designer wrote their state machine to advance data on every clock edge where HTRANS != IDLE, forgetting to AND that condition with HREADY."
+      },
+      "relatedLessons": ["33_common_rtl_bugs"]
+    },
+    {
+      "id": "ahb-decoder-glitch",
+      "protocol": "ahb",
+      "category": "timing",
+      "severity": "moderate",
+      "statement": "Slaves MUST only sample control signals synchronously on the rising clock edge when HREADY is HIGH.",
+      "bugPattern": {
+        "symptom": "A slave accidentally triggers a transaction during a brief address phase glitch.",
+        "rootCause": "The central address decoder is purely combinatorial. If HADDR transitions, HSEL might spike high for a fraction of a nanosecond. If the slave uses an asynchronous latch based directly on HSEL, it triggers incorrectly."
+      },
+      "relatedLessons": ["33_common_rtl_bugs"]
+    },
+    {
+      "id": "ahb-combinatorial-loop",
+      "protocol": "ahb",
+      "category": "deadlock",
+      "severity": "critical",
+      "statement": "A slave MUST NOT generate HREADYOUT combinatorially based on its HREADYIN input.",
+      "bugPattern": {
+        "symptom": "The synthesis tool throws errors about combinatorial loops, or the silicon oscillates.",
+        "rootCause": "The designer tried to save a clock cycle of latency by linking the HREADY inputs and outputs without a flip-flop in between, creating a loop across the system multiplexer."
+      },
+      "relatedLessons": ["33_common_rtl_bugs"]
+    },
+    {
+      "id": "ahb-two-cycle-error",
+      "protocol": "ahb",
+      "category": "response_handling",
+      "severity": "critical",
+      "statement": "A master MUST cancel subsequent beats in a burst if an ERROR response is received.",
+      "bugPattern": {
+        "symptom": "The slave is bombarded with invalid SEQ transfers after having just rejected a sequence, leading to unpredictable system state.",
+        "rootCause": "The master receives a two-cycle ERROR response in the middle of an INCR4 burst, but ignores it and keeps driving SEQ for the rest of the burst."
+      },
+      "relatedLessons": ["33_common_rtl_bugs"]
+    },
+    {
+      "id": "ahb-arbiter-starvation",
+      "protocol": "ahb",
+      "category": "qos",
+      "severity": "moderate",
+      "statement": "System arbiters SHOULD ensure fair access to prevent starvation, especially when undefined-length INCR bursts are used.",
+      "bugPattern": {
+        "symptom": "A DMA buffer overflows because it can never get access to memory to flush its data.",
+        "rootCause": "The Arbiter was designed with strict fixed priority, and a high-priority CPU is heavily utilizing undefined-length INCR bursts."
+      },
+      "relatedLessons": ["33_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-address-based-scoreboard",
+      "protocol": "axi",
+      "category": "ordering",
+      "severity": "moderate",
+      "statement": "Read data MUST be returned in order for a given ARID, but MAY be out of order across different ARIDs.",
+      "bugPattern": {
+        "symptom": "The testbench flags a data mismatch on a read, but the waveform shows the correct data returning on the bus.",
+        "rootCause": "The verification engineer wrote the scoreboard to expect read data in the order the addresses were issued, instead of matching responses by their ID."
+      },
+      "relatedLessons": ["38_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-early-wlast",
+      "protocol": "axi",
+      "category": "burst_structure",
+      "severity": "critical",
+      "statement": "WLAST MUST be asserted exactly when the final data beat of the burst is transferred, as determined by AWLEN.",
+      "bugPattern": {
+        "symptom": "An interconnect state machine locks up permanently or drops data.",
+        "rootCause": "The master asserted WLAST on beat 3 of a 4-beat burst. The interconnect closed the connection, and when the 4th beat arrived, it was dropped or routed as garbage."
+      },
+      "relatedLessons": ["38_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-qos-starvation",
+      "protocol": "axi",
+      "category": "qos",
+      "severity": "moderate",
+      "statement": "An interconnect SHOULD honor AxQOS to prevent lower priority transactions from starving.",
+      "bugPattern": {
+        "symptom": "A low-priority bulk DMA transfer times out after 10,000 cycles.",
+        "rootCause": "The interconnect arbiter prioritizes transactions based on AxQOS. A high-priority CPU is constantly issuing traffic, preventing the DMA from accessing the crossbar."
+      },
+      "relatedLessons": ["38_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-id-truncation",
+      "protocol": "axi",
+      "category": "ordering",
+      "severity": "critical",
+      "statement": "An interconnect MUST NOT arbitrarily truncate transaction IDs if it results in ID collisions.",
+      "bugPattern": {
+        "symptom": "A multi-master system returns data to the wrong master.",
+        "rootCause": "An AXI-to-AXI bridge stripped the upper bits of the ARID to save routing area. When responses come back, IDs collide and the bridge routes Master A's data to Master B."
+      },
+      "relatedLessons": ["38_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-circular-backpressure",
+      "protocol": "axi",
+      "category": "deadlock",
+      "severity": "critical",
+      "statement": "A master MUST NOT wait for BVALID before asserting AWVALID. A slave MUST NOT wait for AWVALID before asserting BVALID.",
+      "bugPattern": {
+        "symptom": "The entire SoC freezes.",
+        "rootCause": "The master won't send BREADY until it sends its next AWVALID. The slave won't accept AWVALID until it gets rid of its current BVALID. Neither can move. Deadlock."
+      },
+      "relatedLessons": ["38_common_rtl_bugs"]
+    }
+  ]
+}

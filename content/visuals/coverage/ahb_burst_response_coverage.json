@@ -1,0 +1,41 @@
+{
+  "id": "cm-ahb-burst-resp",
+  "type": "coverage-map",
+  "title": "AHB Burst Type vs Response Coverage",
+  "xAxis": {
+    "label": "Burst Type (HBURST)",
+    "buckets": ["SINGLE", "INCR", "WRAP4", "INCR4", "WRAP8", "INCR8", "WRAP16", "INCR16"]
+  },
+  "yAxis": {
+    "label": "Response (HRESP)",
+    "buckets": ["OKAY", "ERROR", "SPLIT / RETRY"]
+  },
+  "bins": [
+    { "x": "SINGLE", "y": "OKAY", "hits": 1500, "illegal": false, "tooltip": "Standard successful single transfer." },
+    { "x": "INCR", "y": "OKAY", "hits": 800, "illegal": false, "tooltip": "Standard successful unspecified-length burst." },
+    { "x": "WRAP4", "y": "OKAY", "hits": 250, "illegal": false, "tooltip": "Successful 4-beat wrapping burst." },
+    { "x": "INCR4", "y": "OKAY", "hits": 300, "illegal": false, "tooltip": "Successful 4-beat incrementing burst." },
+    { "x": "WRAP8", "y": "OKAY", "hits": 100, "illegal": false, "tooltip": "Successful 8-beat wrapping burst." },
+    { "x": "INCR8", "y": "OKAY", "hits": 120, "illegal": false, "tooltip": "Successful 8-beat incrementing burst." },
+    { "x": "WRAP16", "y": "OKAY", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: No tests generated a 16-beat wrapping burst that completed successfully." },
+    { "x": "INCR16", "y": "OKAY", "hits": 45, "illegal": false, "tooltip": "Successful 16-beat incrementing burst." },
+    
+    { "x": "SINGLE", "y": "ERROR", "hits": 120, "illegal": false, "tooltip": "Single transfer resulting in an ERROR (e.g., unmapped address)." },
+    { "x": "INCR", "y": "ERROR", "hits": 60, "illegal": false, "tooltip": "Unspecified length burst receiving an ERROR." },
+    { "x": "WRAP4", "y": "ERROR", "hits": 15, "illegal": false, "tooltip": "4-beat wrapping burst receiving an ERROR." },
+    { "x": "INCR4", "y": "ERROR", "hits": 20, "illegal": false, "tooltip": "4-beat incrementing burst receiving an ERROR." },
+    { "x": "WRAP8", "y": "ERROR", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: Missing test for a WRAP8 burst hitting an unmapped or protected region." },
+    { "x": "INCR8", "y": "ERROR", "hits": 5, "illegal": false, "tooltip": "8-beat incrementing burst receiving an ERROR." },
+    { "x": "WRAP16", "y": "ERROR", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: Missing test for a WRAP16 burst hitting an ERROR." },
+    { "x": "INCR16", "y": "ERROR", "hits": 2, "illegal": false, "tooltip": "16-beat incrementing burst receiving an ERROR." },
+
+    { "x": "SINGLE", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]. HRESP is a 1-bit signal (OKAY/ERROR) only." },
+    { "x": "INCR", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]. HRESP is a 1-bit signal (OKAY/ERROR) only." },
+    { "x": "WRAP4", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
+    { "x": "INCR4", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
+    { "x": "WRAP8", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
+    { "x": "INCR8", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
+    { "x": "WRAP16", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
+    { "x": "INCR16", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." }
+  ]
+}

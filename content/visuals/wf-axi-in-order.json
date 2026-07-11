@@ -1,0 +1,36 @@
+{
+  "id": "wf-axi-in-order",
+  "title": "AXI In-Order Guarantee (Same IDs)",
+  "type": "waveform",
+  "cycleCount": 10,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["1", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARID", "type": "data", "color": "orange", "values": ["-", "ID:0", "ID:0", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x1000", "0x2000", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "1", "0", "1", "1", "0"] },
+    { "name": "RREADY", "type": "control", "color": "red", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "RID", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "ID:0", "ID:0", "-", "ID:0", "ID:0", "-"] },
+    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "D_0A", "D_0B", "-", "D_1A", "D_1B", "-"] },
+    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "1", "0"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Master issues Read Request A (ID:0)."
+    },
+    {
+      "cycle": 2,
+      "message": "Master issues Read Request B (also ID:0)."
+    },
+    {
+      "cycle": 4,
+      "message": "Slave returns data for Request A. Because the IDs are identical, the slave MUST return data in the exact order the requests were received."
+    },
+    {
+      "cycle": 7,
+      "message": "Slave returns data for Request B only after Request A has fully completed."
+    }
+  ]
+}

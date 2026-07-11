@@ -1,0 +1,264 @@
+:root {
+  --primary: #2563eb;
+  --bg-color: #f8fafc;
+  --text-main: #0f172a;
+  --sidebar-bg: #ffffff;
+  --border-color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.top-nav {
+  height: 60px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.top-nav h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.layout-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  margin-bottom: 0.75rem;
+}
+
+.sidebar a {
+  text-decoration: none;
+  color: #475569;
+  font-weight: 500;
+  display: block;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.sidebar a:hover {
+  background-color: #f1f5f9;
+  color: var(--text-main);
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background-color: var(--bg-color);
+}
+
+.sidebar-section {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.sidebar-sublist {
+  padding-left: 0.5rem !important;
+}
+
+.lesson-renderer {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.lesson-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.lesson-tier {
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-weight: bold;
+}
+
+.lesson-title {
+  font-size: 2rem;
+  margin: 0.5rem 0;
+}
+
+.lesson-summary {
+  font-size: 1.1rem;
+  color: #475569;
+}
+
+.lesson-tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tag {
+  background: #e2e8f0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.lesson-body {
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.lesson-footer {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.resource-section {
+  margin-bottom: 1.5rem;
+}
+
+.resource-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.resource-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resource-section li {
+  margin-bottom: 0.25rem;
+}
+
+/* Responsive navigation and sidebar */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-right: 1rem;
+}
+
+.nav-search-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.sidebar-scrollable {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Horizontal scroll container utility for dense tables/visuals */
+.scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
+  }
+
+  .nav-search-container {
+    justify-content: flex-end;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    left: -250px;
+    z-index: 20;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .lesson-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* Responsive markdown tables */
+.lesson-body table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+}
+
+.lesson-body th, .lesson-body td {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+}

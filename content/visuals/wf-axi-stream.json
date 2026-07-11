@@ -1,0 +1,27 @@
+{
+  "id": "wf-axi-stream",
+  "title": "AXI-Stream Packet Semantics",
+  "type": "waveform",
+  "cycleCount": 6,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "TVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "1", "0"] },
+    { "name": "TREADY", "type": "control", "color": "green", "values": ["1", "1", "1", "0", "1", "1"] },
+    { "name": "TDATA", "type": "data", "color": "blue", "values": ["-", "D0", "D1", "D2", "D2", "-"] },
+    { "name": "TLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "0"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "First beat of the packet transfers."
+    },
+    {
+      "cycle": 3,
+      "message": "Receiver stalls (TREADY=0). The sender holds TDATA and TVALID."
+    },
+    {
+      "cycle": 4,
+      "message": "Final beat of the packet transfers. TLAST marks the end of the frame."
+    }
+  ]
+}

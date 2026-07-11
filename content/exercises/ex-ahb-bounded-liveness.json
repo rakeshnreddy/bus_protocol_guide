@@ -1,0 +1,8 @@
+{
+  "id": "ex-ahb-bounded-liveness",
+  "type": "reflection",
+  "difficulty": "intermediate",
+  "prompt": "Toggle HREADY to stay low past cycle 4 after a NONSEQ transfer. What happens to the property evaluation, and why does the bounded window matter for hardware in practice?",
+  "expectedTakeaway": "The formal property evaluates to a FAIL (Protocol Violation). In mathematical terms, unbounded liveness means a slave could wait a million cycles and still satisfy the property. In real hardware, holding the bus hostage for a million cycles is functionally a deadlock. Bounding the liveness property ensures the formal tool proves the slave responds within a realistic, safe timeframe.",
+  "relatedLessons": ["32_ahb_formal_properties"]
+}

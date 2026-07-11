@@ -1,0 +1,286 @@
+{
+  "id": "axi-signal-ref",
+  "title": "AXI Signal Quick Reference",
+  "type": "signals",
+  "signals": [
+    {
+      "name": "ACLK",
+      "expansion": "Global clock signal",
+      "role": "clock",
+      "description": "Global clock signal. All signals are sampled on the rising edge.",
+      "direction": "Global",
+      "width": 1,
+      "relatedTermId": "ACLK"
+    },
+    {
+      "name": "ARESETn",
+      "expansion": "Global reset signal",
+      "role": "control",
+      "description": "Global reset signal. Active-LOW.",
+      "direction": "Global",
+      "width": 1,
+      "relatedTermId": "ARESETn"
+    },
+    {
+      "name": "AWID",
+      "expansion": "Write address ID",
+      "role": "control",
+      "description": "Write address ID. Identifies the write transaction.",
+      "direction": "Master -> Slave",
+      "width": "Varies",
+      "relatedTermId": "AWID"
+    },
+    {
+      "name": "AWADDR",
+      "expansion": "Write address",
+      "role": "control",
+      "description": "Write address. The starting physical address for a write burst.",
+      "direction": "Master -> Slave",
+      "width": "Varies",
+      "relatedTermId": "AWADDR"
+    },
+    {
+      "name": "AWLEN",
+      "expansion": "Burst length",
+      "role": "control",
+      "description": "Burst length. The exact number of transfers in a burst is AWLEN + 1.",
+      "direction": "Master -> Slave",
+      "width": "8 (AXI4)",
+      "relatedTermId": "AWLEN"
+    },
+    {
+      "name": "AWSIZE",
+      "expansion": "Burst size",
+      "role": "control",
+      "description": "Burst size. The size of each transfer in the burst (e.g., 0b010 = 4 bytes).",
+      "direction": "Master -> Slave",
+      "width": 3,
+      "relatedTermId": "AWSIZE"
+    },
+    {
+      "name": "AWBURST",
+      "expansion": "Burst type",
+      "role": "control",
+      "description": "Burst type. Indicates FIXED, INCR, or WRAP.",
+      "direction": "Master -> Slave",
+      "width": 2,
+      "relatedTermId": "AWBURST"
+    },
+    {
+      "name": "AWVALID",
+      "expansion": "Write address valid",
+      "role": "control",
+      "description": "Write address valid. Indicates that valid write address and control information are available.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "AWVALID"
+    },
+    {
+      "name": "AWREADY",
+      "expansion": "Write address ready",
+      "role": "control",
+      "description": "Write address ready. Indicates that the slave is ready to accept an address and associated control signals.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "AWREADY"
+    },
+    {
+      "name": "WDATA",
+      "expansion": "Write data",
+      "role": "data",
+      "description": "Write data.",
+      "direction": "Master -> Slave",
+      "width": "Varies",
+      "relatedTermId": "WDATA"
+    },
+    {
+      "name": "WSTRB",
+      "expansion": "Write strobes",
+      "role": "data",
+      "description": "Write strobes. Indicates which byte lanes hold valid data.",
+      "direction": "Master -> Slave",
+      "width": "WDATA/8",
+      "relatedTermId": "WSTRB"
+    },
+    {
+      "name": "WLAST",
+      "expansion": "Write last",
+      "role": "control",
+      "description": "Write last. Indicates the last transfer in a write burst.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "WLAST"
+    },
+    {
+      "name": "WVALID",
+      "expansion": "Write valid",
+      "role": "control",
+      "description": "Write valid. Indicates that valid write data and strobes are available.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "WVALID"
+    },
+    {
+      "name": "WREADY",
+      "expansion": "Write ready",
+      "role": "control",
+      "description": "Write ready. Indicates that the slave can accept the write data.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "WREADY"
+    },
+    {
+      "name": "BID",
+      "expansion": "Response ID tag",
+      "role": "control",
+      "description": "Response ID tag. Must match the AWID of the transaction to which the slave is responding.",
+      "direction": "Slave -> Master",
+      "width": "Varies",
+      "relatedTermId": "BID"
+    },
+    {
+      "name": "BRESP",
+      "expansion": "Write response",
+      "role": "control",
+      "description": "Write response. Indicates OKAY, EXOKAY, SLVERR, or DECERR.",
+      "direction": "Slave -> Master",
+      "width": 2,
+      "relatedTermId": "BRESP"
+    },
+    {
+      "name": "BVALID",
+      "expansion": "Write response valid",
+      "role": "control",
+      "description": "Write response valid. Indicates that the channel is signaling a valid write response.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "BVALID"
+    },
+    {
+      "name": "BREADY",
+      "expansion": "Response ready",
+      "role": "control",
+      "description": "Response ready. Indicates that the master can accept a write response.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "BREADY"
+    },
+    {
+      "name": "ARID",
+      "expansion": "Read address ID",
+      "role": "control",
+      "description": "Read address ID. Identifies the read transaction.",
+      "direction": "Master -> Slave",
+      "width": "Varies",
+      "relatedTermId": "ARID"
+    },
+    {
+      "name": "ARADDR",
+      "expansion": "Read address",
+      "role": "control",
+      "description": "Read address. The starting physical address for a read burst.",
+      "direction": "Master -> Slave",
+      "width": "Varies",
+      "relatedTermId": "ARADDR"
+    },
+    {
+      "name": "ARLEN",
+      "expansion": "Burst length",
+      "role": "control",
+      "description": "Burst length. The exact number of transfers in a burst is ARLEN + 1.",
+      "direction": "Master -> Slave",
+      "width": "8 (AXI4)",
+      "relatedTermId": "ARLEN"
+    },
+    {
+      "name": "ARSIZE",
+      "expansion": "Burst size",
+      "role": "control",
+      "description": "Burst size. The size of each transfer in the burst (e.g., 0b010 = 4 bytes).",
+      "direction": "Master -> Slave",
+      "width": 3,
+      "relatedTermId": "ARSIZE"
+    },
+    {
+      "name": "ARBURST",
+      "expansion": "Burst type",
+      "role": "control",
+      "description": "Burst type. Indicates FIXED, INCR, or WRAP.",
+      "direction": "Master -> Slave",
+      "width": 2,
+      "relatedTermId": "ARBURST"
+    },
+    {
+      "name": "ARVALID",
+      "expansion": "Read address valid",
+      "role": "control",
+      "description": "Read address valid. Indicates that valid read address and control information are available.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "ARVALID"
+    },
+    {
+      "name": "ARREADY",
+      "expansion": "Read address ready",
+      "role": "control",
+      "description": "Read address ready. Indicates that the slave is ready to accept an address and associated control signals.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "ARREADY"
+    },
+    {
+      "name": "RID",
+      "expansion": "Read ID tag",
+      "role": "data",
+      "description": "Read ID tag. Must match the ARID of the read transaction.",
+      "direction": "Slave -> Master",
+      "width": "Varies",
+      "relatedTermId": "RID"
+    },
+    {
+      "name": "RDATA",
+      "expansion": "Read data",
+      "role": "data",
+      "description": "Read data.",
+      "direction": "Slave -> Master",
+      "width": "Varies",
+      "relatedTermId": "RDATA"
+    },
+    {
+      "name": "RRESP",
+      "expansion": "Read response",
+      "role": "control",
+      "description": "Read response. Indicates OKAY, EXOKAY, SLVERR, or DECERR.",
+      "direction": "Slave -> Master",
+      "width": 2,
+      "relatedTermId": "RRESP"
+    },
+    {
+      "name": "RLAST",
+      "expansion": "Read last",
+      "role": "control",
+      "description": "Read last. Indicates the last transfer in a read burst.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "RLAST"
+    },
+    {
+      "name": "RVALID",
+      "expansion": "Read valid",
+      "role": "control",
+      "description": "Read valid. Indicates that the channel is signaling the required read data.",
+      "direction": "Slave -> Master",
+      "width": 1,
+      "relatedTermId": "RVALID"
+    },
+    {
+      "name": "RREADY",
+      "expansion": "Read ready",
+      "role": "control",
+      "description": "Read ready. Indicates that the master can accept the read data and response information.",
+      "direction": "Master -> Slave",
+      "width": 1,
+      "relatedTermId": "RREADY"
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "id": "cm-axi-burst-resp",
+  "type": "coverage-map",
+  "title": "AXI Burst Type vs Response Coverage",
+  "xAxis": {
+    "label": "Burst Type (AxBURST)",
+    "buckets": ["FIXED", "INCR", "WRAP"]
+  },
+  "yAxis": {
+    "label": "Response (xRESP)",
+    "buckets": ["OKAY", "EXOKAY", "SLVERR", "DECERR"]
+  },
+  "bins": [
+    {
+      "x": "FIXED",
+      "y": "OKAY",
+      "hits": 12,
+      "illegal": false,
+      "tooltip": "Standard successful FIXED burst."
+    },
+    {
+      "x": "INCR",
+      "y": "OKAY",
+      "hits": 45,
+      "illegal": false,
+      "tooltip": "Standard successful INCR burst."
+    },
+    {
+      "x": "WRAP",
+      "y": "OKAY",
+      "hits": 0,
+      "illegal": false,
+      "tooltip": "Missing test: Issue a WRAP burst to a memory region."
+    },
+    {
+      "x": "FIXED",
+      "y": "EXOKAY",
+      "hits": 0,
+      "illegal": true,
+      "tooltip": "Exclusive accesses cannot use FIXED bursts per AXI spec."
+    },
+    {
+      "x": "INCR",
+      "y": "EXOKAY",
+      "hits": 5,
+      "illegal": false,
+      "tooltip": "Exclusive INCR burst successfully completed."
+    },
+    {
+      "x": "WRAP",
+      "y": "EXOKAY",
+      "hits": 2,
+      "illegal": false,
+      "tooltip": "Exclusive WRAP burst successfully completed."
+    },
+    {
+      "x": "FIXED",
+      "y": "SLVERR",
+      "hits": 1,
+      "illegal": false,
+      "tooltip": "FIXED burst to a peripheral that returned a Slave Error."
+    },
+    {
+      "x": "INCR",
+      "y": "SLVERR",
+      "hits": 3,
+      "illegal": false,
+      "tooltip": "INCR burst to a peripheral that returned a Slave Error."
+    },
+    {
+      "x": "WRAP",
+      "y": "SLVERR",
+      "hits": 0,
+      "illegal": false,
+      "tooltip": "Missing test: WRAP burst to a region that returns SLVERR."
+    },
+    {
+      "x": "FIXED",
+      "y": "DECERR",
+      "hits": 2,
+      "illegal": false,
+      "tooltip": "FIXED burst to an unmapped address."
+    },
+    {
+      "x": "INCR",
+      "y": "DECERR",
+      "hits": 0,
+      "illegal": false,
+      "tooltip": "Missing test: INCR burst to an unmapped address."
+    },
+    {
+      "x": "WRAP",
+      "y": "DECERR",
+      "hits": 1,
+      "illegal": false,
+      "tooltip": "WRAP burst to an unmapped address."
+    }
+  ]
+}

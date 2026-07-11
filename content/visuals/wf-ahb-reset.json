@@ -1,0 +1,48 @@
+{
+  "id": "wf-ahb-reset",
+  "title": "AHB Reset Sequence",
+  "description": "Notice that HRESETn can assert asynchronously but must de-assert synchronously. HTRANS must be driven to IDLE.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HRESETn",
+      "type": "control",
+      "color": "var(--color-danger)",
+      "values": ["1", "1", "0", "0", "0", "0", "0", "0", "1", "1", "1", "1"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "data",
+      "color": "var(--color-primary)",
+      "values": ["NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "NONSEQ", "NONSEQ"]
+    }
+  ],
+  "cycleCount": 6,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HRESETn",
+      "message": "Asynchronous assertion: HRESETn goes low in the middle of a cycle."
+    },
+    {
+      "cycle": 1,
+      "signalName": "HTRANS",
+      "message": "The master must immediately drive HTRANS to IDLE."
+    },
+    {
+      "cycle": 4,
+      "signalName": "HRESETn",
+      "message": "Synchronous de-assertion: HRESETn goes high aligned with the rising edge of HCLK."
+    },
+    {
+      "cycle": 5,
+      "signalName": "HTRANS",
+      "message": "The master can now safely drive a valid NONSEQ transfer."
+    }
+  ]
+}

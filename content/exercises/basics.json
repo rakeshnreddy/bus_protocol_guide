@@ -1,0 +1,10 @@
+[
+  {
+    "id": "ex-basics-01",
+    "type": "multiple-choice",
+    "difficulty": "beginner",
+    "prompt": "Which component initiates a transaction on the bus?",
+    "expectedTakeaway": "The master is always the initiator.",
+    "relatedLessons": ["foundations-01-intro"]
+  }
+]

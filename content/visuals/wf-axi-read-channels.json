@@ -1,0 +1,31 @@
+{
+  "id": "wf-axi-read-channels",
+  "title": "AXI Read: Concurrent Channels",
+  "type": "waveform",
+  "cycleCount": 6,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "0", "0", "0", "0"] },
+    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["1", "1", "0", "0", "0", "0"] },
+    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x200", "-", "-", "-", "-"] },
+    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "1", "0"] },
+    { "name": "RREADY", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "1", "0"] },
+    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "D0", "D1", "D2", "-"] },
+    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "0"] },
+    { "name": "RRESP", "type": "data", "color": "red", "values": ["-", "-", "OKAY", "OKAY", "OKAY", "-"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Read Address (AR) handshake provides the initial address."
+    },
+    {
+      "cycle": 2,
+      "message": "Slave begins providing Read Data (R). Read Data always follows Read Address."
+    },
+    {
+      "cycle": 4,
+      "message": "RLAST=1 indicates the final beat of the read data burst."
+    }
+  ]
+}

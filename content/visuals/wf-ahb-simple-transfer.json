@@ -1,0 +1,56 @@
+{
+  "id": "wf-ahb-simple-transfer",
+  "title": "Simple AHB Transfer",
+  "description": "A basic NONSEQ read transfer with zero wait states.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
+    },
+    {
+      "name": "HADDR",
+      "type": "data",
+      "color": "var(--color-secondary)",
+      "values": ["---", "---", "0x1000", "0x1000", "---", "---", "---", "---"]
+    },
+    {
+      "name": "HWRITE",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["0", "0", "0", "0", "0", "0", "0", "0"]
+    },
+    {
+      "name": "HRDATA",
+      "type": "data",
+      "color": "var(--color-success)",
+      "values": ["---", "---", "---", "---", "0xDEADBEEF", "0xDEADBEEF", "---", "---"]
+    },
+    {
+      "name": "HREADY",
+      "type": "control",
+      "color": "var(--color-success)",
+      "values": ["1", "1", "1", "1", "1", "1", "1", "1"]
+    }
+  ],
+  "cycleCount": 4,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HTRANS",
+      "message": "The Address Phase starts. Master drives HTRANS=NONSEQ, HADDR=0x1000, and HWRITE=0 (Read)."
+    },
+    {
+      "cycle": 2,
+      "signalName": "HRDATA",
+      "message": "The Data Phase starts. HREADY is 1, so the slave returns HRDATA=0xDEADBEEF immediately. The master simultaneously drives HTRANS back to IDLE."
+    }
+  ]
+}

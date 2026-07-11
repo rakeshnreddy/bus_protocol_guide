@@ -1,0 +1,33 @@
+{
+  "id": "topo-ahb-apb-bridge",
+  "title": "AHB to APB Bridge",
+  "description": "An AHB-to-APB bridge sits as a slave on the fast AHB bus, but acts as the single master for the slower APB bus. It bridges the timing gap between the two domains.",
+  "type": "topology",
+  "nodes": [
+    {
+      "id": "ahb_bus",
+      "label": "AHB Bus (High Speed)",
+      "type": "master"
+    },
+    {
+      "id": "bridge",
+      "label": "AHB-to-APB Bridge",
+      "type": "arbiter"
+    },
+    {
+      "id": "apb_p1",
+      "label": "UART (APB Slave)",
+      "type": "slave"
+    },
+    {
+      "id": "apb_p2",
+      "label": "Timer (APB Slave)",
+      "type": "slave"
+    }
+  ],
+  "edges": [
+    { "source": "ahb_bus", "target": "bridge", "label": "AHB Transfer (Pipelined)", "active": true },
+    { "source": "bridge", "target": "apb_p1", "label": "APB Transfer (Unpipelined)", "active": true },
+    { "source": "bridge", "target": "apb_p2", "label": "APB Transfer" }
+  ]
+}

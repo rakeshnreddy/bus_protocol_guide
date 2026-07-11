@@ -1,0 +1,60 @@
+{
+  "id": "wf-ahb-wait-state-heavy",
+  "title": "AHB Wait-State Heavy Burst",
+  "description": "A 4-beat INCR4 burst where the slave inserts multiple wait states. Notice how the Address Phase of the *next* beat is stalled when the Data Phase of the *current* beat is stalled.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
+    },
+    {
+      "name": "HADDR",
+      "type": "data",
+      "color": "var(--color-secondary)",
+      "values": ["---", "---", "0x50", "0x50", "0x54", "0x54", "0x54", "0x54", "0x58", "0x58", "0x58", "0x58", "0x58", "0x58", "0x5C", "0x5C", "---", "---", "---", "---"]
+    },
+    {
+      "name": "HWDATA",
+      "type": "data",
+      "color": "var(--color-success)",
+      "values": ["---", "---", "---", "---", "---", "---", "D0", "D0", "D1", "D1", "---", "---", "---", "---", "D2", "D2", "D3", "D3", "---", "---"]
+    },
+    {
+      "name": "HREADY",
+      "type": "control",
+      "color": "var(--color-danger)",
+      "values": ["1", "1", "1", "1", "0", "0", "1", "1", "1", "1", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1"]
+    }
+  ],
+  "cycleCount": 10,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HTRANS",
+      "message": "Master initiates burst with NONSEQ to 0x50."
+    },
+    {
+      "cycle": 2,
+      "signalName": "HREADY",
+      "message": "Slave inserts a wait state. Master must hold the *next* address phase (0x54) stable."
+    },
+    {
+      "cycle": 3,
+      "signalName": "HWDATA",
+      "message": "HREADY is high, Data 0 is sampled. Address phase for 0x58 begins."
+    },
+    {
+      "cycle": 5,
+      "signalName": "HREADY",
+      "message": "Slave inserts two wait states. The address phase for 0x5C is stalled."
+    }
+  ]
+}

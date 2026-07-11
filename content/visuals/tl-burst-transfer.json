@@ -1,0 +1,81 @@
+{
+  "id": "tl-burst-transfer",
+  "type": "timeline",
+  "title": "Burst Transfer with Out-of-Order Completion",
+  "data": {
+    "phases": ["Address", "Data", "Response"],
+    "transactions": [
+      {
+        "id": "T1",
+        "label": "Burst A (ID=1)",
+        "color": "blue",
+        "phases": [
+          {
+            "name": "Address",
+            "startCycle": 1,
+            "endCycle": 2,
+            "description": "Master issues starting address for Burst A."
+          },
+          {
+            "name": "Data",
+            "startCycle": 2,
+            "endCycle": 6,
+            "description": "4-beat burst data transfer."
+          },
+          {
+            "name": "Response",
+            "startCycle": 8,
+            "endCycle": 9,
+            "description": "Response for Burst A arrives late."
+          }
+        ]
+      },
+      {
+        "id": "T2",
+        "label": "Burst B (ID=2)",
+        "color": "purple",
+        "phases": [
+          {
+            "name": "Address",
+            "startCycle": 3,
+            "endCycle": 4,
+            "description": "Master issues starting address for Burst B."
+          },
+          {
+            "name": "Data",
+            "startCycle": 6,
+            "endCycle": 7,
+            "description": "Single-beat transfer."
+          },
+          {
+            "name": "Response",
+            "startCycle": 7,
+            "endCycle": 8,
+            "description": "Response for Burst B arrives BEFORE Response for Burst A (Out-of-order)."
+          }
+        ]
+      }
+    ],
+    "dependencies": [
+      {
+        "sourceTx": "T1",
+        "sourcePhase": "Address",
+        "targetTx": "T1",
+        "targetPhase": "Data"
+      },
+      {
+        "sourceTx": "T2",
+        "sourcePhase": "Address",
+        "targetTx": "T2",
+        "targetPhase": "Data"
+      },
+      {
+        "sourceTx": "T2",
+        "sourcePhase": "Response",
+        "targetTx": "T1",
+        "targetPhase": "Response",
+        "type": "ordering"
+      }
+    ]
+  }
+}

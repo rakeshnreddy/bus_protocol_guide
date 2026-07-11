@@ -1,0 +1,17 @@
+{
+  "id": "tp-axi-apb-bridge",
+  "title": "AXI to APB Bridge",
+  "type": "topology",
+  "nodes": [
+    { "id": "m1", "label": "AXI Master", "role": "master" },
+    { "id": "bridge", "label": "AXI-to-APB Bridge", "role": "bridge" },
+    { "id": "s1", "label": "APB Slave (UART)", "role": "slave" },
+    { "id": "s2", "label": "APB Slave (Timer)", "role": "slave" }
+  ],
+  "edges": [
+    { "from": "m1", "to": "bridge", "label": "AXI (Pipelined, IDs)", "color": "purple" },
+    { "from": "bridge", "to": "s1", "label": "APB (2-cycle, no burst)", "color": "orange" },
+    { "from": "bridge", "to": "s2", "label": "APB", "color": "orange" }
+  ],
+  "highlightPaths": []
+}

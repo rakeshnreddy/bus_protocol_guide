@@ -1,0 +1,33 @@
+{
+  "id": "wf-axi-write-channels",
+  "title": "AXI Write: Concurrent Channels",
+  "type": "waveform",
+  "cycleCount": 7,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["0", "1", "0", "0", "0", "0", "0"] },
+    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["1", "1", "0", "0", "0", "0", "0"] },
+    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["-", "0x100", "-", "-", "-", "-", "-"] },
+    { "name": "WVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "0", "0", "0"] },
+    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "0", "0", "0"] },
+    { "name": "WDATA", "type": "data", "color": "green", "values": ["-", "D0", "D1", "D2", "-", "-", "-"] },
+    { "name": "WLAST", "type": "control", "color": "green", "values": ["0", "0", "0", "1", "0", "0", "0"] },
+    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "0"] },
+    { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "0"] },
+    { "name": "BRESP", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "OKAY", "-", "-"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Write Address (AW) handshake happens concurrently with the first beat of Write Data (W)."
+    },
+    {
+      "cycle": 3,
+      "message": "WLAST=1 indicates the end of the data burst."
+    },
+    {
+      "cycle": 4,
+      "message": "Write Response (B) handshake completes the transaction after the final data beat."
+    }
+  ]
+}

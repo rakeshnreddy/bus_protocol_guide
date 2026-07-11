@@ -1,0 +1,31 @@
+{
+  "id": "wf-axi-deadlock",
+  "title": "AXI Anti-Pattern: Circular Backpressure Deadlock",
+  "type": "waveform",
+  "cycleCount": 8,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "WVALID", "type": "control", "color": "green", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "BVALID", "type": "control", "color": "purple", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] }
+  ],
+  "violations": [
+    { "cycle": 2, "signal": "WREADY", "rule": "Deadlock: Slave stalling WREADY waiting for BREADY" },
+    { "cycle": 2, "signal": "BREADY", "rule": "Deadlock: Master stalling BREADY waiting for WREADY" }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "The Master has data to send (WVALID=1) but is refusing to accept responses (BREADY=0)."
+    },
+    {
+      "cycle": 2,
+      "message": "The Slave has responses to send (BVALID=1) but is refusing to accept data (WREADY=0)."
+    },
+    {
+      "cycle": 5,
+      "message": "Both sides are permanently stuck waiting for the other to move first. This is a fatal protocol violation. You cannot make VALID depend on READY."
+    }
+  ]
+}

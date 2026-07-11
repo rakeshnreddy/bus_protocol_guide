@@ -1,0 +1,37 @@
+{
+  "id": "wf-pipeline-timing",
+  "type": "waveform",
+  "title": "Pipelined Timing",
+  "data": {
+    "totalCycles": 5,
+    "signals": [
+      {
+        "name": "CLK",
+        "type": "clock",
+        "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
+      },
+      {
+        "name": "CMD",
+        "type": "data",
+        "color": "blue",
+        "values": ["IDLE", "READ A", "READ B", "IDLE", "IDLE"]
+      },
+      {
+        "name": "DATA",
+        "type": "data",
+        "color": "green",
+        "values": ["0x0", "0x0", "DATA A", "DATA B", "0x0"]
+      }
+    ],
+    "annotations": [
+      {
+        "cycle": 1,
+        "message": "Command phase for READ A begins."
+      },
+      {
+        "cycle": 2,
+        "message": "Pipelining: Command phase for READ B overlaps with Data phase for READ A."
+      }
+    ]
+  }
+}

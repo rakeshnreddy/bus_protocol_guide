@@ -1,0 +1,218 @@
+[
+  {
+    "id": "AHB",
+      "term": "AHB",
+      "expansion": "Advanced High-performance Bus",
+      "definition": "The primary high-performance, pipelined system bus in the AMBA family, used for connecting CPUs, memory controllers, and DMA engines."
+    },
+    {
+      "id": "AMBA",
+      "term": "AMBA",
+      "expansion": "Advanced Microcontroller Bus Architecture",
+      "definition": "An open-standard, on-chip interconnect specification developed by ARM."
+    },
+    {
+      "id": "APB",
+      "term": "APB",
+      "expansion": "Advanced Peripheral Bus",
+      "definition": "A simple, unpipelined AMBA bus used for low-bandwidth, low-power control registers."
+    },
+    {
+      "id": "AXI",
+      "term": "AXI",
+      "expansion": "Advanced eXtensible Interface",
+      "definition": "The most advanced AMBA bus, featuring independent channels and out-of-order completion for high-speed multi-core SoCs."
+    },
+    {
+      "id": "AHB-Lite",
+      "term": "AHB-Lite",
+      "expansion": "AHB-Lite",
+      "definition": "A simplified version of AHB that removes multi-master arbitration and Split/Retry responses, designed to be used with a central Bus Matrix."
+    },
+    {
+      "id": "AHB5",
+      "term": "AHB5",
+      "expansion": "AHB5",
+      "definition": "The latest AHB specification, adding support for TrustZone security (HNONSEC) and Exclusive Accesses (HEXCL)."
+    },
+    {
+      "id": "HCLK",
+      "term": "HCLK",
+      "expansion": "AHB Clock",
+      "definition": "The master clock for the AHB system. All signals are synchronous to its rising edge."
+    },
+    {
+      "id": "HRESETn",
+      "term": "HRESETn",
+      "expansion": "AHB Reset (Active-Low)",
+      "definition": "The active-low reset signal. Asserted asynchronously, de-asserted synchronously to HCLK."
+    },
+    {
+      "id": "HADDR",
+      "term": "HADDR",
+      "expansion": "AHB Address Bus",
+      "definition": "The physical address requested by the master. Must be aligned to HSIZE."
+    },
+    {
+      "id": "HWRITE",
+      "term": "HWRITE",
+      "expansion": "AHB Write Control",
+      "definition": "Indicates direction. 1 = Write (master drives HWDATA), 0 = Read (slave drives HRDATA)."
+    },
+    {
+      "id": "HPROT",
+      "term": "HPROT",
+      "expansion": "AHB Protection Control",
+      "definition": "Specifies the privilege level and nature of the access (e.g., privileged vs user, cacheable vs non-cacheable)."
+    },
+    {
+      "id": "HTRANS",
+      "term": "HTRANS",
+      "expansion": "AHB Transfer Type",
+      "definition": "The heartbeat of the bus. Driven by the master to indicate IDLE, BUSY, NONSEQ, or SEQ states."
+    },
+    {
+      "id": "IDLE",
+      "term": "IDLE",
+      "expansion": "HTRANS = 00",
+      "definition": "The master does not require a data transfer. Slaves must respond with a zero-wait-state OKAY."
+    },
+    {
+      "id": "BUSY",
+      "term": "BUSY",
+      "expansion": "HTRANS = 01",
+      "definition": "The master is continuing a burst but needs time to prepare the next beat. No data is transferred."
+    },
+    {
+      "id": "NONSEQ",
+      "term": "NONSEQ",
+      "expansion": "HTRANS = 10",
+      "definition": "Non-Sequential. Indicates the first beat of a single transfer or a new burst."
+    },
+    {
+      "id": "SEQ",
+      "term": "SEQ",
+      "expansion": "HTRANS = 11",
+      "definition": "Sequential. Indicates the next beat of an ongoing burst. The address is predictably related to the previous beat."
+    },
+    {
+      "id": "HBURST",
+      "term": "HBURST",
+      "expansion": "AHB Burst Type",
+      "definition": "Specifies if the transfer is a SINGLE beat, or an INCR/WRAP burst of 4, 8, or 16 beats."
+    },
+    {
+      "id": "HSIZE",
+      "term": "HSIZE",
+      "expansion": "AHB Transfer Size",
+      "definition": "Specifies the byte size of each beat in the transfer (e.g., Byte, Halfword, Word)."
+    },
+    {
+      "id": "HWDATA",
+      "term": "HWDATA",
+      "expansion": "AHB Write Data Bus",
+      "definition": "Driven by the master during a write transfer."
+    },
+    {
+      "id": "HRDATA",
+      "term": "HRDATA",
+      "expansion": "AHB Read Data Bus",
+      "definition": "Driven by the slave during a read transfer."
+    },
+    {
+      "id": "HREADY",
+      "term": "HREADY",
+      "expansion": "AHB Ready",
+      "definition": "Driven by the slave to indicate the transfer is complete (1) or needs to wait (0)."
+    },
+    {
+      "id": "HREADYOUT",
+      "term": "HREADYOUT",
+      "expansion": "AHB Ready Out",
+      "definition": "The specific HREADY signal driven by a single slave before routing through the multiplexer to become the global HREADY."
+    },
+    {
+      "id": "HRESP",
+      "term": "HRESP",
+      "expansion": "AHB Response",
+      "definition": "Driven by the slave to indicate transfer success (OKAY) or failure (ERROR)."
+    },
+    {
+      "id": "HMASTLOCK",
+      "term": "HMASTLOCK",
+      "expansion": "AHB Master Lock",
+      "definition": "Indicates a locked transfer sequence that must not be interrupted by the arbiter."
+    },
+    {
+      "id": "HEXCL",
+      "term": "HEXCL",
+      "expansion": "AHB Exclusive Access",
+      "definition": "Used in AHB5 to indicate an exclusive read or write (semaphore operation)."
+    },
+    {
+      "id": "HEXOKAY",
+      "term": "HEXOKAY",
+      "expansion": "AHB Exclusive Okay",
+      "definition": "Driven by the slave in AHB5 to indicate if an exclusive write succeeded."
+    },
+    {
+      "id": "HNONSEC",
+      "term": "HNONSEC",
+      "expansion": "AHB Non-Secure",
+      "definition": "Used in AHB5 to indicate TrustZone security level (0 = Secure, 1 = Non-Secure)."
+    },
+    {
+      "id": "WRAP",
+      "term": "WRAP",
+      "expansion": "Wrapping Burst",
+      "definition": "A burst type where the address increments up to a specific boundary and then wraps back down to the start of the boundary."
+    },
+    {
+      "id": "Wrap_Boundary",
+      "term": "Wrap Boundary",
+      "expansion": "Wrap Boundary",
+      "definition": "The aligned address boundary within which a wrapping burst is confined. Calculated as (Number of beats) * (Bytes per beat)."
+    },
+    {
+      "id": "INCR",
+      "term": "INCR",
+      "expansion": "Incrementing Burst",
+      "definition": "A burst type where the address sequentially increments by the transfer size for every beat."
+    },
+    {
+      "id": "SINGLE",
+      "term": "SINGLE",
+      "expansion": "Single Transfer",
+      "definition": "A standalone AHB transfer not part of any burst. Indicated by HBURST=SINGLE and HTRANS=NONSEQ."
+    },
+    {
+      "id": "Pipelining",
+      "term": "Pipelining",
+      "expansion": "Bus Pipelining",
+      "definition": "The overlapping of the Address Phase of one transfer with the Data Phase of the previous transfer to achieve higher throughput."
+    },
+    {
+      "id": "Arbitration",
+      "term": "Arbitration",
+      "expansion": "Arbitration",
+      "definition": "The process by which an Arbiter decides which of multiple competing masters is granted access to the shared bus."
+    },
+    {
+      "id": "Exclusive_Access",
+      "term": "Exclusive Access",
+      "expansion": "Exclusive Access",
+      "definition": "A non-blocking mechanism used by AHB5 (and AXI) to perform atomic read-modify-write operations, typically for semaphores, relying on an Exclusive Monitor rather than locking the bus."
+    },
+    {
+      "id": "Semaphore",
+      "term": "Semaphore",
+      "expansion": "Semaphore / Mutex",
+      "definition": "A variable or hardware flag used to control access to a common resource in a concurrent system, often acquired via Exclusive Accesses."
+    },
+    {
+      "id": "Bounded_Liveness",
+      "term": "Bounded Liveness",
+      "expansion": "Bounded Liveness",
+      "definition": "A variation of a liveness property ('something good eventually happens') constrained to a specific time window. Used in hardware to prove responses occur within a realistic timeframe, rather than waiting indefinitely."
+    }
+]

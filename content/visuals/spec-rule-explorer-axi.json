@@ -1,0 +1,7 @@
+{
+  "id": "spec-rule-explorer-axi",
+  "type": "spec-rule-explorer",
+  "title": "AXI Spec Rule Explorer",
+  "description": "Interactive, filterable index of AXI specification rules.",
+  "defaultProtocol": "axi"
+}

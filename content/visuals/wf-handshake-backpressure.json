@@ -1,0 +1,45 @@
+{
+  "id": "wf-handshake-backpressure",
+  "type": "waveform",
+  "title": "Ready/Valid Handshake and Backpressure",
+  "data": {
+    "totalCycles": 6,
+    "signals": [
+      {
+        "name": "CLK",
+        "type": "clock",
+        "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
+      },
+      {
+        "name": "VALID",
+        "type": "control",
+        "values": ["LOW", "HIGH", "HIGH", "HIGH", "LOW", "LOW"]
+      },
+      {
+        "name": "READY",
+        "type": "control",
+        "values": ["HIGH", "LOW", "LOW", "HIGH", "HIGH", "LOW"]
+      },
+      {
+        "name": "DATA",
+        "type": "data",
+        "color": "blue",
+        "values": ["-", "D1", "D1", "D1", "-", "-"]
+      }
+    ],
+    "annotations": [
+      {
+        "cycle": 1,
+        "message": "Master asserts VALID, but READY is LOW. The transfer stalls (backpressure)."
+      },
+      {
+        "cycle": 2,
+        "message": "Stall continues. The master must hold DATA and VALID steady."
+      },
+      {
+        "cycle": 3,
+        "message": "Slave asserts READY. At the next clock edge, the handshake completes."
+      }
+    ]
+  }
+}

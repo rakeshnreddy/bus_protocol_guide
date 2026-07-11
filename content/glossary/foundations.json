@@ -1,0 +1,72 @@
+[
+  {
+    "term": "Bus",
+    "definition": "A shared communication link consisting of a set of wires that connects multiple components in a digital system.",
+    "relatedTerms": ["Interconnect", "Protocol"]
+  },
+  {
+    "term": "Protocol",
+    "definition": "A set of rules governing the exchange of data over a bus, defining signal timings, states, and sequences.",
+    "relatedTerms": ["Bus"]
+  },
+  {
+    "term": "Interconnect",
+    "definition": "The routing logic (muxes, crossbars, bridges) that connects multiple masters and slaves, acting as the physical implementation of the bus architecture.",
+    "relatedTerms": ["Topology", "Crossbar"]
+  },
+  {
+    "term": "Point-to-Point",
+    "definition": "A direct connection between exactly one master and one slave without shared bus wires.",
+    "relatedTerms": ["Topology"]
+  },
+  {
+    "term": "Transaction",
+    "definition": "A complete operation on a bus, typically consisting of an address phase followed by one or more data phases.",
+    "relatedTerms": ["Beat", "Burst"]
+  },
+  {
+    "term": "Beat",
+    "definition": "A single data transfer within a transaction. A burst consists of multiple beats.",
+    "relatedTerms": ["Burst", "Transaction"]
+  },
+  {
+    "term": "Burst",
+    "definition": "A type of transaction where a single address phase is followed by multiple data beats, improving throughput.",
+    "relatedTerms": ["Beat", "Transaction"]
+  },
+  {
+    "term": "Active-Low",
+    "definition": "A signal convention where the logical 'true' or 'active' state is represented by a low voltage level (0). Often denoted with an 'n' suffix (e.g., RESETn).",
+    "relatedTerms": ["Active-High"]
+  },
+  {
+    "term": "Valid Window",
+    "definition": "The period of time during which a signal's value is stable and guaranteed to be sampled correctly by the receiving logic.",
+    "relatedTerms": ["Setup Time", "Hold Time"]
+  },
+  {
+    "term": "Backpressure",
+    "definition": "The ability of a receiving entity (slave) to stall the sending entity (master) when it is not ready to accept data, typically using a READY signal.",
+    "relatedTerms": ["Ready/Valid", "Handshake"]
+  },
+  {
+    "term": "Handshake",
+    "definition": "A signaling mechanism used to coordinate data transfer between two components, ensuring both are ready. Examples include Request/Grant and Ready/Valid.",
+    "relatedTerms": ["Backpressure"]
+  },
+  {
+    "term": "Out-of-Order",
+    "definition": "A capability where transactions can complete in a different order than they were issued, based on IDs or tags, to prevent stalling on slow slaves.",
+    "relatedTerms": ["Transaction", "ID"]
+  },
+  {
+    "term": "Deadlock",
+    "definition": "A state where two or more operations are each waiting for the other to finish, resulting in the system freezing indefinitely.",
+    "relatedTerms": ["Livelock"]
+  },
+  {
+    "term": "Livelock",
+    "definition": "A state where components continuously change state in response to each other without making any forward progress.",
+    "relatedTerms": ["Deadlock"]
+  }
+]

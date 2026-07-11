@@ -1,0 +1,35 @@
+{
+  "id": "wf-axi-ids-correlation",
+  "title": "AXI IDs: Correlating Responses",
+  "type": "waveform",
+  "cycleCount": 7,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["0", "1", "0", "1", "0", "0", "0"] },
+    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["1", "1", "0", "1", "0", "0", "0"] },
+    { "name": "AWID", "type": "data", "color": "blue", "values": ["-", "0xA", "-", "0xB", "-", "-", "-"] },
+    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["-", "0x100", "-", "0x200", "-", "-", "-"] },
+    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "1"] },
+    { "name": "BREADY", "type": "control", "color": "purple", "values": ["1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "BID", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "0xB", "-", "0xA"] },
+    { "name": "BRESP", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "OKAY", "-", "OKAY"] }
+  ],
+  "annotations": [
+    {
+      "cycle": 1,
+      "message": "Master issues a write address with ID 0xA."
+    },
+    {
+      "cycle": 3,
+      "message": "Master issues another write address with ID 0xB."
+    },
+    {
+      "cycle": 4,
+      "message": "Slave returns a response with ID 0xB. The master matches this to the second transaction."
+    },
+    {
+      "cycle": 6,
+      "message": "Slave returns a response with ID 0xA. The transactions completed out of order!"
+    }
+  ]
+}

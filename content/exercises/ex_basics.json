@@ -1,0 +1,17 @@
+[
+  {
+    "id": "ex-basics-01",
+    "type": "multiple-choice",
+    "difficulty": "beginner",
+    "prompt": "Why is the READY signal necessary in a bus handshake?",
+    "options": [
+      "To tell the master the data is valid.",
+      "To tell the master the destination is prepared to accept the data.",
+      "To provide a clock pulse.",
+      "To reset the system."
+    ],
+    "correctOptionIndex": 1,
+    "expectedTakeaway": "The destination asserts READY to indicate it is capable of accepting the data. Without it, the master might overwrite data before the slave can process it.",
+    "relatedLessons": ["foundations-01-intro"]
+  }
+]

@@ -1,0 +1,60 @@
+{
+  "id": "wf-ahb-wait-state",
+  "title": "AHB Wait States (HREADY)",
+  "description": "The slave needs extra time to fetch data, so it drives HREADY low, extending the data phase.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE"]
+    },
+    {
+      "name": "HADDR",
+      "type": "data",
+      "color": "var(--color-secondary)",
+      "values": ["---", "---", "0x2000", "0x2000", "---", "---", "---", "---", "---", "---", "---", "---"]
+    },
+    {
+      "name": "HRDATA",
+      "type": "data",
+      "color": "var(--color-success)",
+      "values": ["---", "---", "---", "---", "---", "---", "---", "---", "0xC0FFEE", "0xC0FFEE", "---", "---"]
+    },
+    {
+      "name": "HREADY",
+      "type": "control",
+      "color": "var(--color-danger)",
+      "values": ["1", "1", "1", "1", "0", "0", "0", "0", "1", "1", "1", "1"]
+    }
+  ],
+  "cycleCount": 6,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HTRANS",
+      "message": "Master issues a NONSEQ read to 0x2000."
+    },
+    {
+      "cycle": 2,
+      "signalName": "HREADY",
+      "message": "Data phase starts, but the slave drives HREADY low. The master must hold its pipeline state."
+    },
+    {
+      "cycle": 3,
+      "signalName": "HREADY",
+      "message": "Wait state continues. HRDATA is not yet valid."
+    },
+    {
+      "cycle": 4,
+      "signalName": "HREADY",
+      "message": "The slave finally drives HREADY high and provides valid HRDATA. The transfer completes."
+    }
+  ]
+}

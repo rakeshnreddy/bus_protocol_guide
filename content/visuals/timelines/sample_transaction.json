@@ -1,0 +1,38 @@
+{
+  "id": "tl-abstract-transaction",
+  "type": "timeline",
+  "title": "Abstract Bus Transaction",
+  "phases": [
+    {
+      "id": "ph-arb",
+      "name": "Arbitration",
+      "durationCycles": 1,
+      "description": "Master requests bus access"
+    },
+    {
+      "id": "ph-addr",
+      "name": "Address",
+      "durationCycles": 1,
+      "description": "Master drives address and control signals"
+    },
+    {
+      "id": "ph-data",
+      "name": "Data",
+      "durationCycles": 2,
+      "description": "Data transfer occurs between master and slave"
+    },
+    {
+      "id": "ph-resp",
+      "name": "Response",
+      "durationCycles": 1,
+      "description": "Slave indicates success or failure"
+    }
+  ],
+  "labels": ["Master Action", "Slave Action"],
+  "annotations": [
+    {
+      "phase": "ph-data",
+      "message": "Wait states may extend this phase."
+    }
+  ]
+}

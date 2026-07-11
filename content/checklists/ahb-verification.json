@@ -1,0 +1,19 @@
+[
+  {
+    "id": "chk-ahb-verification-01",
+    "title": "AHB Verification Checklist",
+    "protocol": "ahb",
+    "items": [
+      {
+        "id": "chk-ahb-01",
+        "description": "Verify zero wait-state transfers.",
+        "done": false
+      },
+      {
+        "id": "chk-ahb-02",
+        "description": "Verify back-to-back bursts.",
+        "done": false
+      }
+    ]
+  }
+]

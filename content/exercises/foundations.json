@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ex-bus-architectures",
+    "type": "multiple-choice",
+    "prompt": "Which interconnect topology provides the highest concurrent throughput, assuming multiple masters want to talk to different slaves simultaneously?",
+    "options": [
+      "A shared bus",
+      "A point-to-point connection",
+      "A switched interconnect (crossbar)"
+    ],
+    "correctOptionIndex": 2,
+    "explanation": "A switched interconnect allows multiple independent paths to operate at the same time. A shared bus forces serialization, and point-to-point only connects one master to one slave."
+  },
+  {
+    "id": "ex-signal-thinking",
+    "type": "multiple-choice",
+    "prompt": "If a signal is 'active-low' (e.g., RESETn) and you want to trigger the reset, what value should the signal have?",
+    "options": [
+      "HIGH (1)",
+      "LOW (0)",
+      "High-Impedance (Z)"
+    ],
+    "correctOptionIndex": 1,
+    "explanation": "Active-low means the logical 'true' or 'asserted' state is represented by a physical low voltage (0)."
+  },
+  {
+    "id": "ex-timing-diagrams",
+    "type": "reflection",
+    "prompt": "Look at a pipeline timing diagram. Why does the address phase of Transaction B overlap with the data phase of Transaction A? What hardware requirement does this imply for the slave?",
+    "explanation": "Pipelining increases throughput by doing work in parallel. The slave must have internal registers to hold Transaction B's address while it finishes sending Transaction A's data."
+  },
+  {
+    "id": "ex-handshakes",
+    "type": "multiple-choice",
+    "prompt": "In a ready/valid handshake, the master asserts VALID, but the slave keeps READY low for 3 cycles. What must the master do during these 3 cycles?",
+    "options": [
+      "De-assert VALID to prevent data loss.",
+      "Send the next piece of data anyway.",
+      "Hold both VALID and DATA completely stable until READY goes high."
+    ],
+    "correctOptionIndex": 2,
+    "explanation": "This is backpressure. The master is legally required to hold its outputs stable once it asserts VALID until the handshake completes."
+  },
+  {
+    "id": "ex-transaction-structure",
+    "type": "multiple-choice",
+    "prompt": "What is the primary benefit of out-of-order completion?",
+    "options": [
+      "It makes the hardware much simpler to design.",
+      "It prevents a slow slave from blocking transactions intended for other, faster slaves.",
+      "It reduces the number of wires required for the bus."
+    ],
+    "correctOptionIndex": 1,
+    "explanation": "Out-of-order completion allows the interconnect to route responses back to the master as soon as they are ready, bypassing stalled transactions."
+  },
+  {
+    "id": "ex-dv-mindset",
+    "type": "reflection",
+    "prompt": "Why is 'randomization' a core tenet of the Senior DV mindset when verifying a bus protocol?",
+    "explanation": "Hardware state spaces are too large for directed testing. Randomizing stall durations (READY toggling), transfer types, and back-to-back timing exposes subtle corner-case bugs that human designers miss."
+  }
+]

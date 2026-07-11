@@ -1,0 +1,8 @@
+{
+  "id": "ex-axi-wlast-exact",
+  "type": "reflection",
+  "difficulty": "intermediate",
+  "prompt": "Toggle WLAST to appear one beat early in the burst. Explain why this is a protocol violation and what a real scoreboard would flag.",
+  "expectedTakeaway": "Toggling WLAST early causes a FAIL (Protocol Violation). AXI requires WLAST to align perfectly with the final data beat derived from AWLEN. If it arrives early, a slave might prematurely terminate the write operation, leaving subsequent beats orphaned or causing state machines to desync. A real scoreboard would flag this as a premature burst termination.",
+  "relatedLessons": ["37_axi_formal_property_patterns"]
+}

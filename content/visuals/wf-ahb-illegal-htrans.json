@@ -1,0 +1,56 @@
+{
+  "id": "wf-ahb-illegal-htrans",
+  "title": "AHB Protocol Violation: Illegal HTRANS Transition",
+  "description": "A master attempts to change HTRANS while the slave is asserting a wait state. This is a critical protocol violation and a common source of RTL bugs.",
+  "type": "waveform",
+  "signals": [
+    {
+      "name": "HCLK",
+      "type": "clock",
+      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
+    },
+    {
+      "name": "HTRANS",
+      "type": "control",
+      "color": "var(--color-primary)",
+      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE"]
+    },
+    {
+      "name": "HADDR",
+      "type": "data",
+      "color": "var(--color-secondary)",
+      "values": ["---", "---", "0xA0", "0xA0", "0xA4", "0xA4", "0xA4", "0xA4", "---", "---", "---", "---"]
+    },
+    {
+      "name": "HWDATA",
+      "type": "data",
+      "color": "var(--color-success)",
+      "values": ["---", "---", "---", "---", "D0", "D0", "D0", "D0", "D1", "D1", "---", "---"]
+    },
+    {
+      "name": "HREADY",
+      "type": "control",
+      "color": "var(--color-danger)",
+      "values": ["1", "1", "1", "1", "0", "0", "0", "0", "1", "1", "1", "1"]
+    }
+  ],
+  "cycleCount": 6,
+  "annotations": [
+    {
+      "cycle": 1,
+      "signalName": "HTRANS",
+      "message": "Master issues a NONSEQ address phase."
+    },
+    {
+      "cycle": 2,
+      "signalName": "HREADY",
+      "message": "Slave drives HREADY low, meaning the data phase for 0xA0 is stalled. The master correctly issues the *next* address phase (0xA4, SEQ) and must hold it."
+    },
+    {
+      "cycle": 3,
+      "signalName": "HTRANS",
+      "message": "VIOLATION! The master changes HTRANS from SEQ to IDLE while HREADY is still low! The master is not allowed to change the address phase signals until HREADY is high.",
+      "isViolation": true
+    }
+  ]
+}

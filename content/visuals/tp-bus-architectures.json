@@ -1,0 +1,86 @@
+{
+  "id": "tp-bus-architectures",
+  "type": "topology",
+  "title": "Bus Architectures: Shared vs Point-to-Point",
+  "data": {
+    "nodes": [
+      {
+        "id": "m1",
+        "label": "Master 1",
+        "type": "master",
+        "x": 50,
+        "y": 50
+      },
+      {
+        "id": "m2",
+        "label": "Master 2",
+        "type": "master",
+        "x": 50,
+        "y": 150
+      },
+      {
+        "id": "arb",
+        "label": "Shared Arbiter",
+        "type": "arbiter",
+        "x": 200,
+        "y": 100
+      },
+      {
+        "id": "s1",
+        "label": "Slave 1",
+        "type": "slave",
+        "x": 350,
+        "y": 50
+      },
+      {
+        "id": "s2",
+        "label": "Slave 2",
+        "type": "slave",
+        "x": 350,
+        "y": 150
+      },
+      {
+        "id": "m_p2p",
+        "label": "P2P Master",
+        "type": "master",
+        "x": 50,
+        "y": 300
+      },
+      {
+        "id": "s_p2p",
+        "label": "P2P Slave",
+        "type": "slave",
+        "x": 350,
+        "y": 300
+      }
+    ],
+    "edges": [
+      {
+        "source": "m1",
+        "target": "arb",
+        "label": "REQ/GNT"
+      },
+      {
+        "source": "m2",
+        "target": "arb",
+        "label": "REQ/GNT"
+      },
+      {
+        "source": "arb",
+        "target": "s1",
+        "label": "Shared Bus"
+      },
+      {
+        "source": "arb",
+        "target": "s2",
+        "label": "Shared Bus"
+      },
+      {
+        "source": "m_p2p",
+        "target": "s_p2p",
+        "label": "Dedicated Bus"
+      }
+    ],
+    "paths": []
+  }
+}

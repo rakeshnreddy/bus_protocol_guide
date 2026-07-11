@@ -1,0 +1,22 @@
+{
+  "id": "wf-axi-debug-wlast",
+  "title": "Early WLAST Violation",
+  "type": "waveform",
+  "signals": [
+    { "name": "clk", "wave": "p........" },
+    { "name": "AWVALID", "wave": "01.0....." },
+    { "name": "AWREADY", "wave": "01.0....." },
+    { "name": "AWLEN", "wave": "x=.x.....", "data": ["3 (4 beats)"] },
+    { "name": "WVALID", "wave": "0..1...0." },
+    { "name": "WREADY", "wave": "0..1...0." },
+    { "name": "WDATA", "wave": "x..====x.", "data": ["D0", "D1", "D2", "D3"] },
+    { "name": "WLAST", "wave": "0....10.." },
+    { "name": "BVALID", "wave": "0........" }
+  ],
+  "annotations": [
+    {
+      "time": 5,
+      "text": "FATAL: WLAST asserted on beat 3 of 4! The interconnect will prematurely close this burst, dropping D3."
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "se-foundations-signals",
+  "type": "signal-explorer",
+  "title": "Basic Bus Signals",
+  "signals": [
+    {
+      "name": "CLK",
+      "expansion": "Clock",
+      "role": "clock",
+      "description": "The global synchronization signal. All transactions happen relative to its rising edge."
+    },
+    {
+      "name": "VALID",
+      "expansion": "Valid",
+      "role": "control",
+      "description": "Asserted by the source to indicate that the data/control payload on the bus is stable and valid.",
+      "relatedTermId": "handshake"
+    },
+    {
+      "name": "READY",
+      "expansion": "Ready",
+      "role": "control",
+      "description": "Asserted by the destination to indicate it is capable of accepting the data/control payload.",
+      "relatedTermId": "handshake"
+    },
+    {
+      "name": "DATA",
+      "expansion": "Data Payload",
+      "role": "data",
+      "description": "The actual information being transferred. Size depends on the bus width (e.g. 32-bit, 64-bit)."
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+---
+id: "06_write_data_channel"
+title: "The Write Data Channel (W)"
+summary: "The signals used to transfer the actual payload."
+protocol: "axi"
+tier: "1"
+level: "intermediate"
+order: 6
+tags: ["axi", "signals", "write"]
+relatedLessons: ["05_write_address_channel", "09_read_data_channel"]
+prerequisites: ["05_write_address_channel"]
+visualIds: []
+exerciseIds: ["ex-axi-channels-2"]
+glossaryTerms: ["WDATA", "WSTRB", "WLAST", "WVALID", "WREADY", "WID"]
+checklistIds: []
+---
+
+Once a master has initiated a write via the AW channel, it must provide the payload data on the Write Data (W) channel. 
+
+All signals on this channel begin with the prefix `W`.
+
+## Handshake Signals
+
+*   **`WVALID`** (Master -> Slave): The master drives this HIGH when valid write data is on the bus.
+*   **`WREADY`** (Slave -> Master): The slave drives this HIGH when it can accept the write data.
+
+*Note: The W channel handshake operates completely independently of the AW channel. A master can assert `WVALID` before, during, or after it asserts `AWVALID`!*
+
+## Data Payload Signals
+
+*   **`WDATA`** (Write Data): The actual payload. The bus width is typically 32, 64, 128, 256, 512, or 1024 bits wide.
+*   **`WSTRB`** (Write Strobes): One strobe bit for every byte lane in `WDATA`. If a strobe bit is HIGH, that specific byte is valid and should be written to memory. If LOW, that byte is ignored. This enables sparse writes and unaligned transfers.
+*   **`WLAST`** (Write Last): A critical control signal. The master must assert `WLAST` HIGH during the very final data beat of the burst. The slave relies on `WLAST` to know the burst is complete.
+
+## The Missing Signal: WID (AXI3 vs AXI4)
+
+If you are working with AXI3, you will see a **`WID`** (Write ID) signal on this channel. In AXI3, masters were allowed to interleave write data from different transactions. For example, if transaction A and transaction B were both writing bursts, the master could send Beat A1, Beat B1, Beat A2, Beat B2. `WID` was used to identify which transaction each beat belonged to.
+
+In practice, data interleaving made slave and interconnect designs excessively complex and created timing bottlenecks. 
+
+**In AXI4, `WID` was completely removed.** AXI4 mandates that write data must be sent sequentially for a given transaction. You cannot interleave write data bursts. Because data must arrive in order, the slave no longer needs a `WID` tag on every beat.

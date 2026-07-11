@@ -1,0 +1,15 @@
+{
+  "id": "ex-axi-coverage-holes",
+  "type": "multiple-choice",
+  "difficulty": "advanced",
+  "prompt": "Looking at the coverage map above, why is the cross between FIXED burst and EXOKAY response marked as structurally illegal (grey)?",
+  "expectedTakeaway": "Understanding what is structurally impossible saves DV engineers from writing useless tests and helps properly constrain random generators.",
+  "options": [
+    "Because exclusive accesses require a specific address sequence, and the AXI spec explicitly forbids FIXED bursts for exclusive accesses.",
+    "Because FIXED bursts can only target FIFOs, which do not support exclusive monitors.",
+    "Because EXOKAY responses take two cycles, and FIXED bursts don't support multi-cycle responses.",
+    "Because EXOKAY is only valid on the last beat of a burst."
+  ],
+  "correctOptionIndex": 0,
+  "relatedLessons": ["36_axi_functional_coverage"]
+}

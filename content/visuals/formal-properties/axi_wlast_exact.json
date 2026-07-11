@@ -1,0 +1,43 @@
+{
+  "id": "fp-axi-wlast-exact",
+  "type": "formal-property",
+  "title": "AXI Safety: WLAST Exact Match",
+  "property": {
+    "name": "WLAST Exact Match",
+    "description": "WLAST must be asserted on the exact last beat of a burst (when WVALID and WREADY are high), and nowhere else. This checks a 4-beat burst.",
+    "svaString": "assert property (@(posedge ACLK) (WVALID && WREADY && (beat_count == AWLEN)) |-> WLAST);",
+    "evaluatorRule": "axi-wlast-exact"
+  },
+  "editableSignals": ["WLAST"],
+  "waveform": {
+    "id": "wf-axi-wlast-base",
+    "type": "waveform",
+    "title": "AXI WLAST Base Waveform",
+    "cycleCount": 7,
+    "signals": [
+      {
+        "name": "ACLK",
+        "type": "clock",
+        "values": ["P", "P", "P", "P", "P", "P", "P"]
+      },
+      {
+        "name": "WVALID",
+        "type": "control",
+        "color": "#3b82f6",
+        "values": ["0", "1", "1", "1", "1", "0", "0"]
+      },
+      {
+        "name": "WREADY",
+        "type": "control",
+        "color": "#eab308",
+        "values": ["1", "1", "1", "1", "1", "1", "1"]
+      },
+      {
+        "name": "WLAST",
+        "type": "control",
+        "color": "#8b5cf6",
+        "values": ["0", "0", "0", "0", "1", "0", "0"]
+      }
+    ]
+  }
+}
