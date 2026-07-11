@@ -7,6 +7,16 @@ title: "AXI Interview and Work-Use Recap"
 section: "H"
 order: 44
 exerciseIds: []
+summary: "A recap of essential AXI concepts for technical interviews."
+tags:
+  - axi
+  - interview
+  - review
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Interview and Work-Use Recap

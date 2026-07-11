@@ -7,6 +7,17 @@ title: "AXI Assertions and Protocol Checking"
 section: "G"
 order: 35
 exerciseIds: []
+summary: "Using assertions and protocol checkers to validate AXI interfaces."
+tags:
+  - axi
+  - assertions
+  - verification
+  - sva
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Assertions and Protocol Checking

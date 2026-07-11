@@ -9,11 +9,60 @@ export function getLessons(): { lesson: Lesson, body: string }[] {
   
   for (const path in mdFiles) {
     const rawContent = mdFiles[path] as string;
-    const { attributes, body } = parseMarkdown<Lesson>(rawContent);
-    // Ensure basic required fields exist to prevent runtime crashes on bad frontmatter
-    if (attributes && attributes.id && attributes.title) {
-       lessons.push({ lesson: attributes, body });
+    const { attributes, body } = parseMarkdown<any>(rawContent);
+    
+    // Validate core fields
+    if (typeof attributes.id !== 'string' || !attributes.id.trim()) continue;
+    if (typeof attributes.title !== 'string' || !attributes.title.trim()) continue;
+    if (typeof attributes.summary !== 'string' || !attributes.summary.trim()) continue;
+    if (typeof attributes.tier !== 'string' || !attributes.tier.trim()) continue;
+    if (typeof attributes.level !== 'string' || !attributes.level.trim()) continue;
+    if (typeof attributes.order !== 'number' || !Number.isInteger(attributes.order)) continue;
+    
+    const protocol = attributes.protocol;
+    if (protocol !== 'foundations' && protocol !== 'ahb' && protocol !== 'axi') continue;
+    
+    // Normalize and validate collection fields
+    const normalizeArray = (val: any): string[] | null => {
+      if (val === undefined) return [];
+      if (!Array.isArray(val)) return null; // Reject
+      for (const item of val) {
+        if (typeof item !== 'string') return null; // Reject
+      }
+      return val as string[];
+    };
+
+    const tags = normalizeArray(attributes.tags);
+    const prerequisites = normalizeArray(attributes.prerequisites);
+    const relatedLessons = normalizeArray(attributes.relatedLessons);
+    const visualIds = normalizeArray(attributes.visualIds);
+    const exerciseIds = normalizeArray(attributes.exerciseIds);
+    const glossaryTerms = normalizeArray(attributes.glossaryTerms);
+    const checklistIds = normalizeArray(attributes.checklistIds);
+
+    if (tags === null || prerequisites === null || relatedLessons === null || 
+        visualIds === null || exerciseIds === null || glossaryTerms === null || checklistIds === null) {
+      continue;
     }
+
+    const lesson: Lesson = {
+      id: attributes.id,
+      title: attributes.title,
+      summary: attributes.summary,
+      protocol: protocol,
+      tier: attributes.tier,
+      level: attributes.level,
+      order: attributes.order,
+      tags,
+      prerequisites,
+      relatedLessons,
+      visualIds,
+      exerciseIds,
+      glossaryTerms,
+      checklistIds
+    };
+    
+    lessons.push({ lesson, body });
   }
   
   return lessons;
@@ -49,10 +98,70 @@ export function getGlossaryEntries(): GlossaryEntry[] {
   
   for (const path in jsonFiles) {
     const data = jsonFiles[path] as any;
-    if (Array.isArray(data)) {
-      entries = entries.concat(data);
-    } else {
-      entries.push(data);
+    const rawEntries = Array.isArray(data) ? data : [data];
+    
+    // Derive protocol scope from path (e.g. "../../content/glossary/ahb.json" -> "ahb")
+    let defaultScope = 'foundations';
+    const match = path.match(/([a-zA-Z0-9_-]+)\.json$/);
+    if (match) {
+      const name = match[1].toLowerCase();
+      if (['foundations', 'ahb', 'axi'].includes(name)) {
+        defaultScope = name;
+      }
+    }
+    
+    for (const raw of rawEntries) {
+      if (typeof raw.term !== 'string' || !raw.term.trim()) continue;
+      if (typeof raw.definition !== 'string' || !raw.definition.trim()) continue;
+      
+      const normalizeArray = (val: any): string[] | null => {
+        if (val === undefined) return [];
+        if (!Array.isArray(val)) return null;
+        for (const item of val) {
+          if (typeof item !== 'string') return null;
+        }
+        return val as string[];
+      };
+      
+      let protocolScope = normalizeArray(raw.protocolScope);
+      if (protocolScope === null) continue;
+      if (protocolScope.length === 0) protocolScope = [defaultScope];
+      
+      // Validate protocol Scope
+      if (!protocolScope.every(p => ['foundations', 'ahb', 'axi'].includes(p))) continue;
+      
+      const relatedSignals = normalizeArray(raw.relatedSignals);
+      if (relatedSignals === null) continue;
+      
+      const relatedLessons = normalizeArray(raw.relatedLessons);
+      if (relatedLessons === null) continue;
+      
+      let id = raw.id;
+      if (typeof id !== 'string' || !id.trim()) {
+        const primaryScope = protocolScope[0] || defaultScope;
+        const slug = raw.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        id = `${primaryScope}-${slug}`;
+      }
+      
+      const expandedForm = raw.expandedForm ?? raw.expansion ?? '';
+      if (typeof expandedForm !== 'string') continue;
+      
+      const relatedTerms = normalizeArray(raw.relatedTerms);
+      if (relatedTerms === null) continue;
+      
+      const entry: GlossaryEntry = {
+        id,
+        term: raw.term,
+        expandedForm,
+        definition: raw.definition,
+        protocolScope,
+        relatedSignals,
+        relatedLessons,
+      };
+      if (relatedTerms.length > 0) {
+        entry.relatedTerms = relatedTerms;
+      }
+      entries.push(entry);
     }
   }
   

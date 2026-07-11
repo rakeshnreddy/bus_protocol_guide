@@ -7,6 +7,16 @@ title: "AXI Waveform Review Pack"
 section: "H"
 order: 43
 exerciseIds: ["ex-axi-waveform-debug"]
+summary: "A review pack of complex AXI waveforms for diagnostic analysis."
+tags:
+  - axi
+  - waveforms
+  - review
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Waveform Review Pack

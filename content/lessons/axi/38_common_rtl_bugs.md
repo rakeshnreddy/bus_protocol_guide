@@ -7,6 +7,16 @@ title: "Common RTL and Interconnect Bugs"
 section: "G"
 order: 38
 exerciseIds: []
+summary: "Analysis of common RTL and interconnect bugs encountered in AXI designs."
+tags:
+  - axi
+  - rtl-bugs
+  - debug
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # Common RTL and Interconnect Bugs

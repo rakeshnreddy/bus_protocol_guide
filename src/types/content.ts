@@ -47,6 +47,7 @@ export interface GlossaryEntry {
   protocolScope: string[];
   relatedSignals: string[];
   relatedLessons: string[];
+  relatedTerms?: string[];
 }
 
 /**

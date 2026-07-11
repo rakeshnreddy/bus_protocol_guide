@@ -7,6 +7,16 @@ title: "AXI Signal Quick Reference"
 section: "H"
 order: 41
 exerciseIds: []
+summary: "A quick reference guide to AXI signals and their roles."
+tags:
+  - axi
+  - signals
+  - review
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Signal Quick Reference

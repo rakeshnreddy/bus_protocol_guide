@@ -7,6 +7,16 @@ title: "AXI Ordering Review Pack"
 section: "H"
 order: 42
 exerciseIds: ["ex-axi-ordering-scenario"]
+summary: "A comprehensive review of AXI transaction ordering rules and models."
+tags:
+  - axi
+  - ordering
+  - review
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Ordering Review Pack

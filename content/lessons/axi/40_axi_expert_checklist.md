@@ -7,6 +7,16 @@ title: "AXI Expert Checklist"
 section: "H"
 order: 40
 exerciseIds: []
+summary: "An expert checklist for reviewing and verifying AXI implementations."
+tags:
+  - axi
+  - checklist
+  - review
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Expert Checklist

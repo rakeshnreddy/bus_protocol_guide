@@ -8,6 +8,7 @@ import Glossary from './Glossary';
 vi.mock('../lib/loaders', () => ({
   getGlossaryEntries: vi.fn(() => [
     {
+      id: 'foundations-apple',
       term: 'Apple',
       expandedForm: 'Apple Fruit',
       definition: 'A red fruit.',
@@ -16,6 +17,7 @@ vi.mock('../lib/loaders', () => ({
       relatedLessons: []
     },
     {
+      id: 'axi-axi-stream',
       term: 'AXI-Stream',
       expandedForm: '',
       definition: 'Streaming AXI protocol.',
@@ -24,6 +26,7 @@ vi.mock('../lib/loaders', () => ({
       relatedLessons: ['lesson1']
     },
     {
+      id: 'ahb-banana',
       term: 'Banana',
       expandedForm: '',
       definition: 'A yellow fruit.',

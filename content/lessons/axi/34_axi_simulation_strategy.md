@@ -7,6 +7,17 @@ title: "AXI Simulation Strategy"
 section: "G"
 order: 34
 exerciseIds: []
+summary: "Strategies and testbench architectures for robust AXI simulation and verification."
+tags:
+  - axi
+  - simulation
+  - verification
+  - vip
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # AXI Simulation Strategy

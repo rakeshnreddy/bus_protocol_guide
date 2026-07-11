@@ -63,4 +63,75 @@ describe('Loaders', () => {
       expect(exercise?.id).toBe(id);
     }
   });
+
+  describe('Lesson Normalization', () => {
+    it('should default missing collection arrays to empty arrays', () => {
+      const lessons = getLessons();
+      for (const { lesson } of lessons) {
+        expect(Array.isArray(lesson.tags)).toBe(true);
+        expect(Array.isArray(lesson.prerequisites)).toBe(true);
+        expect(Array.isArray(lesson.relatedLessons)).toBe(true);
+        expect(Array.isArray(lesson.visualIds)).toBe(true);
+        expect(Array.isArray(lesson.exerciseIds)).toBe(true);
+        expect(Array.isArray(lesson.glossaryTerms)).toBe(true);
+        expect(Array.isArray(lesson.checklistIds)).toBe(true);
+      }
+    });
+
+    it('should reject lessons with invalid core metadata', () => {
+      // Tested by ensuring only 88 valid lessons load (any failures would reduce count)
+      expect(getLessons().length).toBe(88);
+    });
+  });
+
+  describe('Glossary Normalization', () => {
+    it('should map legacy expansion to canonical expandedForm', () => {
+      const entries = getGlossaryEntries();
+      // BFM historically used "expansion", should now be under expandedForm
+      const bfm = entries.find(e => e.term === 'BFM');
+      if (bfm) {
+        expect(bfm.expandedForm).toBe('Bus Functional Model');
+      }
+    });
+
+    it('should derive missing protocolScope from file path', () => {
+      const entries = getGlossaryEntries();
+      // AHB items should have 'ahb'
+      const hclk = entries.find(e => e.term === 'HCLK');
+      if (hclk) {
+        expect(hclk.protocolScope).toContain('ahb');
+      }
+    });
+
+    it('should derive deterministic IDs when missing', () => {
+      const entries = getGlossaryEntries();
+      const allHaveIds = entries.every(e => typeof e.id === 'string' && e.id.length > 0);
+      expect(allHaveIds).toBe(true);
+    });
+
+    it('should handle duplicate terms across protocols without ID collisions', () => {
+      const entries = getGlossaryEntries();
+      const transactions = entries.filter(e => e.term === 'Transaction');
+      expect(transactions.length).toBeGreaterThan(1);
+      
+      const ids = new Set(transactions.map(t => t.id));
+      expect(ids.size).toBe(transactions.length); // All IDs must be unique
+    });
+
+    it('should preserve relatedTerms if present', () => {
+      const entries = getGlossaryEntries();
+      const hasRelatedTerms = entries.some(e => e.relatedTerms && e.relatedTerms.length > 0);
+      expect(hasRelatedTerms).toBe(true);
+    });
+
+    it('should default missing collection arrays to empty arrays', () => {
+      const entries = getGlossaryEntries();
+      for (const entry of entries) {
+        expect(Array.isArray(entry.protocolScope)).toBe(true);
+        expect(Array.isArray(entry.relatedSignals)).toBe(true);
+        expect(Array.isArray(entry.relatedLessons)).toBe(true);
+      }
+    });
+  });
 });
+

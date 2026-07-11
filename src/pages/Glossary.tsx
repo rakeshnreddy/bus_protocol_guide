@@ -14,7 +14,7 @@ export default function Glossary() {
 
   const filteredEntries = useMemo(() => {
     if (filter === 'all') return allEntries;
-    return allEntries.filter(entry => entry.protocolScope.includes(filter));
+    return allEntries.filter(entry => (entry.protocolScope || []).includes(filter));
   }, [allEntries, filter]);
 
   // Group by first letter
@@ -83,7 +83,7 @@ export default function Glossary() {
             <div key={letter} className="glossary-group">
               <h2 className="glossary-letter">{letter}</h2>
               {groupedEntries.get(letter)!.map(entry => (
-                <div key={entry.term} id={entry.term} className="glossary-term-card">
+                <div key={entry.id} id={entry.id} className="glossary-term-card">
                   <div className="glossary-term-header">
                     <h3 className="glossary-term-title">{entry.term}</h3>
                     {entry.expandedForm && (
@@ -96,7 +96,7 @@ export default function Glossary() {
                     <div className="glossary-meta-item">
                       <span className="glossary-meta-label">Scope:</span>
                       <div className="glossary-tags">
-                        {entry.protocolScope.map(scope => (
+                        {(entry.protocolScope || []).map(scope => (
                           <span key={scope} className="glossary-tag">{scope}</span>
                         ))}
                       </div>

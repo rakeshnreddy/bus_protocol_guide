@@ -8,6 +8,16 @@ section: "G"
 order: 37
 exerciseIds: ["ex-axi-wlast-exact"]
 glossaryTerms: ["WLAST"]
+summary: "Formal property patterns for proving AXI protocol compliance."
+tags:
+  - axi
+  - formal
+  - verification
+  - sva
+prerequisites: []
+relatedLessons: []
+visualIds: []
+checklistIds: []
 ---
 
 # AXI Formal Property Patterns

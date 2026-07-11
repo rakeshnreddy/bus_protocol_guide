@@ -7,6 +7,16 @@ title: "Debug Case Studies"
 section: "G"
 order: 39
 exerciseIds: []
+summary: "Real-world debug case studies for troubleshooting AXI systems."
+tags:
+  - axi
+  - debug
+  - waveforms
+prerequisites: []
+relatedLessons: []
+visualIds: []
+glossaryTerms: []
+checklistIds: []
 ---
 
 # Debug Case Studies

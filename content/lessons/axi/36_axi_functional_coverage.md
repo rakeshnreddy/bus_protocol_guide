@@ -10,6 +10,13 @@ visualIds: ["cm-axi-burst-resp"]
 exerciseIds: ["ex-axi-coverage-holes"]
 glossaryTerms: ["EXOKAY"]
 checklistIds: []
+summary: "Designing a functional coverage model for AXI verification."
+tags:
+  - axi
+  - coverage
+  - verification
+prerequisites: []
+relatedLessons: []
 ---
 
 # AXI Functional Coverage Model
