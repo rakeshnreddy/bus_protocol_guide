@@ -34,7 +34,9 @@ If the CPU issues a `WRAP4` (Word size) starting at `0x38`:
 3. The address **wraps around** to the start of the 16-byte boundary: `0x30`
 4. The memory returns `0x34`
 
-![wf-ahb-wrap4-burst](visual:wf-ahb-wrap4-burst)
+Select Cycle 3 in the waveform to inspect the exact wrap decision and the aligned region that contains all four beats.
+
+![WRAP4 critical-word-first address order with the 0x3C to 0x30 wrap event](visual:wf-ahb-wrap4-burst)
 
 ## Calculating the Wrap Boundary
 

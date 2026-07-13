@@ -1,25 +1,23 @@
 {
   "id": "wf-ahb-bug-wait-state",
-  "title": "Bug Case Study: Wait State Data Loss",
   "type": "waveform",
-  "cycleCount": 5,
+  "title": "Bug Case Study: Write Data Advances During a Stall",
+  "description": "The address phase for 0x18 and the data phase for 0x14 are both held by HREADY=0; the bug appears when HWDATA changes to the later transfer's value before 0x14 completes.",
+  "cycleCount": 6,
   "signals": [
-    { "name": "HCLK", "type": "clock", "values": [] },
-    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE"] },
-    { "name": "HADDR", "type": "control", "values": ["0x10", "0x14", "0x18", "0x00", "0x00"] },
-    { "name": "HWDATA", "type": "data", "values": ["-", "D(0x10)", "D(0x14)", "D(0x14)", "D(0x18)"] },
-    { "name": "HREADY", "type": "control", "color": "orange", "values": ["1", "1", "0", "1", "1"] }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "data", "values": ["0x10", "0x14", "0x18", "0x18", "—", "—"] },
+    { "name": "DATA_OWNER", "type": "sideband", "values": ["—", "0x10", "0x14", "0x14", "0x18", "—"] },
+    { "name": "HWDATA", "type": "data", "values": ["—", "D(0x10)", "D(0x14)", "D(0x18) BUG", "D(0x18)", "—"] },
+    { "name": "HREADY", "type": "control", "values": ["1", "1", "0", "1", "1", "1"] }
   ],
   "annotations": [
-    {
-      "cycle": 2,
-      "message": "Slave drives HREADY=0 to stall the data phase for 0x14."
-    }
+    { "cycle": 2, "message": "Address 0x14 is accepted while write data for 0x10 completes. The pipeline now owes D(0x14) in the following data phase." },
+    { "cycle": 3, "message": "HREADY=0 stalls data phase 0x14 and pending address phase 0x18. HADDR, HTRANS, and HWDATA must remain associated with those owners." },
+    { "cycle": 5, "message": "Address 0x18 finally owns the data phase. D(0x18) is legal here, one accepted address phase after its request." }
   ],
   "violations": [
-    {
-      "cycle": 3,
-      "message": "BUG: The master advanced HWDATA to D(0x18) even though HREADY was 0 in cycle 2. The master dropped D(0x14) permanently!"
-    }
+    { "cycle": 4, "message": "EARLY ADVANCE: DATA_OWNER is still 0x14, but HWDATA changed to D(0x18) after the low-HREADY cycle. The slave completes 0x14 with the wrong data." }
   ]
 }

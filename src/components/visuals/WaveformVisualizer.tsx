@@ -24,11 +24,21 @@ export default function WaveformVisualizer({
   const getViolationForCycle = (cycle: number) => {
     return data.violations?.find(v => v.cycle === cycle);
   };
+
+  const selectCycle = (cycle: number) => setHoveredCycle(cycle);
+
+  const handleKeyboardActivation = (event: React.KeyboardEvent<SVGElement>, action: () => void) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      action();
+    }
+  };
   
   return (
     <div className="waveform-container">
-      <h3 className="visual-title">{data.title}</h3>
-      <div className="waveform-scroll">
+      <h2 className="visual-title">{data.title}</h2>
+      {data.description && <p className="visual-description">{data.description}</p>}
+      <div className="waveform-scroll" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <svg width={svgWidth} height={svgHeight} className="waveform-svg">
           {/* Draw grid lines and labels */}
           {Array.from({ length: data.cycleCount + 1 }).map((_, i) => (
@@ -36,11 +46,20 @@ export default function WaveformVisualizer({
               <line 
                 x1={labelWidth + i * cycleWidth} y1={0} 
                 x2={labelWidth + i * cycleWidth} y2={svgHeight} 
-                stroke="#e2e8f0" strokeDasharray="4 4" 
+                stroke="var(--grid-line)" strokeDasharray="4 4"
               />
-              <text x={labelWidth + i * cycleWidth + 5} y={15} fontSize="10" fill="#94a3b8">
-                C{i}
-              </text>
+              {i < data.cycleCount && (
+                <text
+                  x={labelWidth + i * cycleWidth + cycleWidth / 2}
+                  y={15}
+                  fontSize="10"
+                  fill="var(--ink-soft)"
+                  textAnchor="middle"
+                  fontWeight="bold"
+                >
+                  C{i + 1}
+                </text>
+              )}
             </g>
           ))}
           
@@ -56,10 +75,15 @@ export default function WaveformVisualizer({
                 y={0}
                 width={cycleWidth} // 80px, well above 44px min touch target
                 height={Math.max(svgHeight, 44)} // Ensure height is at least 44px
-                fill={violation ? "rgba(239, 68, 68, 0.1)" : isHovered ? "rgba(241, 245, 249, 0.5)" : "transparent"}
+                fill={violation ? "var(--danger-soft)" : isHovered ? "var(--control-hover)" : "transparent"}
                 onMouseEnter={() => setHoveredCycle(cycle)}
                 onMouseLeave={() => setHoveredCycle(null)}
-                onClick={() => setHoveredCycle(cycle)}
+                onClick={() => selectCycle(cycle)}
+                onKeyDown={(event) => handleKeyboardActivation(event, () => selectCycle(cycle))}
+                role="button"
+                tabIndex={0}
+                aria-label={`Inspect cycle ${cycle}`}
+                aria-pressed={isHovered}
                 className="cycle-interaction-rect"
                 style={{ cursor: 'pointer' }}
               />
@@ -69,7 +93,7 @@ export default function WaveformVisualizer({
           {/* Draw signals */}
           {data.signals.map((signal, sIdx) => {
             const yOffset = sIdx * rowHeight;
-            const color = signal.color || '#334155';
+            const color = signal.color || 'var(--signal-default)';
             
             return (
               <g key={`signal-${sIdx}`} transform={`translate(0, ${yOffset})`}>
@@ -98,6 +122,10 @@ export default function WaveformVisualizer({
                       fill="transparent"
                       cursor="pointer"
                       onClick={handleSignalClick}
+                      onKeyDown={(event) => handleKeyboardActivation(event, handleSignalClick)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${signal.name} cycle ${cycle}, value ${val}. Activate to toggle.`}
                       className="signal-cell-interaction"
                       data-testid={`interaction-${signal.name}-${cycle}`}
                     />
@@ -159,7 +187,7 @@ export default function WaveformVisualizer({
                           ${x + cycleWidth - transitionWidth},${rowHeight - 10} 
                           ${x + transitionWidth},${rowHeight - 10}
                         `}
-                        fill="rgba(255,255,255,0.8)"
+                        fill="var(--waveform-data-fill)"
                         stroke={color}
                         strokeWidth="2"
                       />
@@ -177,7 +205,7 @@ export default function WaveformVisualizer({
       </div>
       
       {/* Annotation panel */}
-      <div className="waveform-info-panel">
+      <div className="waveform-info-panel" aria-live="polite">
         {hoveredCycle !== null ? (
           <>
              <div className="panel-header">Cycle {hoveredCycle}</div>
@@ -191,7 +219,7 @@ export default function WaveformVisualizer({
              )}
           </>
         ) : (
-          <div className="annotation-text empty">Hover over cycles to understand what is happening.</div>
+          <div className="annotation-text empty">Hover, focus, or tap a cycle to inspect phase ownership and sampling.</div>
         )}
       </div>
     </div>

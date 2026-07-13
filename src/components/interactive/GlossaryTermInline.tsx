@@ -76,15 +76,14 @@ export default function GlossaryTermInline({ term, children }: GlossaryTermInlin
       
       {/* We use class toggling for JS-based state instead of relying purely on CSS :hover */}
       <span className={`glossary-tooltip ${isOpen ? 'is-open' : ''}`}>
-        <strong style={{ display: 'block', marginBottom: '4px', fontSize: '1.05em' }}>
+        <strong className="glossary-tooltip-title">
           {term.expandedForm || term.term}
         </strong>
         {term.definition}
-        <span style={{ display: 'block', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.2)', textAlign: 'right' }}>
+        <span className="glossary-tooltip-link-row">
           <span 
-            className="view-full-entry-link"
+            className="view-full-entry-link glossary-tooltip-link"
             onClick={handleLinkClick}
-            style={{ color: '#60a5fa', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
           >
             View full entry ➔
           </span>

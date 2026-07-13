@@ -1,0 +1,61 @@
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid var(--glass-line);
+  border-radius: 12px;
+  background: var(--control-glass);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.theme-option {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  color: var(--ink-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+
+.theme-option svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-option:hover {
+  color: var(--ink);
+  background: var(--control-hover);
+}
+
+.theme-option[aria-pressed="true"] {
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+}
+
+.theme-option[aria-pressed="true"]::after {
+  position: absolute;
+  right: 8px;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+  content: "";
+}
+
+.theme-option:active {
+  transform: scale(0.94);
+}

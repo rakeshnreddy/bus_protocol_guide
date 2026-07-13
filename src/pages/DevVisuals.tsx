@@ -7,7 +7,7 @@ export default function DevVisuals() {
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '0.5rem' }}>Visual Engine Dev Viewer</h1>
-      <p style={{ color: '#64748b', marginBottom: '3rem' }}>
+      <p className="page-intro">
         This route is for internal testing of visual components. It loops through all seeded data in <code>content/visuals/</code> and renders them using the <code>VisualRenderer</code> wrapper.
       </p>
       

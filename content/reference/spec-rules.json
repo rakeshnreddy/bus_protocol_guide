@@ -5,7 +5,7 @@
       "protocol": "ahb",
       "category": "timing",
       "severity": "critical",
-      "statement": "A master MUST hold HWDATA and control signals stable while HREADY is LOW.",
+      "statement": "A master must hold a pending valid transfer's address/control stable while HREADY is LOW, and must hold stalled write data stable for its data phase, subject to the protocol-defined IDLE, BUSY, and ERROR exceptions.",
       "bugPattern": {
         "symptom": "Data is permanently lost. The slave samples the wrong data when it finally raises HREADY.",
         "rootCause": "The RTL designer wrote their state machine to advance data on every clock edge where HTRANS != IDLE, forgetting to AND that condition with HREADY."
@@ -29,7 +29,7 @@
       "protocol": "ahb",
       "category": "deadlock",
       "severity": "critical",
-      "statement": "A slave MUST NOT generate HREADYOUT combinatorially based on its HREADYIN input.",
+      "statement": "System integration must avoid a combinational loop through a slave HREADYOUT path and the selected global HREADY return path; the exact registered/combinational implementation is a timing and integration choice.",
       "bugPattern": {
         "symptom": "The synthesis tool throws errors about combinatorial loops, or the silicon oscillates.",
         "rootCause": "The designer tried to save a clock cycle of latency by linking the HREADY inputs and outputs without a flip-flop in between, creating a loop across the system multiplexer."
@@ -41,10 +41,10 @@
       "protocol": "ahb",
       "category": "response_handling",
       "severity": "critical",
-      "statement": "A master MUST cancel subsequent beats in a burst if an ERROR response is received.",
+      "statement": "After ERROR, a master may cancel the remaining burst or continue it. If it cancels, it drives HTRANS to IDLE during the two-cycle response.",
       "bugPattern": {
-        "symptom": "The slave is bombarded with invalid SEQ transfers after having just rejected a sequence, leading to unpredictable system state.",
-        "rootCause": "The master receives a two-cycle ERROR response in the middle of an INCR4 burst, but ignores it and keeps driving SEQ for the rest of the burst."
+        "symptom": "The master and checker disagree about whether the remaining burst was canceled, so following transfers are misclassified or side effects diverge from the documented design policy.",
+        "rootCause": "The implementation or verification environment treats one legal post-ERROR choice as universally mandatory instead of checking the master's documented cancel-or-continue behavior."
       },
       "relatedLessons": ["33_common_rtl_bugs"]
     },
@@ -53,7 +53,7 @@
       "protocol": "ahb",
       "category": "qos",
       "severity": "moderate",
-      "statement": "System arbiters SHOULD ensure fair access to prevent starvation, especially when undefined-length INCR bursts are used.",
+      "statement": "AHB does not mandate one arbitration policy. If the system contract promises bounded service or fairness, the arbiter and its checker must enforce that implementation-specific guarantee.",
       "bugPattern": {
         "symptom": "A DMA buffer overflows because it can never get access to memory to flush its data.",
         "rootCause": "The Arbiter was designed with strict fixed priority, and a high-priority CPU is heavily utilizing undefined-length INCR bursts."

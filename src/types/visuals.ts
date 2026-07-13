@@ -19,6 +19,7 @@ export interface WaveformVisualData {
   id: string;
   type: 'waveform';
   title: string;
+  description?: string;
   cycleCount: number;
   signals: {
     name: string;
@@ -41,11 +42,24 @@ export interface TransactionTimelineData {
   id: string;
   type: 'timeline';
   title: string;
-  phases: {
+  description?: string;
+  phases?: {
     id: string;
     name: string;
     durationCycles: number;
     description?: string;
+  }[];
+  transactions?: {
+    id: string;
+    label: string;
+    color?: string;
+    phases: {
+      id: string;
+      name: string;
+      startCycle: number;
+      endCycle: number;
+      description?: string;
+    }[];
   }[];
   labels?: string[];
   annotations?: Annotation[];
@@ -59,16 +73,35 @@ export interface TopologyData {
   id: string;
   type: 'topology';
   title: string;
+  description?: string;
   nodes: {
     id: string;
     label: string;
-    type: 'master' | 'slave' | 'arbiter' | 'bridge';
+    type: 'master' | 'slave' | 'arbiter' | 'bridge' | 'concept' | 'phase' | 'state';
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
   }[];
   edges: {
     id: string;
     source: string;
     target: string;
     label?: string;
+    bidirectional?: boolean;
+    kind?: 'request' | 'response' | 'selection' | 'arbitration' | 'data' | 'channel' | 'relationship';
+    tone?: 'primary' | 'secondary' | 'neutral';
+    waypoints?: { x: number; y: number }[];
+    labelPosition?: { x: number; y: number };
+  }[];
+  regions?: {
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    tone?: 'source' | 'fabric' | 'target' | 'concept';
   }[];
   highlightedPath?: string[]; // Array of node or edge IDs to highlight a specific transaction route
   annotations?: Annotation[];
@@ -81,11 +114,18 @@ export interface SignalExplorerData {
   id: string;
   type: 'signal-explorer';
   title: string;
+  description?: string;
   signals: {
     name: string;
     expansion: string;
     role: 'control' | 'data' | 'sideband' | 'clock';
     description: string;
+    group?: string;
+    direction?: string;
+    sampled?: string;
+    values?: string[];
+    verificationNote?: string;
+    typicalUse?: string;
     relatedTermId?: string;
   }[];
 }
@@ -98,6 +138,7 @@ export interface CoverageMapData {
   id: string;
   type: 'coverage-map';
   title: string;
+  description?: string;
   xAxis: {
     label: string;
     buckets: string[];
@@ -123,6 +164,7 @@ export interface FormalPropertyData {
   id: string;
   type: 'formal-property';
   title: string;
+  description?: string;
   property: {
     name: string;
     description: string;

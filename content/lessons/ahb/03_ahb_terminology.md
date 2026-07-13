@@ -9,7 +9,7 @@ order: 3
 tags: ["ahb", "terminology"]
 relatedLessons: []
 prerequisites: ["01_ahb_overview"]
-visualIds: []
+visualIds: ["topo-ahb-terminology-map"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -34,6 +34,10 @@ In any AHB system, there are four conceptual roles:
 2. **Slave:** The responder. A slave waits for a master to talk to it, and then either accepts written data or provides read data. (Examples: SRAM, Flash memory, peripheral registers).
 3. **Arbiter:** If multiple masters share the same wires (rare today, but conceptually important), the arbiter decides who gets to talk.
 4. **Decoder:** Because the address bus is shared, the decoder looks at the `HADDR` driven by the master and uses a memory map to select exactly one slave. It asserts a signal called `HSELx` (Select) to tell that specific slave it is being addressed.
+
+The concept map connects these roles to the transaction words used throughout the course. Follow the highlighted path, then inspect **Beat**, **Burst**, **Wait State**, and **Response** to see how they relate.
+
+![AHB concept map linking roles, transfers, beats, bursts, phases, waits, and responses](visual:topo-ahb-terminology-map)
 
 ## Naming Conventions in Modern Systems
 

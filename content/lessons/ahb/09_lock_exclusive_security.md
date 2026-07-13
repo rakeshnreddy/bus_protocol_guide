@@ -9,13 +9,17 @@ order: 9
 tags: ["ahb", "signals", "security", "exclusive"]
 relatedLessons: []
 prerequisites: ["05_address_and_control"]
-visualIds: []
+visualIds: ["sig-ahb-access-attributes", "tl-ahb-exclusive"]
 exerciseIds: []
 glossaryTerms: ["HMASTLOCK", "HEXCL", "HNONSEC", "HEXOKAY"]
 checklistIds: []
 ---
 
 As systems evolved to support multi-core processors and hardware security (like ARM TrustZone), the basic read/write signals were no longer enough. AHB5 introduced and refined several signals to handle these advanced use cases.
+
+These mechanisms solve different problems. Open each signal before continuing: locking controls bus ownership, exclusives report conditional atomic success, and HNONSEC carries a security attribute.
+
+![Interactive distinction between AHB locking, exclusive access, and security signals](visual:sig-ahb-access-attributes)
 
 ## HMASTLOCK (Locked Transfers)
 
@@ -34,6 +38,10 @@ To replace the heavy-handed `HMASTLOCK`, AHB5 introduced **[glossary:HEXCL]** (f
 4. **The Response:** 
    - If no other master wrote to that address in the meantime, the slave responds with **`HEXOKAY = 1`** and `HRESP = OKAY`. The write succeeds.
    - If another master *did* write to that address, the slave responds with **`HEXOKAY = 0`** and `HRESP = OKAY`. The write fails, and the master knows it must try the whole process again.
+
+The timeline shows why an exclusive sequence does not lock the bus: other masters remain free during the intermission while the monitor protects only the address-specific success condition.
+
+![AHB exclusive read, free intermission, exclusive write, and HEXOKAY result](visual:tl-ahb-exclusive)
 
 ## Security (HNONSEC)
 

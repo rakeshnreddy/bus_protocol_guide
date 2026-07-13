@@ -93,7 +93,7 @@ describe('FormalPropertyPlayground', () => {
       // Toggle cycle 6 to 0
       fireEvent.click(screen.getByTestId('interaction-HREADY-6'));
       
-      expect(screen.getByText('FAIL (Protocol Violation)')).toBeInTheDocument();
+      expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
     });
 
     it('rejects toggling non-editable signals', () => {
@@ -114,7 +114,7 @@ describe('FormalPropertyPlayground', () => {
       fireEvent.click(screen.getByTestId('interaction-HREADY-4'));
       fireEvent.click(screen.getByTestId('interaction-HREADY-5'));
       fireEvent.click(screen.getByTestId('interaction-HREADY-6'));
-      expect(screen.getByText('FAIL (Protocol Violation)')).toBeInTheDocument();
+      expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
 
       // Reset
       fireEvent.click(screen.getByText('Reset to Original'));
@@ -129,7 +129,7 @@ describe('FormalPropertyPlayground', () => {
       // Toggle WLAST high on cycle 3
       fireEvent.click(screen.getByTestId('interaction-WLAST-3'));
       
-      expect(screen.getByText('FAIL (Protocol Violation)')).toBeInTheDocument();
+      expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
     });
 
     it('flags violation if WLAST is missing on the last beat', () => {
@@ -138,7 +138,7 @@ describe('FormalPropertyPlayground', () => {
       // Toggle WLAST low on the last beat (cycle 5)
       fireEvent.click(screen.getByTestId('interaction-WLAST-5'));
       
-      expect(screen.getByText('FAIL (Protocol Violation)')).toBeInTheDocument();
+      expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
     });
   });
 });

@@ -1,0 +1,72 @@
+{
+  "id": "sig-ahb-signoff-evidence",
+  "type": "signal-explorer",
+  "title": "AHB Signoff Evidence Board",
+  "description": "Select a signoff area to connect the review question to the concrete assertion, coverage, scoreboard, or analysis evidence that should answer it.",
+  "signals": [
+    {
+      "name": "Reset and first transfer", "expansion": "Safe reset state and legal restart", "role": "control", "group": "Protocol-control evidence",
+      "description": "Confirm address/control return to safe values during reset and that the first valid transfer after release begins legally.",
+      "direction": "Reset controller, master, and every monitored interface", "sampled": "Reset assertion, synchronous release edge, and first accepted NONSEQ",
+      "values": ["No valid transfer during reset", "First burst beat is NONSEQ"],
+      "typicalUse": "Reset assertions plus directed reset-under-traffic tests",
+      "verificationNote": "Retain a waveform showing reset assertion during an active transfer and the documented recovery behavior."
+    },
+    {
+      "name": "Wait-state behavior", "expansion": "Stable phase ownership under HREADY=0", "role": "control", "group": "Protocol-control evidence",
+      "description": "Prove that address/control and write-data owners do not advance while their respective phases are stalled.",
+      "direction": "Master and selected slave", "sampled": "Every low-HREADY interval, including long and single-cycle stalls",
+      "values": ["0 waits", "1 wait", "Maximum configured waits", "Back-to-back stalls"],
+      "typicalUse": "Stability assertions and constrained wait-state regression",
+      "verificationNote": "Review assertion exceptions for IDLE, BUSY, and ERROR before accepting a green property report."
+    },
+    {
+      "name": "Burst legality", "expansion": "Type, size, alignment, count, and boundary", "role": "control", "group": "Protocol-control evidence",
+      "description": "Demonstrate legal NONSEQ/SEQ progression for every supported HBURST and HSIZE, including wrap math and the 1 KB boundary.",
+      "direction": "Master address generation", "sampled": "Accepted address phases",
+      "values": ["SINGLE/INCR", "INCR4/8/16", "WRAP4/8/16", "All supported HSIZE"],
+      "typicalUse": "Burst predictor, assertions, and crossed functional coverage",
+      "verificationNote": "A coverage hit is insufficient unless the scoreboard/checker also validated every generated address."
+    },
+    {
+      "name": "Response handling", "expansion": "OKAY, two-cycle ERROR, and recovery", "role": "control", "group": "Data-integrity evidence",
+      "description": "Attribute each response to the correct data phase and verify both legal choices after ERROR: cancel the remaining burst or continue it as documented by the master.",
+      "direction": "Selected slave → master", "sampled": "Data-phase completion",
+      "values": ["OKAY completion", "ERROR1 stall", "ERROR2 completion"],
+      "typicalUse": "Response checker and error-injection regression",
+      "verificationNote": "Inject ERROR on the first, middle, and final beat and compare actual side effects with the documented recovery policy."
+    },
+    {
+      "name": "End-to-end data", "expansion": "No loss, duplication, corruption, or misrouting", "role": "data", "group": "Data-integrity evidence",
+      "description": "Compare accepted writes and returned reads against an independent reference model across stalls, bursts, errors, and interconnect routes.",
+      "direction": "Stimulus prediction ↔ monitor reconstruction", "sampled": "Only accepted address/data phases",
+      "values": ["Address", "Direction", "Size", "Data", "Response", "Target"],
+      "typicalUse": "Scoreboard and memory model",
+      "verificationNote": "Ensure expected and actual streams are not derived from the same monitor logic; correlated bugs can otherwise self-cancel."
+    },
+    {
+      "name": "Version and options", "expansion": "AHB, AHB-Lite, and declared AHB5 properties", "role": "sideband", "group": "Configuration evidence",
+      "description": "Show that the checker, stimulus, and coverage model match the implemented interface revision and optional capabilities.",
+      "direction": "Configuration database → all verification components", "sampled": "Environment build and every option-specific transfer",
+      "values": ["Legacy SPLIT/RETRY only where applicable", "Secure_Transfers", "Exclusive_Transfers", "Extended_Memory_Types"],
+      "typicalUse": "Configuration audit and option-gated assertions",
+      "verificationNote": "A checker that assumes absent signals, or ignores declared capabilities, can report misleading signoff."
+    },
+    {
+      "name": "Coverage closure", "expansion": "Legal holes explained and illegal bins excluded", "role": "sideband", "group": "Closure evidence",
+      "description": "Review every zero-hit legal bin, every exclusion, and every cross that matters to the verification plan.",
+      "direction": "Regression database → signoff review", "sampled": "After stable regressions with assertion and scoreboard pass rates",
+      "values": ["Legal covered", "Legal hole", "Justified exclusion", "Illegal bin"],
+      "typicalUse": "Coverage review with test traceability",
+      "verificationNote": "Do not use a raw percentage as the decision. Each waiver needs a reason and each critical scenario needs a reproducing test."
+    },
+    {
+      "name": "Progress and performance", "expansion": "Documented latency, fairness, and deadlock bounds", "role": "sideband", "group": "Closure evidence",
+      "description": "Prove implementation-specific service guarantees under realistic contention and backpressure assumptions.",
+      "direction": "System contract → liveness properties and stress tests", "sampled": "Request-to-grant and transfer-start-to-completion windows",
+      "values": ["Configured wait bound", "Arbitration service bound", "No combinational loop", "No deadlock"],
+      "typicalUse": "Formal liveness plus long-running contention tests",
+      "verificationNote": "Separate a protocol requirement from a product performance promise and record the assumptions used by the proof."
+    }
+  ]
+}

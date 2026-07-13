@@ -48,18 +48,18 @@ describe('CoverageMap', () => {
 
   it('provides at least a 44x44px hit area for touch targets', () => {
     const { container } = render(<CoverageMap data={mockData} />);
-    const cells = container.querySelectorAll('.coverage-cell');
+    const cells = container.querySelectorAll('.coverage-cell-button');
     
     cells.forEach(cell => {
       // We check the inline styles we set to guarantee mobile hit area
       expect(cell).toHaveStyle('min-width: 44px');
-      expect(cell).toHaveStyle('height: 44px');
+      expect(cell).toHaveStyle('min-height: 44px');
     });
   });
 
   it('shows tooltip on hover', () => {
     render(<CoverageMap data={mockData} />);
-    const cell = screen.getByText('5');
+    const cell = screen.getByRole('button', { name: /A by C: covered, 5 hits/i });
     
     fireEvent.mouseEnter(cell);
     expect(screen.getByText('A × C')).toBeInTheDocument();
@@ -67,5 +67,19 @@ describe('CoverageMap', () => {
     
     fireEvent.mouseLeave(cell);
     expect(screen.queryByText('A × C')).not.toBeInTheDocument();
+  });
+
+  it('supports keyboard focus and persistent selection without relying on color', () => {
+    render(<CoverageMap data={mockData} />);
+    const hole = screen.getByRole('button', { name: /B by C: illegal combination/i });
+
+    fireEvent.focus(hole);
+    expect(screen.getByText('B × C')).toBeInTheDocument();
+    fireEvent.blur(hole);
+    expect(screen.queryByText('B × C')).not.toBeInTheDocument();
+
+    fireEvent.click(hole);
+    expect(hole).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('B × C')).toBeInTheDocument();
   });
 });

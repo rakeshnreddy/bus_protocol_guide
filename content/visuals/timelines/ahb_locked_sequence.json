@@ -1,0 +1,41 @@
+{
+  "id": "tl-ahb-locked-sequence",
+  "type": "timeline",
+  "title": "Locked Read-Modify-Write Ownership",
+  "description": "Original multi-master AHB uses a requesting master's HLOCKx and the arbiter's bus-level HMASTLOCK indication to keep other masters out of an indivisible sequence.",
+  "labels": ["Original AMBA 2 AHB", "Bus ownership", "Atomic sequence", "Blocked requester"],
+  "transactions": [
+    {
+      "id": "cpu-lock-request",
+      "label": "CPU HLOCKx",
+      "phases": [
+        { "id": "cpu-lock-ahead", "name": "Request lock", "startCycle": 1, "endCycle": 2, "description": "CPU asserts HLOCKx with HBUSREQx early enough for the arbiter to protect the upcoming sequence." },
+        { "id": "cpu-lock-held", "name": "Lock requested", "startCycle": 2, "endCycle": 4, "description": "The request remains associated with the CPU's indivisible read-modify-write sequence." }
+      ]
+    },
+    {
+      "id": "bus-lock",
+      "label": "Bus HMASTLOCK",
+      "phases": [
+        { "id": "bus-locked", "name": "Locked owner", "startCycle": 2, "endCycle": 4, "description": "The arbiter identifies the active transfer sequence as locked. Other masters cannot be granted until it completes." },
+        { "id": "bus-release", "name": "Release boundary", "startCycle": 4, "endCycle": 5, "description": "The final locked transfer completes; an IDLE after a locked sequence is recommended so arbitration can change cleanly." }
+      ]
+    },
+    {
+      "id": "cpu-operations",
+      "label": "CPU transfer",
+      "phases": [
+        { "id": "locked-read", "name": "Read semaphore", "startCycle": 2, "endCycle": 3, "description": "CPU reads the semaphore while retaining locked ownership." },
+        { "id": "locked-write", "name": "Write semaphore", "startCycle": 3, "endCycle": 4, "description": "CPU writes the updated semaphore before another master can access the protected target." }
+      ]
+    },
+    {
+      "id": "dma-operations",
+      "label": "DMA request",
+      "phases": [
+        { "id": "dma-blocked", "name": "Request blocked", "startCycle": 2, "endCycle": 5, "description": "DMA can request throughout the sequence, but the arbiter must not transfer ownership while HMASTLOCK identifies the locked sequence." },
+        { "id": "dma-granted", "name": "DMA granted", "startCycle": 5, "endCycle": 6, "description": "DMA can take ownership only after the locked sequence and its legal release boundary." }
+      ]
+    }
+  ]
+}

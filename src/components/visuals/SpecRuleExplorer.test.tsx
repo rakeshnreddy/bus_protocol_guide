@@ -16,7 +16,7 @@ describe('SpecRuleExplorer Component', () => {
   it('filters by protocol when a defaultProtocol is provided', () => {
     render(<SpecRuleExplorer data={{ defaultProtocol: 'ahb' }} />);
     // Should show AHB rule
-    expect(screen.getByText(/hold HWDATA and control signals stable/i)).toBeInTheDocument();
+    expect(screen.getByText(/pending valid transfer's address\/control stable/i)).toBeInTheDocument();
     // Should NOT show AXI rule initially
     expect(screen.queryByText(/WLAST MUST be asserted exactly/i)).not.toBeInTheDocument();
   });
@@ -30,7 +30,7 @@ describe('SpecRuleExplorer Component', () => {
     // Should show the early wlast rule
     expect(screen.getByText(/WLAST MUST be asserted exactly/i)).toBeInTheDocument();
     // Should hide irrelevant rules
-    expect(screen.queryByText(/hold HWDATA and control signals stable/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pending valid transfer's address\/control stable/i)).not.toBeInTheDocument();
   });
 
   it('provides at least a 44x44px hit area for touch targets', () => {

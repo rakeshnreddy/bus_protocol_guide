@@ -112,7 +112,7 @@ export default function Glossary() {
                     {entry.relatedLessons && entry.relatedLessons.length > 0 && (
                       <div className="glossary-meta-item">
                         <span className="glossary-meta-label">Used In:</span>
-                        <div className="glossary-tags" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <div className="glossary-tags">
                           {entry.relatedLessons.map(lessonId => (
                             <Link key={lessonId} to={`/lesson/${lessonId}`} className="glossary-related-link">
                               {lessonId.replace('.md', '')}

@@ -14,7 +14,7 @@ tags:
   - debug
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["spec-rule-explorer-axi"]
 glossaryTerms: []
 checklistIds: []
 ---

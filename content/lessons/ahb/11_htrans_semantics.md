@@ -47,4 +47,6 @@ A very common verification failure occurs when a master tries to change its mind
 
 Look at the waveform below. Can you spot the exact cycle the master violates the golden rule?
 
-![wf-ahb-illegal-htrans](visual:wf-ahb-illegal-htrans)
+Inspect the highlighted violation cycle and compare it with the preceding stalled cycle. The failure is the change itself—not merely the value chosen after the change.
+
+![Illegal AHB address and HTRANS change while HREADY holds the pipeline stalled](visual:wf-ahb-illegal-htrans)

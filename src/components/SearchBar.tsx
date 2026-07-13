@@ -69,30 +69,47 @@ export default function SearchBar() {
 
   return (
     <div className="search-bar-wrapper" ref={wrapperRef}>
-      <input
-        type="search"
-        className="search-input"
-        placeholder="Search lessons, signals, glossary..."
-        aria-label="Search"
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onFocus={() => { if (query.trim() && results.length > 0) setIsOpen(true); }}
-      />
+      <div className="search-input-shell">
+        <svg className="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          type="search"
+          className="search-input"
+          placeholder="Search lessons, signals, glossary…"
+          aria-label="Search academy"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="academy-search-results"
+          aria-expanded={isOpen}
+          aria-activedescendant={selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => { if (query.trim() && results.length > 0) setIsOpen(true); }}
+        />
+        <span className="search-shortcut" aria-hidden="true">/</span>
+      </div>
       {isOpen && (
-        <div className="search-results">
+        <div className="search-results" id="academy-search-results" role="listbox" aria-label="Search results">
           {results.map((result, idx) => (
-            <div
+            <button
+              type="button"
               key={result.id}
+              id={`search-result-${idx}`}
+              role="option"
+              aria-selected={idx === selectedIndex}
               className={`search-result-item ${idx === selectedIndex ? 'selected' : ''}`}
               onClick={() => handleSelect(result)}
               onMouseEnter={() => setSelectedIndex(idx)}
             >
+              <span className="search-result-marker" aria-hidden="true" />
               <div className="search-result-title">
                 <span className="search-result-type">[{result.type.toUpperCase()}]</span> {result.title}
               </div>
               <div className="search-result-desc">{result.description}</div>
-            </div>
+            </button>
           ))}
         </div>
       )}

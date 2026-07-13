@@ -1,72 +1,24 @@
 {
   "id": "wf-ahb-incr4-burst",
-  "title": "AHB INCR4 Burst",
-  "description": "A 4-beat incrementing burst (INCR4). Notice how HTRANS transitions from NONSEQ for the first beat to SEQ for subsequent beats, and HADDR increments by the transfer size.",
+  "title": "AHB INCR4 Address and Data Progression",
+  "description": "A word-sized INCR4 burst starts with NONSEQ, advances through three SEQ addresses, and completes one data beat behind each address phase.",
   "type": "waveform",
+  "cycleCount": 6,
   "signals": [
-    {
-      "name": "HCLK",
-      "type": "clock",
-      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
-    },
-    {
-      "name": "HTRANS",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
-    },
-    {
-      "name": "HBURST",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4"]
-    },
-    {
-      "name": "HSIZE",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word", "Word"]
-    },
-    {
-      "name": "HADDR",
-      "type": "data",
-      "color": "var(--color-secondary)",
-      "values": ["---", "---", "0x20", "0x20", "0x24", "0x24", "0x28", "0x28", "0x2C", "0x2C", "---", "---", "---", "---"]
-    },
-    {
-      "name": "HWDATA",
-      "type": "data",
-      "color": "var(--color-success)",
-      "values": ["---", "---", "---", "---", "D0", "D0", "D1", "D1", "D2", "D2", "D3", "D3", "---", "---"]
-    },
-    {
-      "name": "HREADY",
-      "type": "control",
-      "color": "var(--color-success)",
-      "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
-    }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "PHASE OWNER", "type": "sideband", "color": "#0f766e", "values": ["A1", "A2 | D1", "A3 | D2", "A4 | D3", "IDLE | D4", "IDLE"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "HBURST", "type": "sideband", "color": "#2563eb", "values": ["INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4"] },
+    { "name": "HSIZE", "type": "sideband", "color": "#2563eb", "values": ["WORD", "WORD", "WORD", "WORD", "WORD", "WORD"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x20", "0x24", "0x28", "0x2C", "—", "—"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "D0", "D1", "D2", "D3", "—"] },
+    { "name": "HREADY", "type": "control", "color": "#047857", "values": ["1", "1", "1", "1", "1", "1"] }
   ],
-  "cycleCount": 7,
   "annotations": [
-    {
-      "cycle": 1,
-      "signalName": "HTRANS",
-      "message": "Beat 1 Address Phase: HTRANS is NONSEQ, HADDR is 0x20. This initiates the burst."
-    },
-    {
-      "cycle": 2,
-      "signalName": "HTRANS",
-      "message": "Beat 2 Address Phase: HTRANS is SEQ, HADDR increments to 0x24 (since HSIZE is Word = 4 bytes)."
-    },
-    {
-      "cycle": 2,
-      "signalName": "HWDATA",
-      "message": "Beat 1 Data Phase: The data for address 0x20 is provided here."
-    },
-    {
-      "cycle": 5,
-      "signalName": "HWDATA",
-      "message": "Beat 4 Data Phase: The final data beat is transferred, completing the INCR4 burst."
-    }
+    { "cycle": 1, "message": "Beat 1 address phase: NONSEQ starts INCR4 at 0x20 with HSIZE=WORD, so the expected increment is four bytes." },
+    { "cycle": 2, "message": "Beat 2 address 0x24 overlaps Beat 1 data D0. SEQ proves this address continues the active burst." },
+    { "cycle": 3, "message": "Beat 3 advances to 0x28 while D1 completes for the previous address 0x24." },
+    { "cycle": 4, "message": "Beat 4 uses the final fixed-burst address 0x2C while D2 completes." },
+    { "cycle": 5, "message": "D3 completes Beat 4. The address phase is IDLE because INCR4 has no fifth beat." }
   ]
 }

@@ -1,86 +1,45 @@
 {
   "id": "tp-bus-architectures",
   "type": "topology",
-  "title": "Bus Architectures: Shared vs Point-to-Point",
-  "data": {
-    "nodes": [
-      {
-        "id": "m1",
-        "label": "Master 1",
-        "type": "master",
-        "x": 50,
-        "y": 50
-      },
-      {
-        "id": "m2",
-        "label": "Master 2",
-        "type": "master",
-        "x": 50,
-        "y": 150
-      },
-      {
-        "id": "arb",
-        "label": "Shared Arbiter",
-        "type": "arbiter",
-        "x": 200,
-        "y": 100
-      },
-      {
-        "id": "s1",
-        "label": "Slave 1",
-        "type": "slave",
-        "x": 350,
-        "y": 50
-      },
-      {
-        "id": "s2",
-        "label": "Slave 2",
-        "type": "slave",
-        "x": 350,
-        "y": 150
-      },
-      {
-        "id": "m_p2p",
-        "label": "P2P Master",
-        "type": "master",
-        "x": 50,
-        "y": 300
-      },
-      {
-        "id": "s_p2p",
-        "label": "P2P Slave",
-        "type": "slave",
-        "x": 350,
-        "y": 300
-      }
-    ],
-    "edges": [
-      {
-        "source": "m1",
-        "target": "arb",
-        "label": "REQ/GNT"
-      },
-      {
-        "source": "m2",
-        "target": "arb",
-        "label": "REQ/GNT"
-      },
-      {
-        "source": "arb",
-        "target": "s1",
-        "label": "Shared Bus"
-      },
-      {
-        "source": "arb",
-        "target": "s2",
-        "label": "Shared Bus"
-      },
-      {
-        "source": "m_p2p",
-        "target": "s_p2p",
-        "label": "Dedicated Bus"
-      }
-    ],
-    "paths": []
-  }
+  "title": "Shared, Point-to-Point, and Switched Bus Architectures",
+  "description": "Compare resource ownership: a shared bus permits one active route, a point-to-point link is dedicated, and a switched interconnect can sustain independent routes to different targets.",
+  "regions": [
+    { "id": "shared", "label": "1 · Shared bus: one owner at a time", "x": 25, "y": 30, "width": 950, "height": 220, "tone": "fabric" },
+    { "id": "p2p", "label": "2 · Point-to-point: one dedicated link", "x": 25, "y": 280, "width": 950, "height": 170, "tone": "source" },
+    { "id": "switched", "label": "3 · Switched crossbar: independent concurrent routes", "x": 25, "y": 480, "width": 950, "height": 270, "tone": "concept" }
+  ],
+  "nodes": [
+    { "id": "shared_m1", "label": "Master 1", "type": "master", "x": 145, "y": 95 },
+    { "id": "shared_m2", "label": "Master 2", "type": "master", "x": 145, "y": 190 },
+    { "id": "shared_bus", "label": "Arbiter +\nShared Wires", "type": "arbiter", "x": 500, "y": 143 },
+    { "id": "shared_s1", "label": "Slave 1", "type": "slave", "x": 850, "y": 95 },
+    { "id": "shared_s2", "label": "Slave 2", "type": "slave", "x": 850, "y": 190 },
+
+    { "id": "p2p_master", "label": "P2P Master", "type": "master", "x": 190, "y": 365 },
+    { "id": "p2p_slave", "label": "P2P Slave", "type": "slave", "x": 810, "y": 365 },
+
+    { "id": "xbar_m1", "label": "Master 1", "type": "master", "x": 145, "y": 565 },
+    { "id": "xbar_m2", "label": "Master 2", "type": "master", "x": 145, "y": 680 },
+    { "id": "xbar", "label": "Crossbar\nSwitch Fabric", "type": "arbiter", "x": 500, "y": 623 },
+    { "id": "xbar_s1", "label": "Slave 1", "type": "slave", "x": 850, "y": 565 },
+    { "id": "xbar_s2", "label": "Slave 2", "type": "slave", "x": 850, "y": 680 }
+  ],
+  "edges": [
+    { "id": "e-shared-m1", "source": "shared_m1", "target": "shared_bus", "label": "current owner", "kind": "arbitration", "tone": "primary", "waypoints": [{ "x": 320, "y": 95 }, { "x": 320, "y": 143 }], "labelPosition": { "x": 305, "y": 68 } },
+    { "id": "e-shared-m2", "source": "shared_m2", "target": "shared_bus", "label": "waiting request", "kind": "arbitration", "tone": "neutral", "waypoints": [{ "x": 340, "y": 190 }, { "x": 340, "y": 143 }], "labelPosition": { "x": 315, "y": 218 } },
+    { "id": "e-shared-s1", "source": "shared_bus", "target": "shared_s1", "label": "selected route", "bidirectional": true, "kind": "channel", "tone": "primary", "waypoints": [{ "x": 680, "y": 143 }, { "x": 680, "y": 95 }], "labelPosition": { "x": 700, "y": 68 } },
+    { "id": "e-shared-s2", "source": "shared_bus", "target": "shared_s2", "label": "inactive route", "bidirectional": true, "kind": "channel", "tone": "neutral", "waypoints": [{ "x": 700, "y": 143 }, { "x": 700, "y": 190 }], "labelPosition": { "x": 700, "y": 218 } },
+    { "id": "e-p2p", "source": "p2p_master", "target": "p2p_slave", "label": "dedicated request/response link", "bidirectional": true, "kind": "channel", "tone": "secondary" },
+    { "id": "e-xbar-m1", "source": "xbar_m1", "target": "xbar", "label": "route A", "bidirectional": true, "kind": "channel", "tone": "primary", "waypoints": [{ "x": 330, "y": 565 }, { "x": 330, "y": 600 }], "labelPosition": { "x": 300, "y": 535 } },
+    { "id": "e-xbar-m2", "source": "xbar_m2", "target": "xbar", "label": "route B", "bidirectional": true, "kind": "channel", "tone": "secondary", "waypoints": [{ "x": 330, "y": 680 }, { "x": 330, "y": 646 }], "labelPosition": { "x": 300, "y": 715 } },
+    { "id": "e-xbar-s1", "source": "xbar", "target": "xbar_s1", "label": "simultaneous A", "bidirectional": true, "kind": "channel", "tone": "primary", "waypoints": [{ "x": 680, "y": 600 }, { "x": 680, "y": 565 }], "labelPosition": { "x": 700, "y": 535 } },
+    { "id": "e-xbar-s2", "source": "xbar", "target": "xbar_s2", "label": "simultaneous B", "bidirectional": true, "kind": "channel", "tone": "secondary", "waypoints": [{ "x": 680, "y": 646 }, { "x": 680, "y": 680 }], "labelPosition": { "x": 700, "y": 715 } }
+  ],
+  "highlightedPath": ["shared_m1", "e-shared-m1", "shared_bus", "e-shared-s1", "shared_s1", "p2p_master", "e-p2p", "p2p_slave", "xbar_m1", "e-xbar-m1", "xbar", "e-xbar-s1", "xbar_s1", "xbar_m2", "e-xbar-m2", "e-xbar-s2", "xbar_s2"],
+  "annotations": [
+    { "nodeId": "shared_bus", "message": "All participants share the same transfer resource, so arbitration permits only one master-owned route at a time." },
+    { "edgeId": "e-p2p", "message": "The direct link needs no system-level arbitration, but adding every possible master-target pair scales poorly in wires and ports." },
+    { "nodeId": "xbar", "message": "The switch fabric contains multiple internal paths. Master 1 can reach Slave 1 while Master 2 reaches Slave 2, provided the routes do not contend for the same target resource." },
+    { "edgeId": "e-xbar-s2", "message": "Route B is independent of route A. Labels and separate geometry make concurrency understandable without relying on color alone." }
+  ]
 }

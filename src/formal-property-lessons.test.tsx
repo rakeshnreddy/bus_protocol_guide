@@ -19,7 +19,7 @@ describe('Formal Property Lessons Integration', () => {
     );
 
     // Verify the playground is rendered (checking for title or specific elements)
-    expect(screen.getByText('AHB Liveness: HREADY Assertion')).toBeInTheDocument();
+    expect(screen.getByText('AHB Example Bounded Completion Contract')).toBeInTheDocument();
     
     // Check that we also render the setup text
     expect(screen.getByText(/Try it yourself — toggle/)).toBeInTheDocument();

@@ -1,18 +1,18 @@
 {
   "id": "fp-ahb-hready-liveness",
   "type": "formal-property",
-  "title": "AHB Liveness: HREADY Assertion",
+  "title": "AHB Example Bounded Completion Contract",
   "property": {
-    "name": "Bounded Liveness",
-    "description": "Every NONSEQ transfer must see HREADY go high within 4 cycles. In real formal verification, liveness is often unbounded ('eventually'), but for this interactive teaching tool, we bound the property to a fixed window so we can give a definitive pass/fail within a short visible waveform.",
-    "svaString": "assert property (@(posedge HCLK) (HTRANS == NONSEQ) |-> ##[0:4] HREADY == 1);",
+    "name": "Configured Bounded Liveness",
+    "description": "This example assumes the implementation contract requires an accepted NONSEQ request to see HREADY HIGH within four cycles. Four is a teaching/configuration bound, not one universal AHB protocol limit.",
+    "svaString": "assert property (@(posedge HCLK) (HTRANS == NONSEQ) |-> ##[0:4] (HREADY == 1));",
     "evaluatorRule": "ahb-hready-bounded-liveness"
   },
   "editableSignals": ["HREADY"],
   "waveform": {
     "id": "wf-ahb-hready-base",
     "type": "waveform",
-    "title": "AHB HREADY Base Waveform",
+    "title": "AHB Configured Completion Window",
     "cycleCount": 7,
     "signals": [
       {
@@ -22,14 +22,12 @@
       },
       {
         "name": "HTRANS",
-        "type": "data",
-        "color": "#eab308",
+        "type": "sideband",
         "values": ["IDLE", "NONSEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
       },
       {
         "name": "HREADY",
         "type": "control",
-        "color": "#3b82f6",
         "values": ["1", "1", "1", "1", "1", "1", "1"]
       }
     ]

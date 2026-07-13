@@ -51,6 +51,18 @@ Should support:
 - Bridge traversal
 - Zoomable architecture maps
 
+#### Production block-diagram rules
+
+The repository-level requirements in `AGENTS.md` are mandatory for future topology work. In particular, a block diagram is not complete until its protocol meaning and its geometry are both verified.
+
+- Model source, fabric, and target responsibilities separately. Arbitration, owner muxing, address decoding, target selection, and return routing are different functions and must not be collapsed when that would obscure the lesson.
+- Use semantic node roles and labeled regions. Concepts, phases, and states must not be styled as hardware blocks merely to obtain a convenient color.
+- Route connections from block boundaries using orthogonal lanes. Explicit waypoints and label positions are required whenever automatic routing produces a collision or an ambiguous crossing.
+- Dynamic block sizing and wrapped labels are preferred over fixed boxes. All blocks, captions, waypoints, and region headings must remain inside the computed view box.
+- The visual must remain inspectable with keyboard, pointer, and touch. Selection details must explain protocol or DV relevance, not repeat the block label.
+- Geometry integrity tests must prove separation and containment rather than relying only on screenshots.
+- Browser acceptance covers every changed topology at desktop and mobile widths, both themes, and a clean console.
+
 ### 4. Signal Explorer
 Purpose:
 - Present signal lists grouped by function.

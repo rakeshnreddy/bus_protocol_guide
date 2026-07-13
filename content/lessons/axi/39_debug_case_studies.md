@@ -14,7 +14,7 @@ tags:
   - waveforms
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["wf-axi-deadlock", "wf-axi-out-of-order"]
 glossaryTerms: []
 checklistIds: []
 ---
@@ -25,7 +25,7 @@ Let's walk through two classic AXI debugging scenarios using the waveform topolo
 
 ## Case Study 1: The Infinite Stall
 
-<img src="visual:wf-axi-deadlock" alt="Waveform showing a circular deadlock between master and slave" />
+![Waveform showing a circular deadlock between master and slave](visual:wf-axi-deadlock)
 
 **The Symptom:**
 The simulation hangs at 50us. The waveform shows the W channel has finished sending data, but the B channel response never completes.
@@ -40,7 +40,7 @@ Circular combinatorial logic dependency. This is a fatal protocol violation.
 
 ## Case Study 2: The Scrambled Read
 
-<img src="visual:wf-axi-out-of-order" alt="Waveform showing out of order read completion" />
+![Waveform showing out-of-order read completion](visual:wf-axi-out-of-order)
 
 **The Symptom:**
 The testbench reports a data mismatch on a read transaction. It expected `0xAAAA` but received `0xBBBB`.

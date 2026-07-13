@@ -1,0 +1,47 @@
+{
+  "id": "tl-ahb-performance-comparison",
+  "type": "timeline",
+  "title": "Same Four Beats, Different Performance",
+  "description": "Each block marks a completion window; blank columns expose initial latency or stalls, while block spacing reveals sustained throughput.",
+  "labels": ["Completion blocks", "Blank cycles = latency or stalls", "Short spacing = high throughput"],
+  "transactions": [
+    {
+      "id": "zero-wait",
+      "label": "Zero-wait INCR4",
+      "color": "#047857",
+      "phases": [
+        { "id": "zw-first", "name": "B1 done", "startCycle": 2, "endCycle": 3, "description": "The first completion follows the initial address phase and its data phase." },
+        { "id": "zw-second", "name": "B2 done", "startCycle": 3, "endCycle": 4, "description": "Once full, the pipeline completes one beat every cycle." },
+        { "id": "zw-third", "name": "B3 done", "startCycle": 4, "endCycle": 5, "description": "Sustained throughput remains one beat per cycle." },
+        { "id": "zw-fourth", "name": "B4 done", "startCycle": 5, "endCycle": 6, "description": "The final completion remains adjacent to the previous beat." }
+      ]
+    },
+    {
+      "id": "wait-heavy",
+      "label": "INCR4 + waits",
+      "color": "#d97706",
+      "phases": [
+        { "id": "wait-first", "name": "B1 done", "startCycle": 3, "endCycle": 4, "description": "The extra blank column shows a wait state increasing first-beat latency and freezing the next address." },
+        { "id": "wait-second", "name": "B2 done", "startCycle": 4, "endCycle": 5, "description": "The pipeline briefly returns to one beat per cycle." },
+        { "id": "wait-third", "name": "B3 done", "startCycle": 7, "endCycle": 8, "description": "Two blank completion windows reveal additional wait cycles reducing average throughput." },
+        { "id": "wait-fourth", "name": "B4 done", "startCycle": 8, "endCycle": 9, "description": "The last beat cannot complete until the earlier stall clears." }
+      ]
+    },
+    {
+      "id": "slow-singles",
+      "label": "Four slow SINGLEs",
+      "color": "#dc2626",
+      "phases": [
+        { "id": "slow-first", "name": "S1 done", "startCycle": 3, "endCycle": 4, "description": "The slave pays its setup penalty before the first isolated completion." },
+        { "id": "slow-second", "name": "S2 done", "startCycle": 6, "endCycle": 7, "description": "A new independent address pays the setup penalty again, leaving two blank cycles." },
+        { "id": "slow-third", "name": "S3 done", "startCycle": 9, "endCycle": 10, "description": "No burst context is available for prefetch or sequential optimization." },
+        { "id": "slow-fourth", "name": "S4 done", "startCycle": 12, "endCycle": 13, "description": "The fourth completion arrives far later than in either burst case." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "zw-second", "message": "Latency is still two phases, but throughput is now one completed beat per cycle." },
+    { "phase": "wait-third", "message": "Every HREADY-low cycle delays both the current data phase and the following address phase." },
+    { "phase": "slow-fourth", "message": "Independent transfers can repeatedly pay slave setup cost that a declared burst avoids." }
+  ]
+}

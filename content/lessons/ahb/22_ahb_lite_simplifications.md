@@ -9,7 +9,7 @@ order: 22
 tags: ["ahb", "architecture", "ahb-lite"]
 relatedLessons: []
 prerequisites: ["21_multi_master_systems"]
-visualIds: []
+visualIds: ["sig-ahb-variants", "tp-bus-architectures"]
 exerciseIds: []
 glossaryTerms: ["AHB-Lite"]
 checklistIds: []
@@ -28,14 +28,22 @@ Because there is only one master:
 - **No `SPLIT`/`RETRY`:** The complex `SPLIT` and `RETRY` error responses (which required slaves to tell the arbiter to temporarily ban a master) were removed.
 - **Simpler Masters:** Master design became trivially easy. A master simply drives `HTRANS` and `HADDR` whenever it wants.
 
+Use the comparison to distinguish the signals removed by AHB-Lite from the optional capabilities later added by AHB5.
+
+![Interactive comparison of original AHB, AHB-Lite, and AHB5 interface capabilities](visual:sig-ahb-variants)
+
 ## How do we build Multi-Master systems today?
 
 If AHB-Lite only supports one master, how do we build systems with a CPU, a DMA, and a GPU?
 
-We use an **Interconnect Matrix** (or Bus Matrix). 
+We commonly use an **Interconnect Matrix** (or Bus Matrix).
 
-Instead of connecting all masters to one shared bus, every master gets its *own* dedicated, single-master AHB-Lite bus. All these buses plug into a massive central routing matrix. The matrix contains multiple tiny internal arbiters at every cross-point. 
+Instead of connecting all masters to one shared bus, every master gets its *own* dedicated, single-master AHB-Lite interface. These interfaces can plug into a central routing matrix. The matrix arbitrates only where two input ports contend for the same output target.
 - If Master 1 wants to talk to Slave 1, and Master 2 wants to talk to Slave 2, the matrix allows them to happen simultaneously! There is no contention.
 - The only time arbitration happens is if Master 1 and Master 2 both try to talk to Slave 1 at the exact same time.
 
 By removing arbitration from the *protocol* and pushing it into the *interconnect implementation*, AHB-Lite dramatically simplified RTL design and improved system performance.
+
+Compare the shared-bus and switched-interconnect structures. The matrix can allow independent targets to progress concurrently; it does not make every pair of accesses contention-free.
+
+![Architecture comparison showing point-to-point, shared-bus, and switched-crossbar connectivity](visual:tp-bus-architectures)

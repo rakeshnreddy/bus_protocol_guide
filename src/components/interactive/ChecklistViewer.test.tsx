@@ -33,5 +33,7 @@ describe('ChecklistViewer', () => {
     
     // Progress should update to 1/2
     expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: /Test Checklist completion/i }))
+      .toHaveAttribute('aria-valuenow', '1');
   });
 });

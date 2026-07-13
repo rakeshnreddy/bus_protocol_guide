@@ -14,7 +14,7 @@ tags:
   - review
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["axi-signal-ref"]
 glossaryTerms: []
 checklistIds: []
 ---
@@ -23,7 +23,7 @@ checklistIds: []
 
 This is your day-to-day cheat sheet for the AXI interface. It lists every primary signal across all five channels.
 
-<img src="visual:axi-signal-ref" alt="Interactive signal reference table" />
+![Interactive AXI signal reference table](visual:axi-signal-ref)
 
 ## Key Reminders
 - **AW / AR Channels:** Send the address *once* per burst.

@@ -9,7 +9,7 @@ order: 2
 tags: ["ahb", "versions", "ahb5", "ahb-lite"]
 relatedLessons: []
 prerequisites: ["01_ahb_overview"]
-visualIds: []
+visualIds: ["sig-ahb-variants"]
 exerciseIds: []
 glossaryTerms: ["AHB-Lite", "AHB5"]
 checklistIds: []
@@ -35,6 +35,10 @@ As systems became more complex and secure, AHB-Lite needed an upgrade to stay re
 - **Secure Transfers:** The `HNONSEC` signal indicates if a transfer is secure (TrustZone support).
 - **Exclusive Accesses:** The `HEXCL` and `HEXOKAY` signals support atomic operations (like semaphores in multi-core systems).
 - **Single-Copy Atomicity:** Stricter rules on how data is accessed.
+
+Open each variant below and compare the verification contract—not just the release date. In particular, notice that AHB5 adds attributes and exclusives without restoring original AHB's shared-bus arbitration model.
+
+![Interactive comparison of original AHB, AHB-Lite, and AHB5](visual:sig-ahb-variants)
 
 ## Which one should I care about?
 

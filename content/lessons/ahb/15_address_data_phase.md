@@ -34,6 +34,8 @@ The Data Phase begins immediately after the Address Phase. It lasts for one cloc
 
 The genius of the AHB protocol is that it is **[glossary:Pipelining|pipelined]**. While the slave is busy handling the Data Phase of Transfer N, the bus is free! The master can use that time to issue the Address Phase for Transfer N+1.
 
-![wf-ahb-pipelined-sequence](visual:wf-ahb-pipelined-sequence)
+Use the explicit phase-owner rows to trace the pipeline. In each overlapping cycle, ask which earlier address owns the visible write data.
+
+![AHB pipeline showing each address phase overlapping the previous transfer data phase](visual:wf-ahb-pipelined-sequence)
 
 In a zero-wait-state burst, this means that *every single clock cycle* the bus is moving a piece of data *and* broadcasting a new address simultaneously. This overlap is what allows AHB to achieve high throughput without requiring complex out-of-order execution logic.

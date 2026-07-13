@@ -1,25 +1,25 @@
 {
   "id": "wf-ahb-bug-decoder-glitch",
-  "title": "Bug Case Study: Decoder Glitch",
   "type": "waveform",
+  "title": "Bug Case Study: Unsafe Asynchronous HSEL Consumption",
+  "description": "HSEL is a combinational address decode and can transition within a cycle; only the value sampled on a rising HCLK edge with HREADY HIGH identifies the accepted slave.",
   "cycleCount": 5,
   "signals": [
-    { "name": "HCLK", "type": "clock", "values": [] },
-    { "name": "HADDR", "type": "control", "values": ["0x10", "0x20", "0x20", "0x30", "0x30"] },
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1"] },
+    { "name": "HTRANS", "type": "sideband", "values": ["NONSEQ", "NONSEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "data", "values": ["0x10 (S1)", "0x30 (S3)", "0x34 (S3)", "—", "—"] },
+    { "name": "HREADY", "type": "control", "values": ["1", "1", "1", "1", "1"] },
     { "name": "HSEL_S1", "type": "control", "values": ["1", "0", "0", "0", "0"] },
-    { "name": "HSEL_S2", "type": "control", "color": "red", "values": ["0", "0 (Glitch 1)", "1", "0", "0"] },
-    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE"] }
+    { "name": "HSEL_S2_RAW", "type": "sideband", "values": ["0", "0→pulse→0", "0", "0", "0"] },
+    { "name": "HSEL_S2_SAMPLED", "type": "control", "values": ["0", "0", "0", "0", "0"] },
+    { "name": "HSEL_S3", "type": "control", "values": ["0", "1", "1", "0", "0"] }
   ],
   "annotations": [
-    {
-      "cycle": 1,
-      "message": "Combinatorial decoding logic evaluates the new HADDR (0x20)."
-    }
+    { "cycle": 1, "message": "Slave 1 is selected for accepted address 0x10." },
+    { "cycle": 2, "message": "The decoder settles on Slave 3 for 0x30. A transient raw S2 pulse between clock edges is not an accepted S2 transfer because HSEL_S2 is sampled LOW at the accepting edge." },
+    { "cycle": 3, "message": "Slave 3 remains selected for the continuing SEQ address 0x34." }
   ],
   "violations": [
-    {
-      "cycle": 1,
-      "message": "BUG: HSEL_S2 glitches high for a brief moment before settling to 0. If Slave 2 uses an asynchronous latch instead of a flip-flop, it might mistakenly accept this transfer!"
-    }
+    { "cycle": 2, "message": "INTEGRATION BUG: An asynchronous latch or clock gate reacts to the raw S2 pulse. Protocol-facing state must use the HSEL value sampled with HREADY HIGH, which is 0 for S2." }
   ]
 }

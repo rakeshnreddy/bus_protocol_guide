@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-13T00:00:00+05:30",
+  "title": "Design System: Bus Protocol DV Academy",
+  "extensions": {
+    "colorMeta": {
+      "brand": { "role": "primary", "displayName": "Bus Blue", "canonical": "oklch(0.56 0.19 251)", "tonalRamp": ["oklch(0.2 0.08 251)", "oklch(0.3 0.12 251)", "oklch(0.4 0.16 251)", "oklch(0.5 0.19 251)", "oklch(0.6 0.18 251)", "oklch(0.72 0.14 251)", "oklch(0.84 0.09 251)", "oklch(0.94 0.04 251)"] },
+      "cyan": { "role": "secondary", "displayName": "Timing Cyan", "canonical": "oklch(0.68 0.14 210)", "tonalRamp": ["oklch(0.2 0.06 210)", "oklch(0.3 0.09 210)", "oklch(0.4 0.12 210)", "oklch(0.5 0.14 210)", "oklch(0.62 0.14 210)", "oklch(0.72 0.12 210)", "oklch(0.84 0.08 210)", "oklch(0.94 0.035 210)"] },
+      "amber": { "role": "tertiary", "displayName": "Sampling Amber", "canonical": "oklch(0.76 0.15 75)", "tonalRamp": ["oklch(0.2 0.055 75)", "oklch(0.3 0.08 75)", "oklch(0.4 0.11 75)", "oklch(0.52 0.14 75)", "oklch(0.64 0.15 75)", "oklch(0.76 0.15 75)", "oklch(0.86 0.09 75)", "oklch(0.95 0.035 75)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Protocol Display", "purpose": "Home and protocol thesis statements." },
+      "body": { "displayName": "Learning Body", "purpose": "Long-form protocol instruction." },
+      "label": { "displayName": "Signal Label", "purpose": "Signals, IDs, phases, cycles, and compact metadata." }
+    },
+    "shadows": [
+      { "name": "card-ambient", "value": "0 8px 24px oklch(0.2 0.04 250 / 0.07)", "purpose": "Interactive cards and visual surfaces." },
+      { "name": "navigation-ambient", "value": "0 8px 24px oklch(0.2 0.05 250 / 0.1)", "purpose": "Drawers, dropdowns, and structural overlays." }
+    ],
+    "motion": [{ "name": "responsive-ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Short state changes and entrances; disabled for reduced motion." }],
+    "breakpoints": [{ "name": "mobile-navigation", "value": "900px" }, { "name": "compact", "value": "470px" }]
+  },
+  "components": [
+    { "name": "Primary Button", "kind": "button", "refersTo": "button-primary", "description": "The high-confidence action for starting or advancing learning.", "html": "<button class=\"ds-btn-primary\">Start AHB path</button>", "css": ".ds-btn-primary{min-height:44px;padding:11px 17px;border:0;border-radius:9px;color:white;background:oklch(0.56 0.19 251);font:700 15px system-ui;transition:transform 160ms cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover{transform:translateY(-2px)}.ds-btn-primary:focus-visible{outline:3px solid oklch(0.69 0.16 220);outline-offset:3px}" },
+    { "name": "Filter Chip", "kind": "chip", "refersTo": "chip", "description": "A quiet protocol or type filter with explicit selected state.", "html": "<button class=\"ds-chip\" aria-pressed=\"true\">AHB</button>", "css": ".ds-chip{min-height:44px;padding:8px 14px;border:1px solid oklch(0.86 0.025 242);border-radius:999px;color:oklch(0.44 0.03 250);background:oklch(0.995 0.004 240);font:700 13px system-ui}.ds-chip[aria-pressed=true]{border-color:oklch(0.56 0.19 251);color:white;background:oklch(0.56 0.19 251)}.ds-chip:focus-visible{outline:3px solid oklch(0.69 0.16 220);outline-offset:3px}" },
+    { "name": "Learning Card", "kind": "card", "refersTo": "card", "description": "A crisp surface for protocol content and interactive visuals.", "html": "<article class=\"ds-card\"><code>HREADY</code><h3>Transfer completion</h3><p>Inspect who owns the active data phase.</p></article>", "css": ".ds-card{padding:20px;border:1px solid oklch(0.86 0.025 242);border-radius:12px;color:oklch(0.22 0.035 255);background:oklch(0.995 0.004 240);font:15px/1.6 system-ui}.ds-card code{color:oklch(0.38 0.18 253)}.ds-card h3{margin:8px 0}.ds-card p{margin:0;color:oklch(0.44 0.03 250)}" }
+  ],
+  "narrative": {
+    "northStar": "The Luminous Protocol Bench",
+    "overview": "A calibrated engineering instrument: atmospheric in its structural shell, crisp where timing and protocol reasoning happen.",
+    "keyCharacteristics": ["Structural glass only", "Crisp learning surfaces", "Equal-quality light and dark themes", "Purposeful monospace instrumentation"],
+    "rules": [
+      { "name": "Signal Priority", "body": "Accent colors must explain protocol meaning or state; decoration never competes with a waveform.", "section": "colors" },
+      { "name": "Crisp Content", "body": "Lesson prose and diagrams stay opaque and readable; never apply backdrop blur to every card.", "section": "elevation" }
+    ],
+    "dos": ["Use glass for structural navigation and overlays.", "Preserve protocol meaning with labels and non-color cues.", "Maintain WCAG 2.2 AA and 44px controls."],
+    "donts": ["Do not return to a bare documentation shell.", "Do not use neon cyberpunk signal palettes.", "Do not use decorative SaaS metric cards.", "Do not put frosted glass on every container.", "Do not add motion that delays reading."]
+  }
+}

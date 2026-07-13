@@ -1,0 +1,44 @@
+{
+  "id": "sig-ahb-variants",
+  "type": "signal-explorer",
+  "title": "AHB Family Comparison",
+  "description": "Open each variant to compare master context, arbitration, responses, security, exclusives, and typical deployment.",
+  "signals": [
+    {
+      "name": "Original AHB",
+      "expansion": "AMBA 2 multi-master shared bus",
+      "role": "sideband",
+      "group": "AHB family variants",
+      "description": "The original protocol includes shared-bus arbitration and legacy SPLIT/RETRY responses so multiple masters can contend directly for one bus.",
+      "direction": "Multiple masters and slaves share one arbitrated bus",
+      "sampled": "Transfers remain synchronous to HCLK; grant ownership controls which master may drive",
+      "values": ["Multiple masters", "HBUSREQ/HGRANT", "OKAY/ERROR/SPLIT/RETRY"],
+      "typicalUse": "Legacy SoCs and compatibility blocks",
+      "verificationNote": "Track grant ownership, locked sequences, and SPLIT/RETRY re-arbitration; do not apply AHB-Lite response rules."
+    },
+    {
+      "name": "AHB-Lite",
+      "expansion": "Single-master interface",
+      "role": "sideband",
+      "group": "AHB family variants",
+      "description": "AHB-Lite removes bus-level multi-master arbitration and legacy SPLIT/RETRY responses. A bus matrix can still combine several independent single-master interfaces.",
+      "direction": "One master per interface; a matrix arbitrates internally when needed",
+      "sampled": "Address/control are accepted on a rising HCLK edge when HREADY is HIGH",
+      "values": ["Single master", "No HBUSREQ/HGRANT", "OKAY/ERROR"],
+      "typicalUse": "Most contemporary microcontroller IP and subsystem buses",
+      "verificationNote": "Do not expect shared-bus grant signals. Check that ERROR uses the AHB-Lite two-cycle response sequence."
+    },
+    {
+      "name": "AHB5",
+      "expansion": "Modern AHB-Lite extension",
+      "role": "sideband",
+      "group": "AHB family variants",
+      "description": "AHB5 keeps the AHB-Lite transfer model while adding modern memory attributes, security signaling, and exclusive-access support.",
+      "direction": "Single-master interfaces connected through modern interconnects",
+      "sampled": "Base control plus AHB5 attributes are sampled with the accepted address phase",
+      "values": ["HNONSEC", "HEXCL/HEXOKAY", "Extended memory attributes"],
+      "typicalUse": "Secure IoT, automotive, and current microcontroller SoCs",
+      "verificationNote": "Keep security, exclusive success, and ordinary HRESP semantics separate; HEXOKAY=0 is not itself an ERROR."
+    }
+  ]
+}

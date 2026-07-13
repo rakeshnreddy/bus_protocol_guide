@@ -9,7 +9,7 @@ order: 7
 tags: ["ahb", "signals", "burst", "size"]
 relatedLessons: []
 prerequisites: ["06_htrans_transfer_types"]
-visualIds: []
+visualIds: ["sig-ahb-burst-size", "wf-ahb-incr4-burst", "wf-ahb-wrap4-burst"]
 exerciseIds: []
 glossaryTerms: ["HBURST", "HSIZE"]
 checklistIds: []
@@ -41,9 +41,19 @@ While `HTRANS` tells the slave what is happening *right now*, `HBURST` and `HSIZ
   - `100` / `101`: WRAP8 / INCR8 (8-beat bursts)
   - `110` / `111`: WRAP16 / INCR16 (16-beat bursts)
 
+Use the explorer to connect every HBURST family to accepted beat count, HSIZE-based address increment, alignment, and the wrap-boundary calculation a checker must reproduce.
+
+![Interactive HBURST and HSIZE relationship explorer](visual:sig-ahb-burst-size)
+
 ### Incrementing vs Wrapping
 
 - **INCR (Incrementing):** The address simply increments by the `HSIZE` for each beat. If `HSIZE` is 4 bytes, the addresses go: `0x00 -> 0x04 -> 0x08 -> 0x0C`.
 - **WRAP (Wrapping):** This is heavily used by CPU cache line fills. If a master requests a WRAP4 burst starting at address `0x04`, the addresses will wrap around at the boundary of the burst size: `0x04 -> 0x08 -> 0x0C -> 0x00`.
+
+These two recovered waveforms use the same four-byte HSIZE but different HBURST rules. Step through the addresses and identify the beat where wrapping changes the otherwise sequential progression.
+
+![Four-beat incrementing AHB burst with word-sized address progression](visual:wf-ahb-incr4-burst)
+
+![Four-beat wrapping AHB burst returning to the start of its wrap boundary](visual:wf-ahb-wrap4-burst)
 
 **DV Check:** Just like `HWRITE` and `HSIZE`, the `HBURST` signal must remain perfectly constant for every beat of a burst! Changing `HBURST` mid-burst is a critical protocol violation.

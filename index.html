@@ -2,9 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f8fc" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#07121f" />
+    <meta name="description" content="A visual-first academy for learning and verifying AMBA AHB and AXI protocols." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>temp-app</title>
+    <script>
+      (() => {
+        try {
+          const preference = localStorage.getItem('bpda-theme') || 'system';
+          const resolved = preference === 'system'
+            ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : preference;
+          document.documentElement.dataset.themePreference = preference;
+          document.documentElement.dataset.theme = resolved;
+          document.documentElement.style.colorScheme = resolved;
+        } catch {
+          document.documentElement.dataset.themePreference = 'system';
+        }
+      })();
+    </script>
+    <title>Bus Protocol DV Academy</title>
   </head>
   <body>
     <div id="root"></div>

@@ -1,60 +1,26 @@
 {
   "id": "wf-ahb-wait-state-heavy",
-  "title": "AHB Wait-State Heavy Burst",
-  "description": "A 4-beat INCR4 burst where the slave inserts multiple wait states. Notice how the Address Phase of the *next* beat is stalled when the Data Phase of the *current* beat is stalled.",
+  "title": "AHB Wait-State Domino Effect",
+  "description": "An INCR4 write burst shows how a stalled data phase freezes the following address phase and delays every later beat.",
   "type": "waveform",
+  "cycleCount": 8,
   "signals": [
-    {
-      "name": "HCLK",
-      "type": "clock",
-      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
-    },
-    {
-      "name": "HTRANS",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
-    },
-    {
-      "name": "HADDR",
-      "type": "data",
-      "color": "var(--color-secondary)",
-      "values": ["---", "---", "0x50", "0x50", "0x54", "0x54", "0x54", "0x54", "0x58", "0x58", "0x58", "0x58", "0x58", "0x58", "0x5C", "0x5C", "---", "---", "---", "---"]
-    },
-    {
-      "name": "HWDATA",
-      "type": "data",
-      "color": "var(--color-success)",
-      "values": ["---", "---", "---", "---", "---", "---", "D0", "D0", "D1", "D1", "---", "---", "---", "---", "D2", "D2", "D3", "D3", "---", "---"]
-    },
-    {
-      "name": "HREADY",
-      "type": "control",
-      "color": "var(--color-danger)",
-      "values": ["1", "1", "1", "1", "0", "0", "1", "1", "1", "1", "0", "0", "0", "0", "1", "1", "1", "1", "1", "1"]
-    }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "PHASE OWNER", "type": "sideband", "color": "#0f766e", "values": ["A1", "A2 | D1", "A2 | D1", "A3 | D2", "A4 | D3", "A4 | D3", "A4 | D3", "IDLE | D4"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x50", "0x54", "0x54", "0x58", "0x5C", "0x5C", "0x5C", "—"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "D0", "D0", "D1", "D2", "D2", "D2", "D3"] },
+    { "name": "HREADY", "type": "control", "color": "#dc2626", "values": ["1", "0", "1", "1", "0", "0", "1", "1"] },
+    { "name": "HRESP", "type": "control", "color": "#047857", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] }
   ],
-  "cycleCount": 10,
   "annotations": [
-    {
-      "cycle": 1,
-      "signalName": "HTRANS",
-      "message": "Master initiates burst with NONSEQ to 0x50."
-    },
-    {
-      "cycle": 2,
-      "signalName": "HREADY",
-      "message": "Slave inserts a wait state. Master must hold the *next* address phase (0x54) stable."
-    },
-    {
-      "cycle": 3,
-      "signalName": "HWDATA",
-      "message": "HREADY is high, Data 0 is sampled. Address phase for 0x58 begins."
-    },
-    {
-      "cycle": 5,
-      "signalName": "HREADY",
-      "message": "Slave inserts two wait states. The address phase for 0x5C is stalled."
-    }
+    { "cycle": 1, "message": "A1 starts the burst at 0x50. No data phase exists yet." },
+    { "cycle": 2, "message": "D1 is stalled by HREADY=0. A2 at 0x54 is visible but cannot be accepted, so HTRANS, HADDR, and D0 must hold." },
+    { "cycle": 3, "message": "HREADY rises: D1 completes and the held A2 address is finally accepted at the same edge." },
+    { "cycle": 4, "message": "D2 completes without a wait state while A3 at 0x58 is accepted." },
+    { "cycle": 5, "message": "D3 stalls. A4 at 0x5C becomes the frozen next address phase." },
+    { "cycle": 6, "message": "The second wait cycle continues. A4, HTRANS=SEQ, and D2 all remain stable." },
+    { "cycle": 7, "message": "HREADY rises: D3 completes and the held A4 address is accepted." },
+    { "cycle": 8, "message": "D4 completes for 0x5C while the address phase returns to IDLE. The INCR4 burst is finished." }
   ]
 }

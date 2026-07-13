@@ -9,7 +9,7 @@ order: 6
 tags: ["ahb", "signals", "htrans"]
 relatedLessons: ["07_burst_and_size", "08_data_and_response"]
 prerequisites: ["05_address_and_control"]
-visualIds: ["wf-ahb-simple-transfer"]
+visualIds: ["wf-ahb-htrans-sequences", "wf-ahb-simple-transfer"]
 exerciseIds: ["ex-ahb-htrans-sequence"]
 glossaryTerms: ["HTRANS", "IDLE", "BUSY", "NONSEQ", "SEQ"]
 checklistIds: []
@@ -39,10 +39,14 @@ The master is continuing an existing burst.
 - **Meaning:** The address on `HADDR` is sequentially related to the previous address in the burst (e.g., Address + 4). 
 - **Optimization:** Slaves love `SEQ` cycles because they can predict the address and pre-fetch data from memory, making the transfer incredibly fast.
 
+Compare the legal and buggy sequences below. The key question is whether a `SEQ` beat still has an active burst context: `BUSY` preserves that context, while `IDLE` ends it.
+
+![Legal HTRANS burst with BUSY compared with an illegal SEQ restart after IDLE](visual:wf-ahb-htrans-sequences)
+
 ## A Simple Transfer Sequence
 
 Let's look at a waveform showing the most basic transaction: a single `NONSEQ` read, followed by the bus returning to `IDLE`.
 
-![wf-ahb-simple-transfer](visual:wf-ahb-simple-transfer)
+![Single NONSEQ read followed by an IDLE address phase and returning read data](visual:wf-ahb-simple-transfer)
 
 Notice that the master asserts `HTRANS = NONSEQ` along with a valid address. Once the slave acknowledges it, the master immediately returns `HTRANS` to `IDLE` on the next clock cycle, while the slave provides the requested data. (We will discuss this pipelining effect more deeply in the Data and Response lesson).

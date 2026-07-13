@@ -17,10 +17,17 @@ export default function ChecklistViewer({ checklist }: { checklist: Checklist })
     <div className="checklist-container">
       <div className="checklist-header">
         <h4 className="checklist-title">Checklist: {checklist.title}</h4>
-        <div className="checklist-progress">{completedCount} / {totalCount}</div>
+        <div className="checklist-progress" aria-live="polite">{completedCount} / {totalCount}</div>
       </div>
       
-      <div className="checklist-progress-bar">
+      <div
+        className="checklist-progress-bar"
+        role="progressbar"
+        aria-label={`${checklist.title} completion`}
+        aria-valuemin={0}
+        aria-valuemax={totalCount}
+        aria-valuenow={completedCount}
+      >
         <div className="checklist-progress-fill" style={{ width: `${progressPercent}%` }}></div>
       </div>
 

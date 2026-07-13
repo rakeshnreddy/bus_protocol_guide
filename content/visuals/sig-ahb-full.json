@@ -1,119 +1,128 @@
 {
   "id": "sig-ahb-full",
-  "title": "AHB Signal Reference",
   "type": "signal-explorer",
+  "title": "AHB Core and Version-Specific Signal Reference",
+  "description": "Expand a signal to check its source, phase, values, revision scope, and the verification mistake most likely to corrupt a transaction model.",
   "signals": [
     {
-      "name": "HCLK",
-      "expansion": "Bus Clock",
-      "role": "clock",
-      "description": "Master clock for the AHB system. All signal timings are related to the rising edge of HCLK.",
-      "relatedTermId": "HCLK"
+      "name": "HCLK", "expansion": "Bus clock", "role": "clock", "group": "Global",
+      "description": "All AHB transfer timing is related to the rising edge of HCLK.", "direction": "Clock source → all components", "sampled": "Rising edge",
+      "values": ["Clock"], "verificationNote": "Sample protocol state on the specified edge; a sub-cycle combinational transition is not a second transfer.", "relatedTermId": "HCLK"
     },
     {
-      "name": "HRESETn",
-      "expansion": "Reset",
-      "role": "control",
-      "description": "Active-low reset signal. Asserted asynchronously, de-asserted synchronously.",
-      "relatedTermId": "HRESETn"
+      "name": "HRESETn", "expansion": "Active-low reset", "role": "control", "group": "Global",
+      "description": "Resets the bus and participating components. Assertion can be asynchronous; deassertion is synchronized to HCLK.", "direction": "Reset controller → all components", "sampled": "Reset assertion and release",
+      "values": ["0 reset", "1 normal operation"], "verificationNote": "Test reset during traffic and verify a safe first address phase after release.", "relatedTermId": "HRESETn"
     },
     {
-      "name": "HADDR",
-      "expansion": "Address",
-      "role": "control",
-      "description": "The 32-bit (or larger) system address bus. Driven by the master.",
-      "relatedTermId": "HADDR"
+      "name": "HADDR", "expansion": "Address", "role": "control", "group": "Master address and control",
+      "description": "Identifies the byte address for the current address phase.", "direction": "Master → decoder and slaves", "sampled": "With HREADY HIGH for a valid NONSEQ/SEQ transfer",
+      "values": ["Implementation address width"], "verificationNote": "Queue accepted addresses; do not associate current HADDR directly with current HRDATA/HRESP.", "relatedTermId": "HADDR"
     },
     {
-      "name": "HTRANS",
-      "expansion": "Transfer Type",
-      "role": "control",
-      "description": "Indicates the type of the current transfer: IDLE, BUSY, NONSEQ, or SEQ.",
-      "relatedTermId": "HTRANS"
+      "name": "HTRANS", "expansion": "Transfer type", "role": "control", "group": "Master address and control",
+      "description": "Classifies the current address phase as IDLE, BUSY, NONSEQ, or SEQ.", "direction": "Master → slaves", "sampled": "Accepted address phase",
+      "values": ["IDLE", "BUSY", "NONSEQ", "SEQ"], "verificationNote": "Track burst context: INCR may terminate after BUSY, while a fixed burst must finish on SEQ.", "relatedTermId": "HTRANS"
     },
     {
-      "name": "HWRITE",
-      "expansion": "Write Control",
-      "role": "control",
-      "description": "Direction of transfer. 1 = Write, 0 = Read.",
-      "relatedTermId": "HWRITE"
+      "name": "HWRITE", "expansion": "Transfer direction", "role": "control", "group": "Master address and control",
+      "description": "Selects write when HIGH and read when LOW for the address phase.", "direction": "Master → slave", "sampled": "Accepted address phase",
+      "values": ["0 read", "1 write"], "verificationNote": "Delay direction with the accepted address when determining which later data bus owns the transfer.", "relatedTermId": "HWRITE"
     },
     {
-      "name": "HSIZE",
-      "expansion": "Transfer Size",
-      "role": "control",
-      "description": "Indicates the size of the transfer (Byte, Halfword, Word, etc.).",
-      "relatedTermId": "HSIZE"
+      "name": "HSIZE", "expansion": "Transfer size", "role": "control", "group": "Master address and control",
+      "description": "Encodes the number of bytes transferred by one beat.", "direction": "Master → slave", "sampled": "Accepted address phase",
+      "values": ["000 byte", "001 halfword", "010 word", "Larger implementation-supported sizes"], "verificationNote": "Check natural alignment, active byte lanes, and address increment of 2^HSIZE.", "relatedTermId": "HSIZE"
     },
     {
-      "name": "HBURST",
-      "expansion": "Burst Type",
-      "role": "control",
-      "description": "Indicates if the transfer forms part of a burst (SINGLE, INCR, WRAP4, etc.).",
-      "relatedTermId": "HBURST"
+      "name": "HBURST", "expansion": "Burst type", "role": "control", "group": "Master address and control",
+      "description": "Defines SINGLE, undefined INCR, and fixed incrementing or wrapping burst forms.", "direction": "Master → slave", "sampled": "First and continuing accepted address phases",
+      "values": ["SINGLE", "INCR", "WRAP4/8/16", "INCR4/8/16"], "verificationNote": "Cross with HSIZE and verify count, wrap span, early termination rules, and the 1 KB boundary.", "relatedTermId": "HBURST"
     },
     {
-      "name": "HPROT",
-      "expansion": "Protection Control",
-      "role": "control",
-      "description": "Provides information about the access (privileged, cacheable, etc.).",
-      "relatedTermId": "HPROT"
+      "name": "HPROT[3:0]", "expansion": "Base protection attributes", "role": "sideband", "group": "Master address and control",
+      "description": "Carries data/instruction, privileged, bufferable, and cacheable/modifiable information according to the implemented revision.", "direction": "Master → slave/interconnect", "sampled": "Accepted address phase",
+      "values": ["Data or instruction", "Privileged or user", "Memory attributes"], "verificationNote": "Treat attributes as part of transaction identity and keep them stable with the pending valid transfer.", "relatedTermId": "HPROT"
     },
     {
-      "name": "HWDATA",
-      "expansion": "Write Data",
-      "role": "data",
-      "description": "The write data bus, driven by the master during write transfers.",
-      "relatedTermId": "HWDATA"
+      "name": "HMASTLOCK", "expansion": "Locked-sequence indication", "role": "control", "group": "Master address and control",
+      "description": "Indicates that the current transfer is part of a locked sequence. Original shared AHB derives the bus-level value through the arbiter; AHB-Lite/AHB5 include it on the interface.", "direction": "Current owner/interconnect → selected slave", "sampled": "Accepted address phase",
+      "values": ["0 normal", "1 locked"], "verificationNote": "Do not confuse locked ownership with HEXCL or security state.", "relatedTermId": "HMASTLOCK"
     },
     {
-      "name": "HRDATA",
-      "expansion": "Read Data",
-      "role": "data",
-      "description": "The read data bus, driven by the slave during read transfers.",
-      "relatedTermId": "HRDATA"
+      "name": "HWDATA", "expansion": "Write data", "role": "data", "group": "Data and response",
+      "description": "Carries write data in the data phase following its accepted write address phase.", "direction": "Master → slave", "sampled": "When the write data phase completes with HREADY HIGH",
+      "values": ["Data width is implementation-defined"], "verificationNote": "Hold stalled write data stable and associate it with the previous accepted address, not current HADDR.", "relatedTermId": "HWDATA"
     },
     {
-      "name": "HREADY",
-      "expansion": "Transfer Ready",
-      "role": "control",
-      "description": "Driven by the slave to indicate transfer completion (1) or request wait states (0).",
-      "relatedTermId": "HREADY"
+      "name": "HRDATA", "expansion": "Read data", "role": "data", "group": "Data and response",
+      "description": "Carries read data from the selected slave through the return-data mux.", "direction": "Selected slave → master", "sampled": "Read data-phase completion with HREADY HIGH",
+      "values": ["Data width matches HWDATA"], "verificationNote": "Only compare data on completion and attribute it to the queued read address.", "relatedTermId": "HRDATA"
     },
     {
-      "name": "HRESP",
-      "expansion": "Transfer Response",
-      "role": "control",
-      "description": "Provides the status of the transfer: OKAY (0) or ERROR (1).",
-      "relatedTermId": "HRESP"
+      "name": "HRESP", "expansion": "Transfer response", "role": "control", "group": "Data and response",
+      "description": "Reports completion status. AHB-Lite/AHB5 use one-bit OKAY/ERROR; original AHB uses a wider encoding that also includes RETRY/SPLIT.", "direction": "Selected slave through response mux → master", "sampled": "Data phase with HREADY",
+      "values": ["AHB-Lite/AHB5: OKAY or ERROR", "Original AHB: OKAY/ERROR/RETRY/SPLIT"], "verificationNote": "Select response rules by interface revision and recognize both cycles of ERROR.", "relatedTermId": "HRESP"
     },
     {
-      "name": "HSEL",
-      "expansion": "Slave Select",
-      "role": "control",
-      "description": "Driven by the decoder to select a specific slave for the transfer.",
-      "relatedTermId": "AHB"
+      "name": "HREADYOUT", "expansion": "Per-slave completion", "role": "control", "group": "Slave and decoder",
+      "description": "An individual slave indicates whether its current data phase is pending or complete.", "direction": "Each slave → return mux", "sampled": "Every data-phase cycle",
+      "values": ["0 insert wait", "1 complete"], "verificationNote": "Review system muxing and timing to prevent a combinational loop through the selected HREADY path.", "relatedTermId": "HREADYOUT"
     },
     {
-      "name": "HEXCL",
-      "expansion": "Exclusive Transfer",
-      "role": "control",
-      "description": "AHB5 signal indicating an exclusive access sequence.",
-      "relatedTermId": "HEXCL"
+      "name": "HREADY", "expansion": "Global selected completion", "role": "control", "group": "Slave and decoder",
+      "description": "The return mux presents the selected slave's completion state to the master and all slaves so address and data phases advance together.", "direction": "Return mux → master and slaves", "sampled": "Rising HCLK edge",
+      "values": ["0 current data phase pending", "1 current data phase completes"], "verificationNote": "A monitor advances its accepted-phase queues only when HREADY is HIGH.", "relatedTermId": "HREADY"
     },
     {
-      "name": "HEXOKAY",
-      "expansion": "Exclusive Okay",
-      "role": "control",
-      "description": "AHB5 response from slave indicating exclusive write success.",
-      "relatedTermId": "HEXOKAY"
+      "name": "HSELx", "expansion": "Slave select", "role": "control", "group": "Slave and decoder",
+      "description": "A combinational decode of high-order HADDR selects one target for the address phase.", "direction": "Decoder → slave x", "sampled": "By the slave only with HREADY HIGH",
+      "values": ["0 not selected", "1 selected"], "verificationNote": "Do not asynchronously consume transient HSEL changes as accepted transfers."
     },
     {
-      "name": "HNONSEC",
-      "expansion": "Non-Secure Transfer",
-      "role": "control",
-      "description": "AHB5 signal indicating the TrustZone security level.",
-      "relatedTermId": "HNONSEC"
+      "name": "HBUSREQx", "expansion": "Bus request", "role": "control", "group": "Original shared AHB only",
+      "description": "A master requests ownership of the original shared AHB bus.", "direction": "Master x → arbiter", "sampled": "Arbitration decision",
+      "values": ["0 no request", "1 request"], "verificationNote": "A request does not equal ownership; combine the selected HGRANTx with HREADY at the accepting edge."
+    },
+    {
+      "name": "HGRANTx", "expansion": "Bus grant", "role": "control", "group": "Original shared AHB only",
+      "description": "The arbiter identifies the highest-priority eligible requester for next ownership.", "direction": "Arbiter → master x", "sampled": "With HREADY at rising HCLK",
+      "values": ["0 not granted", "1 next owner when accepted"], "verificationNote": "Keep current HMASTER unchanged through a stalled handover."
+    },
+    {
+      "name": "HLOCKx", "expansion": "Per-master lock request", "role": "control", "group": "Original shared AHB only",
+      "description": "A requesting master tells the arbiter that its upcoming sequence must be indivisible.", "direction": "Master x → arbiter", "sampled": "With HBUSREQx before the locked address phase",
+      "values": ["0 normal request", "1 locked request"], "verificationNote": "Distinguish this request from the arbiter's aligned bus-level HMASTLOCK output."
+    },
+    {
+      "name": "HMASTER", "expansion": "Master identity", "role": "sideband", "group": "Version-specific identity",
+      "description": "Original AHB uses arbiter-generated HMASTER for shared-bus identity. AHB5 uses an implementation-defined-width identity when Exclusive_Transfers is supported and can extend it in the interconnect.", "direction": "Arbiter or master/interconnect → slave/monitor", "sampled": "Accepted address phase",
+      "values": ["Original shared-bus owner", "AHB5 exclusive-capable identity"], "verificationNote": "Do not assume the same source or width across revisions."
+    },
+    {
+      "name": "HSPLITx", "expansion": "Split completion request", "role": "sideband", "group": "Original shared AHB only",
+      "description": "A SPLIT-capable slave tells the original AHB arbiter which master may reattempt a split transfer.", "direction": "SPLIT-capable slave → arbiter", "sampled": "Legacy split re-arbitration",
+      "values": ["One bit per supported master"], "verificationNote": "This signal and SPLIT/RETRY behavior do not exist on AHB-Lite/AHB5 interfaces."
+    },
+    {
+      "name": "HNONSEC", "expansion": "Non-secure transfer", "role": "sideband", "group": "Optional AHB5 capabilities",
+      "description": "Present when Secure_Transfers is declared; labels the address phase Secure or Non-secure.", "direction": "Master → decoder, interconnect, and slave", "sampled": "Accepted address phase",
+      "values": ["0 Secure", "1 Non-secure"], "verificationNote": "Verify explicit adaptation at boundaries where one interface lacks the capability.", "relatedTermId": "HNONSEC"
+    },
+    {
+      "name": "HEXCL", "expansion": "Exclusive transfer", "role": "sideband", "group": "Optional AHB5 capabilities",
+      "description": "Present when Exclusive_Transfers is declared; marks a NONSEQ transfer as part of an exclusive sequence.", "direction": "Master → exclusive monitor", "sampled": "Accepted exclusive address phase",
+      "values": ["0 normal", "1 exclusive"], "verificationNote": "Exclusive transfers are single-transfer SINGLE/INCR forms, contain no BUSY, and must be aligned.", "relatedTermId": "HEXCL"
+    },
+    {
+      "name": "HEXOKAY", "expansion": "Exclusive result", "role": "sideband", "group": "Optional AHB5 capabilities",
+      "description": "Reports success or failure of an exclusive transfer; for a write, success means memory was updated.", "direction": "Exclusive monitor/slave → master", "sampled": "Only when HREADY is asserted",
+      "values": ["0 failed/not supported", "1 successful"], "verificationNote": "HEXOKAY must not be asserted with HRESP=ERROR, and HEXOKAY=0 is not itself an ERROR.", "relatedTermId": "HEXOKAY"
+    },
+    {
+      "name": "HPROT[6:4]", "expansion": "Extended memory types", "role": "sideband", "group": "Optional AHB5 capabilities",
+      "description": "Present when Extended_Memory_Types is declared; extends the base protection attributes with lookup, allocation, and shareability information.", "direction": "Master → interconnect and slave", "sampled": "Accepted address phase",
+      "values": ["Lookup", "Allocate", "Shareable"], "verificationNote": "Gate checkers by the declared property and verify legacy HPROT adaptation explicitly."
     }
   ]
 }

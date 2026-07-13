@@ -1,23 +1,22 @@
 {
   "id": "wf-ahb-review-error",
-  "title": "Waveform Review: Two-Cycle Error",
   "type": "waveform",
+  "title": "AHB Two-Cycle ERROR Response",
+  "description": "Inspect why ERROR first stalls the pipeline and then completes the failed transfer, giving the master an opportunity—but not an unconditional requirement—to cancel the following address.",
   "cycleCount": 6,
   "signals": [
-    { "name": "HCLK", "type": "clock", "values": [] },
-    { "name": "HTRANS", "type": "control", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE"] },
-    { "name": "HADDR", "type": "control", "values": ["0x0", "0x4", "0x8", "0x8", "0x0", "0x0"] },
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "data", "values": ["A", "B", "B", "—", "—", "—"] },
+    { "name": "DATA_PHASE", "type": "sideband", "values": ["—", "A", "A", "A", "—", "—"] },
     { "name": "HREADY", "type": "control", "values": ["1", "1", "0", "1", "1", "1"] },
-    { "name": "HRESP", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "0", "0"] }
+    { "name": "HRESP", "type": "sideband", "values": ["OKAY", "OKAY", "ERROR", "ERROR", "OKAY", "OKAY"] }
   ],
   "annotations": [
-    {
-      "cycle": 2,
-      "message": "Slave detects an error on address 0x4."
-    },
-    {
-      "cycle": 3,
-      "message": "Master responds to HREADY=1 by transitioning to IDLE, canceling the burst."
-    }
+    { "cycle": 1, "message": "Address A is accepted. Its response will be observed later in A's data phase." },
+    { "cycle": 2, "message": "The pipeline broadcasts following address B while transfer A occupies the data phase." },
+    { "cycle": 3, "message": "ERROR cycle 1: HRESP=ERROR and HREADY=0 extend A for one cycle so the master can react to the already-broadcast B transfer." },
+    { "cycle": 4, "message": "ERROR cycle 2: HRESP remains ERROR and HREADY=1 completes failed transfer A. This example cancels B by driving IDLE; continuing the burst is also permitted by the specification." },
+    { "cycle": 5, "message": "The bus returns to OKAY. A verifier must attribute both ERROR cycles to data phase A, not to following address B." }
   ]
 }

@@ -9,7 +9,7 @@ order: 8
 tags: ["ahb", "signals", "data", "hready"]
 relatedLessons: []
 prerequisites: ["07_burst_and_size"]
-visualIds: ["wf-ahb-wait-state"]
+visualIds: ["wf-ahb-read-write-response", "wf-ahb-wait-state"]
 exerciseIds: []
 glossaryTerms: ["HWDATA", "HRDATA", "HREADY", "HREADYOUT", "HRESP"]
 checklistIds: []
@@ -23,6 +23,10 @@ Unlike older bi-directional buses, AHB features dedicated, unidirectional buses 
 - **[glossary:HWDATA] (Write Data):** Driven by the Master. Contains the payload for a Write transfer.
 - **[glossary:HRDATA] (Read Data):** Driven by the Slave. Contains the payload for a Read transfer.
 
+The combined waveform distinguishes a successful read, a successful write, and an AHB-Lite ERROR completion. Follow the driver names in the signal labels and inspect the two error cycles separately.
+
+![AHB read data, write data, wait-state, and two-cycle error response](visual:wf-ahb-read-write-response)
+
 ## Backpressure and Wait States: HREADY
 
 The most important signal controlled by the slave is **[glossary:HREADY]** (sometimes split into `HREADYOUT` from the slave and `HREADY` as a global signal into the master).
@@ -30,7 +34,7 @@ The most important signal controlled by the slave is **[glossary:HREADY]** (some
 When a master sends a request (e.g., `HTRANS = NONSEQ`), the slave might need time to fetch the data from memory. It tells the master to wait by driving `HREADY` to `0`. 
 This is called inserting a **Wait State**.
 
-![wf-ahb-wait-state](visual:wf-ahb-wait-state)
+![AHB wait state showing HREADY low and the next address phase held stable](visual:wf-ahb-wait-state)
 
 - **Rule 1:** When `HREADY` is `0`, the current Data Phase is extended. The data on `HRDATA` (if reading) is not yet valid.
 - **Rule 2:** Because AHB uses a pipelined architecture (which we will cover in depth in Section D: Timing and Pipelining), inserting a wait state also stalls the *next* Address Phase! For now, just know that if the slave says "wait" (`HREADY` is `0`), the master must freeze and hold its `HADDR` and `HTRANS` perfectly stable.

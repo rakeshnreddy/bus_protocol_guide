@@ -1,0 +1,28 @@
+{
+  "id": "wf-ahb-hsize-byte-lanes",
+  "type": "waveform",
+  "title": "HSIZE Alignment and Natural Byte Lanes",
+  "description": "Little-endian examples on a 32-bit bus pair each address/size with the previous transfer's active write-data lanes and flag a misaligned halfword.",
+  "cycleCount": 6,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "NONSEQ", "NONSEQ", "IDLE"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x00", "0x01", "0x02", "0x04", "0x01", "—"] },
+    { "name": "HSIZE", "type": "sideband", "color": "#2563eb", "values": ["BYTE", "BYTE", "HALF", "WORD", "HALF", "—"] },
+    { "name": "ADDR CHECK", "type": "sideband", "color": "#0f766e", "values": ["VALID", "VALID", "VALID", "VALID", "MISALIGNED", "—"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "000000A5", "0000A500", "BEEF0000", "DEADBEEF", "—"] },
+    { "name": "DATA LANES", "type": "sideband", "color": "#047857", "values": ["—", "[7:0]", "[15:8]", "[31:16]", "[31:0]", "BLOCK"] },
+    { "name": "HREADY", "type": "control", "color": "#047857", "values": ["1", "1", "1", "1", "1", "1"] }
+  ],
+  "annotations": [
+    { "cycle": 1, "message": "Address phase: a BYTE at 0x00 is aligned. Its payload will use HWDATA[7:0] in the following data phase." },
+    { "cycle": 2, "message": "Data 0xA5 for address 0x00 appears on lane [7:0], while a new BYTE address 0x01 is accepted for lane [15:8]." },
+    { "cycle": 3, "message": "The byte for 0x01 is shifted onto HWDATA[15:8]. The simultaneous HALFWORD address 0x02 is aligned and will use lanes [31:16]." },
+    { "cycle": 4, "message": "The halfword for 0x02 occupies HWDATA[31:16]. The simultaneous WORD at 0x04 is aligned and will use all four byte lanes." },
+    { "cycle": 5, "message": "The word for 0x04 uses HWDATA[31:0]. The new HALFWORD address 0x01 is illegal because address bit 0 is set." },
+    { "cycle": 6, "message": "A protocol monitor must report the misaligned transfer; a compliant master must not generate a data phase for it." }
+  ],
+  "violations": [
+    { "cycle": 5, "message": "Halfword transfer at 0x01 is not aligned to a two-byte boundary." }
+  ]
+}

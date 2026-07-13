@@ -30,7 +30,9 @@ The Address Decoder is a central piece of combinatorial logic that looks at the 
 - It determines which slave's memory region the address falls into.
 - It asserts a dedicated **`HSELx`** (Select) signal to that specific slave.
 
-![topo-ahb-multi-master](visual:topo-ahb-multi-master)
+Follow the highlighted request into SRAM, then inspect the default-slave route to see how an unmapped access still receives a defined response.
+
+![AHB decoder topology showing one selected slave, the return mux, and the default error slave](visual:topo-ahb-multi-master)
 
 ## Slave Behavior
 
@@ -42,4 +44,5 @@ A slave must strictly monitor its `HSELx` signal.
 
 What happens if a master requests an address that is *not* mapped to any slave? (e.g., `0x3000_0000` in our example).
 - The decoder asserts `HSEL` for a special, dummy slave called the **Default Slave**.
-- The Default Slave's only job is to immediately provide a two-cycle `ERROR` response on `HRESP` and `HREADY`, cleanly terminating the invalid transaction so the bus doesn't hang.
+- For a valid `NONSEQ` or `SEQ` transfer, the Default Slave provides the required two-cycle `ERROR` response on `HRESP` and `HREADY`, cleanly terminating the invalid transaction so the bus doesn't hang.
+- `IDLE` or `BUSY` transfers to an unmapped location receive a zero-wait `OKAY` response because they do not represent a valid data transfer.

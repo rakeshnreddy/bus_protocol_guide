@@ -1,0 +1,64 @@
+{
+  "id": "sig-ahb-assertion-library",
+  "type": "signal-explorer",
+  "title": "AHB Assertion Library: Trigger, Obligation, Exception",
+  "description": "Open each checker to see the precise antecedent, required behavior, protocol exception, and DV failure signature that prevent false assertions.",
+  "signals": [
+    {
+      "name": "Accepted wait-state stability", "expansion": "Hold a valid pending transfer", "role": "control", "group": "Master safety properties",
+      "description": "When NONSEQ or SEQ address/control is pending and HREADY is LOW, the master holds that accepted transfer information until completion.",
+      "direction": "Master outputs", "sampled": "Rising HCLK edges while the valid transfer remains pending",
+      "values": ["Stable HTRANS/HADDR/HWRITE/HSIZE/HBURST/HPROT", "Stable HWDATA for a stalled write data phase"],
+      "typicalUse": "Detect early pipeline advance",
+      "verificationNote": "Do not write a blanket $stable assertion for every low-HREADY cycle: IDLE/BUSY transitions and the first ERROR cycle have specification-defined exceptions."
+    },
+    {
+      "name": "Transfer-type legality", "expansion": "NONSEQ, SEQ, BUSY, IDLE context", "role": "control", "group": "Master safety properties",
+      "description": "A burst begins with NONSEQ and continuing data beats use SEQ. BUSY preserves an intended continuation without creating a transfer.",
+      "direction": "Master → selected slave", "sampled": "Accepted address phases",
+      "values": ["Fixed burst ends on SEQ", "INCR may terminate after BUSY with IDLE or NONSEQ", "SINGLE cannot be followed by BUSY"],
+      "typicalUse": "Stateful burst checker",
+      "verificationNote": "An undefined-length INCR may terminate after BUSY with IDLE or NONSEQ. A simple BUSY→IDLE ban will produce false failures."
+    },
+    {
+      "name": "Address progression", "expansion": "Size, alignment, increment, and wrap", "role": "control", "group": "Master safety properties",
+      "description": "For each accepted SEQ beat, predict the next address from HSIZE and HBURST, including the wrap boundary and the 1 KB limit.",
+      "direction": "Checker prediction against HADDR", "sampled": "Accepted NONSEQ/SEQ address phases only",
+      "values": ["Increment = 2^HSIZE bytes", "Wrap span = beats × bytes", "Never cross 1 KB"],
+      "typicalUse": "Burst protocol checker",
+      "verificationNote": "Do not advance the predictor on BUSY, IDLE, or a waited cycle."
+    },
+    {
+      "name": "Two-cycle ERROR", "expansion": "First cycle stalls, second completes", "role": "control", "group": "Slave safety properties",
+      "description": "Once the first ERROR cycle occurs with HRESP=1 and HREADYOUT=0, the next cycle completes with HRESP=1 and HREADYOUT=1.",
+      "direction": "Selected slave → response mux", "sampled": "Consecutive HCLK cycles in the response data phase",
+      "values": ["ERROR1: HRESP=1, HREADYOUT=0", "ERROR2: HRESP=1, HREADYOUT=1"],
+      "typicalUse": "Response-sequence checker",
+      "verificationNote": "Additional wait states may precede ERROR1 only with HRESP=OKAY. Do not trigger the property from ERROR2 as though it were a new response."
+    },
+    {
+      "name": "IDLE and BUSY response", "expansion": "Zero-wait OKAY and ignore", "role": "control", "group": "Slave safety properties",
+      "description": "Slaves provide a zero-wait OKAY response to IDLE and BUSY transfer types and ignore them as data transfers.",
+      "direction": "Selected/default slave response", "sampled": "When HTRANS is IDLE or BUSY",
+      "values": ["HREADYOUT=1", "HRESP=OKAY", "No state update"],
+      "typicalUse": "Slave protocol checker",
+      "verificationNote": "Also assert that no write side effect or transaction count increment occurs for these transfer types."
+    },
+    {
+      "name": "Exclusive response legality", "expansion": "HEXOKAY timing and mutual exclusion", "role": "sideband", "group": "AHB5 optional properties",
+      "description": "When Exclusive_Transfers is supported, HEXOKAY can only be asserted when HREADY is asserted and must not be asserted in the same cycle as HRESP.",
+      "direction": "Monitor/slave → master", "sampled": "Exclusive transfer completion",
+      "values": ["HEXOKAY implies HREADY", "HEXOKAY excludes HRESP=ERROR"],
+      "typicalUse": "Exclusive monitor checker",
+      "verificationNote": "Gate the assertion by the interface capability and the accepted exclusive transfer context; HEXOKAY=0 is not itself an ERROR."
+    },
+    {
+      "name": "Bounded service contract", "expansion": "Implementation liveness, not base protocol", "role": "sideband", "group": "System contract properties",
+      "description": "A project can require completion or grant within a configured bound, but the AHB protocol does not choose an arbitration fairness policy or one universal maximum wait count.",
+      "direction": "Environment and implementation contract", "sampled": "From accepted request until completion/grant",
+      "values": ["Assume legal environment", "Assert configured bound"],
+      "typicalUse": "Deadlock and starvation proof",
+      "verificationNote": "Document the bound and its assumptions. A fixed-priority arbiter cannot satisfy unconditional fairness under a permanently requesting higher-priority master."
+    }
+  ]
+}

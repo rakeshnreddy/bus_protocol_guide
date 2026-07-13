@@ -9,7 +9,7 @@ order: 14
 tags: ["ahb", "semantics", "size", "alignment"]
 relatedLessons: []
 prerequisites: ["07_burst_and_size"]
-visualIds: []
+visualIds: ["wf-ahb-hsize-byte-lanes"]
 exerciseIds: []
 glossaryTerms: ["HSIZE"]
 checklistIds: []
@@ -41,3 +41,7 @@ For a Halfword (2-byte) write:
 - A Halfword write to `0x02` is driven on `HWDATA[31:16]`
 
 A smart master will often just replicate its 8-bit payload across *all* byte lanes (e.g., if writing `0xFF`, it drives `0xFFFFFFFF` on the 32-bit bus). The slave is responsible for looking at `HADDR[1:0]` and `HSIZE` to decide which specific bytes to sample and write into memory.
+
+The waveform below keeps address and data ownership separate: each `HWDATA` value belongs to the address accepted one cycle earlier. Select the examples to connect alignment, lane selection, and the misaligned halfword violation.
+
+![Aligned byte, halfword, and word transfers mapped onto natural lanes of a 32-bit AHB write-data bus](visual:wf-ahb-hsize-byte-lanes)

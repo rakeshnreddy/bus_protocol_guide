@@ -21,16 +21,16 @@ Let's look at two of the bugs discussed in the previous lesson as they appear on
 
 Look at the waveform below. 
 - **The Symptom:** A testbench scoreboard reports a mismatch for the data written to address `0x14`.
-- **The Root Cause:** In Cycle 2, the slave drives `HREADY = 0` to stall the data phase for address `0x14`. However, in Cycle 3, the master advances its `HWDATA` bus to drive the data for `0x18`. It dropped `D(0x14)`!
+- **The Root Cause:** In Cycle 3, the slave drives `HREADY = 0` to stall the data phase for address `0x14`. In Cycle 4, the master incorrectly advances `HWDATA` to the value for `0x18` even though data owner `0x14` is only now completing.
 - **The Fix:** The master RTL must be updated to condition its internal `HWDATA` pipeline register advance on `HREADY == 1`.
 
-![wf-ahb-bug-wait-state](visual:wf-ahb-bug-wait-state)
+![AHB debug waveform marking the first cycle where stalled write data advances to the wrong owner](visual:wf-ahb-bug-wait-state)
 
 ## Case Study 2: Decoder Glitch
 
 Look at the waveform below.
-- **The Symptom:** Slave 2 reports a spurious write to its memory, even though the master was targeting Slave 3 (Address `0x30`).
-- **The Root Cause:** During Cycle 1, the address bus transitions from `0x10` (Slave 1) to `0x20` (Slave 2) to `0x30` (Slave 3). Because the decoder is combinatorial, `HSEL_S2` glitches high momentarily before settling to 0. 
-- **The Fix:** Slaves must **never** use `HSEL` asynchronously. They must only sample `HSEL` on the rising edge of `HCLK`. By the time the clock edge arrives in Cycle 2, `HSEL_S2` has settled to `0`, and the glitch is safely ignored.
+- **The Symptom:** Slave 2 reports a spurious side effect even though the accepted address selects Slave 3 (`0x30`).
+- **The Root Cause:** During the address transition into Cycle 2, combinational `HSEL_S2_RAW` briefly pulses before the decoder settles on Slave 3. An asynchronous latch or clock gate treats that pulse as a transfer even though `HSEL_S2_SAMPLED` is 0 at the accepting edge.
+- **The Fix:** Protocol-facing slave state must only sample `HSEL`, address, and control at the rising edge where `HREADY` is high. The raw transient is not an accepted Slave 2 transfer.
 
-![wf-ahb-bug-decoder-glitch](visual:wf-ahb-bug-decoder-glitch)
+![AHB decoder waveform distinguishing a raw within-cycle select pulse from the synchronously accepted HSEL value](visual:wf-ahb-bug-decoder-glitch)

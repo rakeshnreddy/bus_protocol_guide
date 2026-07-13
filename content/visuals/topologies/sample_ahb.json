@@ -1,54 +1,81 @@
 {
   "id": "tp-basic-ahb",
   "type": "topology",
-  "title": "Basic Multi-Master AHB System",
+  "title": "AHB Inside a Microcontroller SoC",
+  "description": "Trace command and write-data flow toward one selected slave, then follow read data, readiness, and response back to the master.",
+  "regions": [
+    { "id": "source-domain", "label": "Transfer initiator", "x": 30, "y": 45, "width": 210, "height": 430, "tone": "source" },
+    { "id": "fabric-domain", "label": "AHB routing fabric", "x": 275, "y": 45, "width": 390, "height": 430, "tone": "fabric" },
+    { "id": "target-domain", "label": "Memory-mapped slaves", "x": 700, "y": 45, "width": 270, "height": 430, "tone": "target" }
+  ],
   "nodes": [
-    {
-      "id": "m1",
-      "label": "Master 1 (CPU)",
-      "type": "master"
-    },
-    {
-      "id": "m2",
-      "label": "Master 2 (DMA)",
-      "type": "master"
-    },
-    {
-      "id": "arb",
-      "label": "Arbiter/Decoder",
-      "type": "arbiter"
-    },
-    {
-      "id": "s1",
-      "label": "Slave 1 (SRAM)",
-      "type": "slave"
-    }
+    { "id": "cpu", "label": "CPU / DMA\nAHB Master", "type": "master", "x": 135, "y": 260 },
+    { "id": "matrix", "label": "AHB Interconnect", "type": "arbiter", "x": 385, "y": 260 },
+    { "id": "decoder", "label": "Address Decoder\n+ Response Mux", "type": "arbiter", "x": 565, "y": 260, "width": 170 },
+    { "id": "sram", "label": "SRAM Slave", "type": "slave", "x": 835, "y": 130 },
+    { "id": "flash", "label": "Flash Slave", "type": "slave", "x": 835, "y": 260 },
+    { "id": "bridge", "label": "Peripheral Bridge", "type": "bridge", "x": 835, "y": 390 }
   ],
   "edges": [
     {
-      "id": "e-m1-arb",
-      "source": "m1",
-      "target": "arb",
-      "label": "Request/Grant"
+      "id": "e-master-matrix",
+      "source": "cpu",
+      "target": "matrix",
+      "label": "HADDR/control, HWDATA →\nHRDATA, HREADY, HRESP ←",
+      "bidirectional": true,
+      "kind": "data",
+      "tone": "primary",
+      "labelPosition": { "x": 260, "y": 185 }
     },
     {
-      "id": "e-m2-arb",
-      "source": "m2",
-      "target": "arb",
-      "label": "Request/Grant"
+      "id": "e-matrix-decoder",
+      "source": "matrix",
+      "target": "decoder",
+      "label": "Decode + route",
+      "bidirectional": true,
+      "kind": "channel",
+      "tone": "primary",
+      "labelPosition": { "x": 475, "y": 195 }
     },
     {
-      "id": "e-arb-s1",
-      "source": "arb",
-      "target": "s1",
-      "label": "Bus Matrix"
+      "id": "e-decoder-sram",
+      "source": "decoder",
+      "target": "sram",
+      "label": "HSEL_SRAM + transfer\nreturn data/response",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "primary",
+      "waypoints": [{ "x": 665, "y": 160 }, { "x": 720, "y": 160 }],
+      "labelPosition": { "x": 640, "y": 105 }
+    },
+    {
+      "id": "e-decoder-flash",
+      "source": "decoder",
+      "target": "flash",
+      "label": "HSEL_FLASH",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "labelPosition": { "x": 700, "y": 205 }
+    },
+    {
+      "id": "e-decoder-bridge",
+      "source": "decoder",
+      "target": "bridge",
+      "label": "HSEL_BRIDGE",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "waypoints": [{ "x": 665, "y": 360 }, { "x": 720, "y": 360 }],
+      "labelPosition": { "x": 690, "y": 402 }
     }
   ],
-  "highlightedPath": ["m1", "e-m1-arb", "arb", "e-arb-s1", "s1"],
+  "highlightedPath": ["cpu", "e-master-matrix", "matrix", "e-matrix-decoder", "decoder", "e-decoder-sram", "sram"],
   "annotations": [
-    {
-      "nodeId": "arb",
-      "message": "Central multiplexer routing the selected master to the slave."
-    }
+    { "nodeId": "cpu", "message": "The active master drives address, control, and write data. It consumes read data, HREADY, and HRESP on the return path." },
+    { "nodeId": "matrix", "message": "The interconnect carries the selected master's transfer. In a multi-master system it also multiplexes ownership." },
+    { "nodeId": "decoder", "message": "This logical block combines address decode with the return-path mux. Implementations commonly place both functions inside the interconnect." },
+    { "edgeId": "e-master-matrix", "message": "The two arrowheads do not mean every signal is bidirectional. Command and write data travel outward; read data, readiness, and response travel back." },
+    { "edgeId": "e-decoder-sram", "message": "The highlighted address selects SRAM. Flash and the peripheral bridge remain unselected, and only SRAM's return path is routed to the master." }
   ]
 }

@@ -19,7 +19,9 @@ Because AHB is pipelined (Address Phase N+1 overlaps with Data Phase N), introdu
 
 When a slave drives `HREADY = 0`, it extends Data Phase N. Because Data Phase N is extended, the master **cannot** move on to Data Phase N+1. Therefore, the master must freeze Address Phase N+1 exactly as it is until `HREADY` goes back to `1`.
 
-![wf-ahb-wait-state-heavy](visual:wf-ahb-wait-state-heavy)
+Select Cycles 2–3 and 5–7 to see the domino effect: the current data beat waits, the following address freezes, and every later completion moves outward.
+
+![INCR4 write burst showing HREADY wait states freezing the following address phase](visual:wf-ahb-wait-state-heavy)
 
 ## Bug Gallery: The Wait State Domino Effect
 

@@ -1,0 +1,23 @@
+{
+  "id": "wf-ahb-htrans-sequences",
+  "type": "waveform",
+  "title": "HTRANS: Valid Burst and Suspicious Restart",
+  "description": "Compare a legal NONSEQ–SEQ burst containing BUSY with a buggy sequence that resumes using SEQ after leaving the burst.",
+  "cycleCount": 8,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "VALID HTRANS", "type": "sideband", "color": "#1d4ed8", "values": ["IDLE", "NONSEQ", "SEQ", "BUSY", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "VALID HADDR", "type": "data", "color": "#0f766e", "values": ["—", "0x100", "0x104", "hold", "0x108", "0x10C", "—", "—"] },
+    { "name": "BUGGY HTRANS", "type": "sideband", "color": "#dc2626", "values": ["IDLE", "NONSEQ", "SEQ", "IDLE", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "BUGGY HADDR", "type": "data", "color": "#b91c1c", "values": ["—", "0x200", "0x204", "—", "0x208", "0x20C", "—", "—"] }
+  ],
+  "annotations": [
+    { "cycle": 2, "message": "NONSEQ marks the first valid beat of both bursts." },
+    { "cycle": 3, "message": "SEQ is legal because it continues the burst started by NONSEQ." },
+    { "cycle": 4, "message": "BUSY inserts no transfer but preserves the valid burst context; address progression resumes afterward." },
+    { "cycle": 5, "message": "The valid sequence resumes with SEQ after BUSY. The buggy sequence used IDLE, so its next valid beat must restart with NONSEQ." }
+  ],
+  "violations": [
+    { "cycle": 5, "message": "BUGGY HTRANS uses SEQ after IDLE. No active burst remains, so this transfer must be NONSEQ." }
+  ]
+}

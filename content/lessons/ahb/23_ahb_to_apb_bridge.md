@@ -24,13 +24,13 @@ The solution is the **[glossary:APB]** (Advanced Peripheral Bus) and a Bridge.
 To the AHB system, the bridge is just a standard AHB Slave. It has `HSEL`, `HREADY`, `HADDR`, and `HWDATA` inputs.
 To the APB system, the bridge is the *only* Master.
 
-![topo-ahb-apb-bridge](visual:topo-ahb-apb-bridge)
+![AHB bridge topology showing its upstream slave role, downstream master role, and response return path](visual:topo-ahb-apb-bridge)
 
 ## Bridging the Timing Domain
 
 APB is an unpipelined, 2-cycle protocol. It does not support bursts. 
 
-When an AHB master initiates a transfer targeting an APB peripheral:
+For a typical simple, unbuffered bridge, when an AHB master initiates a transfer targeting an APB peripheral:
 1. **AHB Address Phase:** The master drives `HTRANS=NONSEQ` targeting the APB UART address. The AHB decoder selects the Bridge.
 2. **AHB Data Phase / APB Setup:** The Bridge samples the address. Because APB takes two cycles, the Bridge immediately drives `HREADY=0` to the AHB master, stalling the AHB pipeline. Simultaneously, the Bridge initiates the APB "Setup Phase" targeting the UART.
 3. **APB Access:** In the next cycle, the Bridge moves the APB bus to the "Access Phase".
@@ -39,9 +39,9 @@ When an AHB master initiates a transfer targeting an APB peripheral:
 ## Why this matters for Verification
 
 When verifying a system with bridges, you must understand that pipelining is lost at the bridge.
-If an AHB master issues an `INCR4` burst to the APB Bridge:
+If an AHB master issues an `INCR4` burst to a simple APB Bridge:
 - The master issues Beat 1. The Bridge stalls it (`HREADY=0`) while it translates it to a 2-cycle APB transfer.
 - The master issues Beat 2. The Bridge stalls it again.
-- The high-performance AHB burst is "chopped up" into four slow, independent, unpipelined transfers. 
+- Each accepted AHB beat must ultimately become an individual downstream peripheral transfer. A more capable bridge can buffer requests, but it must preserve address/data ownership and return responses to the correct AHB beat.
 
 Verification engineers must write tests to ensure the bridge correctly handles back-to-back AHB bursts without dropping data or locking up the bus.

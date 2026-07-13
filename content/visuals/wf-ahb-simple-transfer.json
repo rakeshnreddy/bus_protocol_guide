@@ -1,56 +1,25 @@
 {
   "id": "wf-ahb-simple-transfer",
-  "title": "Simple AHB Transfer",
-  "description": "A basic NONSEQ read transfer with zero wait states.",
+  "title": "Back-to-Back AHB SINGLE Transfers",
+  "description": "Two independent SINGLE transfers show how one transfer's data phase overlaps the next transfer's NONSEQ address phase.",
   "type": "waveform",
+  "cycleCount": 5,
   "signals": [
-    {
-      "name": "HCLK",
-      "type": "clock",
-      "values": ["1", "0", "1", "0", "1", "0", "1", "0"]
-    },
-    {
-      "name": "HTRANS",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
-    },
-    {
-      "name": "HADDR",
-      "type": "data",
-      "color": "var(--color-secondary)",
-      "values": ["---", "---", "0x1000", "0x1000", "---", "---", "---", "---"]
-    },
-    {
-      "name": "HWRITE",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["0", "0", "0", "0", "0", "0", "0", "0"]
-    },
-    {
-      "name": "HRDATA",
-      "type": "data",
-      "color": "var(--color-success)",
-      "values": ["---", "---", "---", "---", "0xDEADBEEF", "0xDEADBEEF", "---", "---"]
-    },
-    {
-      "name": "HREADY",
-      "type": "control",
-      "color": "var(--color-success)",
-      "values": ["1", "1", "1", "1", "1", "1", "1", "1"]
-    }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1"] },
+    { "name": "PHASE OWNER", "type": "sideband", "color": "#0f766e", "values": ["A1", "A2 | D1", "IDLE | D2", "IDLE", "IDLE"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE"] },
+    { "name": "HBURST", "type": "sideband", "color": "#2563eb", "values": ["SINGLE", "SINGLE", "SINGLE", "SINGLE", "SINGLE"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x1000", "0x2000", "—", "—", "—"] },
+    { "name": "HWRITE", "type": "control", "color": "#2563eb", "values": ["0", "1", "0", "0", "0"] },
+    { "name": "HRDATA", "type": "data", "color": "#047857", "values": ["—", "0xBEEF", "—", "—", "—"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "—", "0xCAFE", "—", "—"] },
+    { "name": "HREADY", "type": "control", "color": "#047857", "values": ["1", "1", "1", "1", "1"] },
+    { "name": "HRESP", "type": "control", "color": "#047857", "values": ["0", "0", "0", "0", "0"] }
   ],
-  "cycleCount": 4,
   "annotations": [
-    {
-      "cycle": 1,
-      "signalName": "HTRANS",
-      "message": "The Address Phase starts. Master drives HTRANS=NONSEQ, HADDR=0x1000, and HWRITE=0 (Read)."
-    },
-    {
-      "cycle": 2,
-      "signalName": "HRDATA",
-      "message": "The Data Phase starts. HREADY is 1, so the slave returns HRDATA=0xDEADBEEF immediately. The master simultaneously drives HTRANS back to IDLE."
-    }
+    { "cycle": 1, "message": "Transfer 1 address phase: NONSEQ, HBURST=SINGLE, HADDR=0x1000, and HWRITE=0 identify an independent read." },
+    { "cycle": 2, "message": "Transfer 1 read data completes while Transfer 2 starts with a fresh NONSEQ write address. The overlap improves throughput, but the transfers remain independent." },
+    { "cycle": 3, "message": "Transfer 2 write data completes with HREADY=1 and HRESP=OKAY. HTRANS is already IDLE because no third address phase is active." },
+    { "cycle": 4, "message": "The bus is idle. Another SINGLE transfer would restart with NONSEQ, never SEQ." }
   ]
 }

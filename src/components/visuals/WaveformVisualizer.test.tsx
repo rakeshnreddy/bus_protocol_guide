@@ -45,8 +45,9 @@ describe('WaveformVisualizer', () => {
 
   it('renders cycle labels correctly', () => {
     render(<WaveformVisualizer data={mockData} />);
-    expect(screen.getByText('C0')).toBeInTheDocument();
     expect(screen.getByText('C1')).toBeInTheDocument();
+    expect(screen.getByText('C2')).toBeInTheDocument();
+    expect(screen.queryByText('C0')).not.toBeInTheDocument();
   });
 
   it('reveals annotation on cycle click', () => {
@@ -73,5 +74,21 @@ describe('WaveformVisualizer', () => {
       expect(width).toBeGreaterThanOrEqual(44);
       expect(height).toBeGreaterThanOrEqual(44);
     });
+  });
+
+  it('allows keyboard users to inspect a cycle annotation', () => {
+    render(<WaveformVisualizer data={mockData} />);
+    const cycle = screen.getByRole('button', { name: 'Inspect cycle 1' });
+
+    cycle.focus();
+    fireEvent.keyDown(cycle, { key: 'Enter' });
+
+    expect(screen.getByText('Valid goes high')).toBeInTheDocument();
+  });
+
+  it('announces cycle details and gives pointer, focus, and tap instructions', () => {
+    const { container } = render(<WaveformVisualizer data={mockData} />);
+    expect(screen.getByText(/Hover, focus, or tap a cycle/i)).toBeInTheDocument();
+    expect(container.querySelector('.waveform-info-panel')).toHaveAttribute('aria-live', 'polite');
   });
 });

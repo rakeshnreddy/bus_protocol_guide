@@ -15,7 +15,7 @@ vi.mock('../../lib/visualLoaders', () => ({
 
 // Mock the child components to simplify testing the renderer logic
 vi.mock('./WaveformVisualizer', () => ({
-  default: () => <div data-testid="mock-waveform" />
+  default: ({ data }: { data: { title: string } }) => <div data-testid="mock-waveform">{data.title}</div>
 }));
 vi.mock('./TransactionTimeline', () => ({
   default: () => <div data-testid="mock-timeline" />
@@ -31,6 +31,11 @@ describe('VisualRenderer', () => {
   it('renders a waveform visual', () => {
     render(<VisualRenderer visualRef={{ id: 'wf-1', type: 'waveform', dataFile: '' }} />);
     expect(screen.getByTestId('mock-waveform')).toBeInTheDocument();
+  });
+
+  it('preserves the authored visual title when alt text is provided', () => {
+    render(<VisualRenderer visualRef={{ id: 'wf-1', type: 'waveform', dataFile: '' }} altText="Figure caption" />);
+    expect(screen.getByTestId('mock-waveform')).toHaveTextContent('WF');
   });
 
   it('renders a timeline visual', () => {

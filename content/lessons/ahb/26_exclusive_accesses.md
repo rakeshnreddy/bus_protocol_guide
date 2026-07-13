@@ -26,8 +26,8 @@ Instead of locking the bus, the system simply "watches" the target address.
 
 To perform a Read-Modify-Write using exclusive accesses:
 
-1. **Exclusive Read:** Master 1 reads the [glossary:Semaphore] address, driving **`HEXCL = 1`**. 
-   - The Exclusive Monitor logs Master 1's ID and the address being read.
+1. **Exclusive Read:** Master 1 reads the [glossary:Semaphore] address with `HTRANS=NONSEQ`, driving **`HEXCL = 1`**.
+   - The Exclusive Monitor records the master identity, address, and matching transfer attributes.
 2. **Intermission:** Master 1 does local math (e.g., adding 1 to the read value). 
    - **Crucially, the bus is NOT locked!** Other masters are free to use the bus during this time.
 3. **Exclusive Write:** Master 1 attempts to write the new value back to the address, again driving **`HEXCL = 1`**.
@@ -35,8 +35,10 @@ To perform a Read-Modify-Write using exclusive accesses:
    - If no other master wrote to that address during the intermission, the Monitor approves the write. The slave asserts **`HEXOKAY = 1`**, and the write succeeds. Master 1 has the semaphore!
    - If Master 2 *did* write to that address during the intermission, the Monitor rejects Master 1's write. The slave asserts **`HEXOKAY = 0`**. The write is discarded, and Master 1 must start the entire process over from step 1.
 
-![tl-ahb-exclusive](visual:tl-ahb-exclusive)
+Compare the success path with an attempt invalidated by an intervening write. In both cases the bus remains available to other masters.
+
+![Timeline comparing successful and failed AHB5 exclusive writes with HEXOKAY results](visual:tl-ahb-exclusive)
 
 ## Why is this better?
 
-Exclusive accesses use an optimistic concurrency model. 99% of the time, no other master interferes, the write succeeds, and the bus was never locked, allowing massive throughput gains. If contention does occur, the master simply retries.
+Exclusive accesses use an optimistic concurrency model. When interference is uncommon, the write succeeds without a global bus lock. If contention does occur, `HEXOKAY=0` reports that memory was not updated and software can retry. This conditional failure is separate from an `HRESP=ERROR` response.

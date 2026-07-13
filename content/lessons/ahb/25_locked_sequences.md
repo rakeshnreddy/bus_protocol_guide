@@ -9,7 +9,7 @@ order: 25
 tags: ["ahb", "advanced", "lock"]
 relatedLessons: []
 prerequisites: ["21_multi_master_systems"]
-visualIds: []
+visualIds: ["tl-ahb-locked-sequence", "sig-ahb-access-attributes"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -25,19 +25,25 @@ But what if the Arbiter grants the bus to Master 2 (DMA) immediately after the r
 
 ## The HMASTLOCK Solution
 
-To solve this, AHB provides the **`HMASTLOCK`** signal.
+To solve this, AHB provides locked-sequence signaling.
 
-When a master needs an atomic sequence:
-1. It asserts its `HBUSREQ`.
-2. Once granted, it asserts `HMASTLOCK = 1` simultaneously with `HADDR` and `HTRANS`.
-3. It performs the Read.
-4. It performs the Write.
-5. It de-asserts `HMASTLOCK = 0`.
+In an original AMBA 2 multi-master system:
+1. The master asserts its `HBUSREQx` and per-master **`HLOCKx`** request.
+2. The Arbiter grants the master and drives bus-level **`HMASTLOCK`** with the address/control phase of the locked sequence.
+3. The master performs the Read.
+4. The master performs the Write.
+5. The locked sequence ends and arbitration can move to another requester. An `IDLE` transfer after the sequence is recommended to create a clean handover opportunity.
 
 When the Arbiter sees `HMASTLOCK = 1`, it **guarantees** it will not grant the bus to any other master until the locked sequence finishes, even if a higher priority master requests the bus.
 
+Follow the CPU lock request, the arbiter's bus-level indication, and the DMA request that must wait.
+
+![Timeline showing HLOCKx, HMASTLOCK, locked read and write phases, and a blocked DMA requester](visual:tl-ahb-locked-sequence)
+
 ## The Downside
 
-Locking the bus is a brute-force approach. It absolutely destroys system latency. If a master locks the bus for 10 cycles, all other masters (and potentially critical real-time interrupts) are stalled.
+Locking serializes access through the protected path. If a master holds a locked sequence for 10 cycles, other masters needing that shared resource can be delayed for those 10 cycles.
 
-For this reason, `HMASTLOCK` is heavily discouraged in modern SoC design, having been replaced by the much more elegant **Exclusive Access** mechanism (introduced in AHB5).
+AHB5 still defines `HMASTLOCK`; Exclusive Access is an additional, more scalable conditional-atomic mechanism rather than a protocol deletion of locking. Inspect the signals below before moving to the exclusive sequence.
+
+![Interactive signal comparison distinguishing locked ownership, exclusive success, and security attribution](visual:sig-ahb-access-attributes)

@@ -9,7 +9,7 @@ order: 24
 tags: ["ahb", "advanced", "error", "hresp"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
-visualIds: []
+visualIds: ["wf-ahb-review-error"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -35,8 +35,12 @@ To handle this cleanly, the AHB specification requires `ERROR` responses to take
 2. **Cycle 2 (Error Completion):**
    - The slave keeps `HRESP = ERROR` (1).
    - The slave drives `HREADY = 1` (Ready).
-   - *Why?* Driving `HREADY` high officially terminates the failed Data Phase. The master uses this cycle to change `HTRANS` to `IDLE` for the *next* transfer, effectively canceling the pipelined request that was in flight during the error.
+   - *Why?* Driving `HREADY` high officially terminates the failed Data Phase. The extra cycle gives the master time to change `HTRANS` to `IDLE` if it chooses to cancel the pipelined request that was already broadcast.
+
+Inspect which address owns both ERROR cycles. The following address is visible in the pipeline, but it is not the transfer being reported as failed.
+
+![AHB waveform showing the first stalled ERROR cycle, completing ERROR cycle, and optional cancellation of the following address](visual:wf-ahb-review-error)
 
 ## Master Responsibility
 
-When a master receives an `ERROR` response, it is strictly required to cancel any pending sequence. If it was in the middle of a 4-beat burst and beat 2 errors out, the master must transition `HTRANS` to `IDLE` and abort the rest of the burst.
+When a master receives an `ERROR` response, it **may** cancel the remaining transfers in the burst, but the specification also permits it to continue them. If it cancels, it must drive `HTRANS` to `IDLE` during the two-cycle response. A verification environment must check the implemented master's documented choice without confusing the already-broadcast following address with the data phase that returned the error.

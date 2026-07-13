@@ -9,7 +9,7 @@ order: 33
 tags: ["ahb", "verification", "bugs"]
 relatedLessons: []
 prerequisites: ["30_ahb_assertions"]
-visualIds: []
+visualIds: ["wf-ahb-bug-wait-state", "wf-ahb-bug-decoder-glitch", "spec-rule-explorer-ahb"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -23,23 +23,27 @@ When verifying a new AHB Master or Slave, you will almost certainly encounter th
 **Why it happens:** The RTL designer wrote their state machine to advance data on every clock edge where `HTRANS != IDLE`, forgetting to AND that condition with `HREADY`.
 **The Result:** Data is permanently lost. The slave samples the wrong data when it finally raises `HREADY`.
 
+![Waveform exposing write data advancing one cycle before its stalled AHB data phase completes](visual:wf-ahb-bug-wait-state)
+
 ## 2. Decoder Glitches
 
-**The Bug:** The central address decoder is purely combinatorial. If `HADDR` transitions from `0x1F` to `0x20`, the combinatorial logic might briefly glitch, causing `HSEL_SLAVE_3` to spike high for a fraction of a nanosecond before settling on `HSEL_SLAVE_4`.
+**The Bug:** `HSEL` is a combinational decode of `HADDR`, and an integration block consumes a transient decode change asynchronously instead of using the value sampled at the legal HCLK/HREADY acceptance point.
 **Why it happens:** Unequal delay paths in the synthesis of the decoder logic.
 **The Result:** If Slave 3 uses an asynchronous latch or a poor clock-gating strategy based directly on `HSEL`, it might accidentally trigger a transaction.
 
+![Waveform separating a transient raw HSEL pulse from the slave select sampled at the accepting clock edge](visual:wf-ahb-bug-decoder-glitch)
+
 ## 3. Combinatorial HREADY Loops
 
-**The Bug:** A slave calculates its `HREADYOUT` combinatorially based on its `HREADYIN` input.
-**Why it happens:** The designer tried to save a clock cycle of latency by linking the inputs and outputs without a flip-flop in between.
-**The Result:** Because `HREADYOUT` feeds into the system multiplexer which drives `HREADYIN`, this creates a combinatorial loop across the entire SoC interconnect. The synthesis tool will throw errors, or worse, the silicon will oscillate and burn up.
+**The Bug:** System integration creates a combinational dependency from the selected global `HREADY` path back into a slave's `HREADYOUT`, which then feeds the same return mux.
+**Why it happens:** Local logic may look legal in isolation, but the assembled feedback path closes only after interconnect muxing.
+**The Result:** Timing analysis or lint reports a combinational loop, and the path has no well-defined synchronous settling contract. Whether a particular output is registered is an implementation choice; avoiding the closed loop is the requirement.
 
 ## 4. Unhandled Two-Cycle Errors
 
-**The Bug:** A master receives a two-cycle `ERROR` response in the middle of an `INCR4` burst, but just ignores it and keeps driving `SEQ` for the rest of the burst.
-**Why it happens:** The master RTL designer only tested their design against a perfectly well-behaved memory that never threw errors.
-**The Result:** The slave is bombarded with invalid `SEQ` transfers after having just rejected the sequence, leading to unpredictable system state.
+**The Bug:** The master, checker, and scoreboard disagree about the master's documented post-ERROR policy.
+**Why it happens:** The design was only tested against OKAY responses, or the verification environment incorrectly assumes that canceling the remaining burst is mandatory.
+**The Result:** Following transfers are misclassified or the scoreboard predicts the wrong side effects. Both canceling and continuing are permitted; the implementation must behave consistently with its documented choice.
 
 ## 5. Arbiter Starvation
 
@@ -53,4 +57,4 @@ When verifying a new AHB Master or Slave, you will almost certainly encounter th
 
 For a quick reference of the formal specification rules violated by the bugs above, you can explore the searchable index below. This tool extracts the "shall/must" rules and maps them directly back to these common failure patterns.
 
-![Spec Rules](visual:spec-rule-explorer-ahb)
+![Searchable AHB rule and bug-pattern explorer for timing, response, integration, and arbitration failures](visual:spec-rule-explorer-ahb)

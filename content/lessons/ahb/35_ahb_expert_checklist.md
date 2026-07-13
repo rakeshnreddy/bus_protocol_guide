@@ -9,7 +9,7 @@ order: 35
 tags: ["ahb", "review", "checklist"]
 relatedLessons: []
 prerequisites: ["34_debug_case_studies"]
-visualIds: []
+visualIds: ["sig-ahb-signoff-evidence"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: ["chk-ahb-expert"]
@@ -19,4 +19,6 @@ Before declaring an AHB master or slave "verified," run through this expert chec
 
 If you can confidently check every box below, your design is robust.
 
-[checklist:chk-ahb-expert]
+Before ticking a box, inspect the evidence board and name the artifact that proves the claim. The interactive checklist follows below the lesson.
+
+![Interactive AHB signoff evidence board linking protocol risks to assertions, scoreboards, coverage, and review artifacts](visual:sig-ahb-signoff-evidence)

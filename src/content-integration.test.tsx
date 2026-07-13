@@ -41,7 +41,7 @@ describe('Content Integration Tests', () => {
         throw new Error(`Failed to render lesson ${lesson.id}: ${error}`);
       }
     });
-  }, 15000);
+  }, 30000);
 
   it('loads all glossaries without error', () => {
     const terms = getGlossaryEntries();

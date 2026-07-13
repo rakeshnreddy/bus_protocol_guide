@@ -22,7 +22,9 @@ A **Single Transfer** (where `HBURST = SINGLE`) consists of two overlapping phas
 1. **Address Phase:** The master drives `HADDR`, `HWRITE`, `HSIZE`, and sets `HBURST` to `SINGLE`. Most importantly, it drives `HTRANS` to `NONSEQ` to indicate this is a valid, isolated transfer.
 2. **Data Phase:** The slave samples the address, fetches or stores the data, and drives `HREADY = 1` and `HRESP = OKAY`.
 
-![wf-ahb-simple-transfer](visual:wf-ahb-simple-transfer)
+Use the cycle selector below to answer two questions: which address owns the current data, and why does the second independent transfer start with `NONSEQ` again?
+
+![Back-to-back AHB SINGLE read and write transfers with overlapping address and data phases](visual:wf-ahb-simple-transfer)
 
 If a master wants to do *another* single transfer immediately after the first one, it simply drives `HTRANS` to `NONSEQ` again in the very next cycle. 
 

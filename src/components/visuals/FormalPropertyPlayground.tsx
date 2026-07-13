@@ -28,7 +28,7 @@ function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): Wav
             const endCycle = Math.min(i + 4, cycleCount - 1) + 1;
             violations.push({
               cycle: endCycle,
-              message: `HREADY must go high within 4 cycles of a NONSEQ transfer (started at cycle ${i + 1}).`
+              message: `Configured completion contract failed: HREADY did not go high within 4 cycles of the NONSEQ transfer that started at cycle ${i + 1}.`
             });
           }
         }
@@ -117,30 +117,29 @@ export default function FormalPropertyPlayground({ data }: { data: FormalPropert
   const hasViolations = currentWaveform.violations && currentWaveform.violations.length > 0;
 
   return (
-    <div className="formal-playground-container" style={{ margin: '2rem 0', padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-      <div className="formal-property-header" style={{ marginBottom: '1rem' }}>
-        <h3 className="formal-property-title" style={{ marginTop: 0 }}>{data.title}</h3>
-        <div className="formal-property-sva" style={{ backgroundColor: '#1e293b', color: '#f8fafc', padding: '1rem', borderRadius: '4px', margin: '1rem 0' }}>
+    <div className="formal-playground-container">
+      <div className="formal-property-header">
+        <h2 className="formal-property-title">{data.title}</h2>
+        <div className="formal-property-sva">
           <code>{data.property.svaString}</code>
         </div>
         <p className="formal-property-desc">{data.property.description}</p>
-        <div className="formal-property-status" style={{ padding: '0.5rem', backgroundColor: hasViolations ? '#fef2f2' : '#f0fdf4', border: `1px solid ${hasViolations ? '#fca5a5' : '#86efac'}`, borderRadius: '4px', display: 'inline-block' }}>
+        <div className={`formal-property-status ${hasViolations ? 'has-violations' : 'holds'}`}>
           <strong>Status: </strong>
           {hasViolations ? (
-            <span className="status-fail" style={{ color: '#ef4444', fontWeight: 'bold' }}>FAIL (Protocol Violation)</span>
+            <span className="status-fail">FAIL (Property Violation)</span>
           ) : (
-            <span className="status-pass" style={{ color: '#22c55e', fontWeight: 'bold' }}>PASS (Property Holds)</span>
+            <span className="status-pass">PASS (Property Holds)</span>
           )}
         </div>
-        <div className="formal-property-controls" style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="formal-property-controls">
           <button 
             className="exercise-btn" 
             onClick={handleReset}
-            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
           >
             Reset to Original
           </button>
-          <span className="hint-text" style={{ fontSize: '0.85rem', color: '#64748b' }}>
+          <span className="hint-text">
             Click cells on editable signals (<strong>{data.editableSignals.join(', ')}</strong>) to toggle their values.
           </span>
         </div>

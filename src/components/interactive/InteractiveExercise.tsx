@@ -9,7 +9,7 @@ export default function InteractiveExercise({ exercise }: { exercise: Exercise }
   if (exercise.type === 'multiple-choice') {
     return (
       <div className="exercise-container">
-        <h4 className="exercise-prompt">{exercise.prompt}</h4>
+        <h3 className="exercise-prompt">{exercise.prompt}</h3>
         <div className="exercise-options">
           {exercise.options?.map((opt, i) => {
             const isSelected = selectedOption === i;
@@ -57,7 +57,7 @@ export default function InteractiveExercise({ exercise }: { exercise: Exercise }
   // default to reveal type
   return (
     <div className="exercise-container">
-      <h4 className="exercise-prompt">{exercise.prompt}</h4>
+      <h3 className="exercise-prompt">{exercise.prompt}</h3>
       {!revealed ? (
         <button className="exercise-btn" onClick={() => setRevealed(true)}>Reveal Answer</button>
       ) : (

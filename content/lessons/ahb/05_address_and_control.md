@@ -9,13 +9,17 @@ order: 5
 tags: ["ahb", "signals", "address", "control"]
 relatedLessons: ["06_htrans_transfer_types"]
 prerequisites: ["05_transaction_structure"]
-visualIds: []
+visualIds: ["sig-ahb-address-control"]
 exerciseIds: []
 glossaryTerms: ["HADDR", "HWRITE", "HPROT"]
 checklistIds: []
 ---
 
 When an AHB master initiates a transfer, it must broadcast its intent during the **Address Phase**. The three fundamental signals that describe *where* and *how* the data is being moved are `HADDR`, `HWRITE`, and `HPROT`.
+
+Select each address-phase signal below to see who drives it, when it is sampled, and the verification failure most likely to expose a broken master.
+
+![Interactive AHB address and control signal explorer with DV watchpoints](visual:sig-ahb-address-control)
 
 ## HADDR (Address Bus)
 

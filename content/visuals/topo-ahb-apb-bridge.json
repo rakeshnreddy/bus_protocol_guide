@@ -1,33 +1,57 @@
 {
   "id": "topo-ahb-apb-bridge",
-  "title": "AHB to APB Bridge",
-  "description": "An AHB-to-APB bridge sits as a slave on the fast AHB bus, but acts as the single master for the slower APB bus. It bridges the timing gap between the two domains.",
   "type": "topology",
+  "title": "AHB-to-APB Bridge Roles and Flow",
+  "description": "The bridge is an AHB slave on its upstream side and the only APB master downstream, translating each accepted AHB transfer into an APB setup/access sequence.",
+  "regions": [
+    { "id": "ahb-side", "label": "AHB domain", "x": 30, "y": 55, "width": 250, "height": 360, "tone": "source" },
+    { "id": "translation", "label": "Protocol translation", "x": 320, "y": 55, "width": 320, "height": 360, "tone": "fabric" },
+    { "id": "apb-side", "label": "APB peripheral domain", "x": 680, "y": 55, "width": 290, "height": 360, "tone": "target" }
+  ],
   "nodes": [
-    {
-      "id": "ahb_bus",
-      "label": "AHB Bus (High Speed)",
-      "type": "master"
-    },
-    {
-      "id": "bridge",
-      "label": "AHB-to-APB Bridge",
-      "type": "arbiter"
-    },
-    {
-      "id": "apb_p1",
-      "label": "UART (APB Slave)",
-      "type": "slave"
-    },
-    {
-      "id": "apb_p2",
-      "label": "Timer (APB Slave)",
-      "type": "slave"
-    }
+    { "id": "ahb_master", "label": "AHB Master", "type": "master", "x": 155, "y": 235 },
+    { "id": "bridge", "label": "AHB Slave\nBridge\nAPB Master", "type": "bridge", "x": 480, "y": 235, "width": 175, "height": 84 },
+    { "id": "apb_p1", "label": "UART\nAPB Slave", "type": "slave", "x": 825, "y": 155 },
+    { "id": "apb_p2", "label": "Timer\nAPB Slave", "type": "slave", "x": 825, "y": 315 }
   ],
   "edges": [
-    { "source": "ahb_bus", "target": "bridge", "label": "AHB Transfer (Pipelined)", "active": true },
-    { "source": "bridge", "target": "apb_p1", "label": "APB Transfer (Unpipelined)", "active": true },
-    { "source": "bridge", "target": "apb_p2", "label": "APB Transfer" }
+    {
+      "id": "e-ahb-bridge",
+      "source": "ahb_master",
+      "target": "bridge",
+      "label": "HADDR/control, HWDATA →\nHRDATA, HREADY, HRESP ←",
+      "bidirectional": true,
+      "kind": "channel",
+      "tone": "primary",
+      "labelPosition": { "x": 300, "y": 180 }
+    },
+    {
+      "id": "e-bridge-uart",
+      "source": "bridge",
+      "target": "apb_p1",
+      "label": "PSEL/PENABLE, PADDR, PWDATA →\nPRDATA, PREADY, PSLVERR ←",
+      "bidirectional": true,
+      "kind": "channel",
+      "tone": "primary",
+      "waypoints": [{ "x": 650, "y": 155 }],
+      "labelPosition": { "x": 630, "y": 110 }
+    },
+    {
+      "id": "e-bridge-timer",
+      "source": "bridge",
+      "target": "apb_p2",
+      "label": "independent APB selection",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "waypoints": [{ "x": 650, "y": 315 }],
+      "labelPosition": { "x": 650, "y": 372 }
+    }
+  ],
+  "highlightedPath": ["ahb_master", "e-ahb-bridge", "bridge", "e-bridge-uart", "apb_p1"],
+  "annotations": [
+    { "nodeId": "bridge", "message": "The bridge terminates the AHB transfer as a slave, buffers the request, then initiates one APB transfer as the APB master." },
+    { "edgeId": "e-ahb-bridge", "message": "While APB is busy, the bridge can hold HREADY low. Completion or error is translated back onto the AHB return signals." },
+    { "edgeId": "e-bridge-uart", "message": "Only the selected APB peripheral receives PSEL. Read data, PREADY, and PSLVERR return from that peripheral to the bridge." }
   ]
 }

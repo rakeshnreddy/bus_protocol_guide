@@ -1,0 +1,26 @@
+{
+  "id": "wf-ahb-arbitration-handover",
+  "type": "waveform",
+  "title": "AHB Grant and Ownership Handover",
+  "description": "Inspect the stalled handover: HGRANT_DMA can identify the next owner, but DMA cannot own the address phase until a rising edge where HREADY is HIGH.",
+  "cycleCount": 6,
+  "signals": [
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "HBUSREQ_CPU", "type": "control", "values": ["1", "1", "0", "0", "0", "0"] },
+    { "name": "HBUSREQ_DMA", "type": "control", "values": ["0", "1", "1", "1", "1", "1"] },
+    { "name": "HGRANT_CPU", "type": "control", "values": ["1", "1", "0", "0", "0", "0"] },
+    { "name": "HGRANT_DMA", "type": "control", "values": ["0", "0", "1", "1", "1", "1"] },
+    { "name": "HREADY", "type": "control", "values": ["1", "1", "0", "1", "1", "1"] },
+    { "name": "HMASTER", "type": "sideband", "values": ["CPU", "CPU", "CPU", "CPU", "DMA", "DMA"] },
+    { "name": "HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "NONSEQ", "SEQ"] },
+    { "name": "HADDR", "type": "data", "values": ["A0", "A4", "A8", "A8", "B0", "B4"] }
+  ],
+  "annotations": [
+    { "cycle": 1, "message": "CPU owns the shared address phase because HGRANT_CPU and HREADY were both HIGH at the accepting edge." },
+    { "cycle": 2, "message": "DMA requests the bus while CPU continues its burst. A request alone never changes the active owner." },
+    { "cycle": 3, "message": "The arbiter names DMA as the next owner, but HREADY is LOW. CPU remains HMASTER and must hold its active address/control stable." },
+    { "cycle": 4, "message": "HREADY returns HIGH. CPU's stalled transfer completes and the DMA grant is accepted at this boundary." },
+    { "cycle": 5, "message": "DMA now owns the address phase and starts its independent transfer with HTRANS=NONSEQ." },
+    { "cycle": 6, "message": "DMA continues with SEQ. Verification must also delay write-data ownership by one accepted address phase." }
+  ]
+}

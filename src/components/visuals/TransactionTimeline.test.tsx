@@ -42,4 +42,41 @@ describe('TransactionTimeline', () => {
     // Description should now be visible
     expect(screen.getByText('Send address')).toBeInTheDocument();
   });
+
+  it('renders and explains overlapping transaction lanes', () => {
+    const laneData: TransactionTimelineData = {
+      id: 'multi-lane',
+      type: 'timeline',
+      title: 'Out-of-order completion',
+      transactions: [
+        {
+          id: 'T1',
+          label: 'Burst A',
+          phases: [
+            { id: 'T1-response', name: 'Response', startCycle: 4, endCycle: 5, description: 'Burst A responds last.' },
+          ],
+        },
+        {
+          id: 'T2',
+          label: 'Burst B',
+          phases: [
+            { id: 'T2-response', name: 'Response', startCycle: 3, endCycle: 4, description: 'Burst B responds first.' },
+          ],
+        },
+      ],
+    };
+
+    render(<TransactionTimeline data={laneData} />);
+    const burstBResponse = screen.getByRole('button', { name: /Burst B: Response/ });
+    expect(burstBResponse).toBeInTheDocument();
+    expect(burstBResponse).not.toHaveTextContent(/1 cycle/);
+
+    fireEvent.focus(burstBResponse);
+    expect(screen.getByText('Burst B responds first.')).toBeInTheDocument();
+  });
+
+  it('shows a useful empty state for malformed timeline data', () => {
+    render(<TransactionTimeline data={{ id: 'empty', type: 'timeline', title: 'Empty' }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('No timeline phases are available');
+  });
 });

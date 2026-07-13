@@ -14,7 +14,7 @@ tags:
   - review
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["wf-axi-throughput", "wf-axi-debug-wlast", "wf-axi-deadlock"]
 glossaryTerms: []
 checklistIds: []
 ---
@@ -26,14 +26,14 @@ Being able to read an AXI waveform instantly is the mark of a senior DV engineer
 ## The Perfect Pipelined Read
 Notice how the Address channel (`AR`) runs continuously ahead of the Data channel (`R`). The master queues up multiple requests, and the slave streams the data back. This is AXI at peak throughput.
 
-<img src="visual:wf-axi-throughput" alt="High throughput AXI traffic" />
+![High-throughput AXI traffic](visual:wf-axi-throughput)
 
 ## The WLAST Violation
 This is a fatal protocol error. The master asserts `WLAST` early, breaking the interconnect's tracking logic.
 
-<img src="visual:wf-axi-debug-wlast" alt="Early WLAST violation" />
+![Early WLAST violation](visual:wf-axi-debug-wlast)
 
 ## The Circular Deadlock
 If you see the channels frozen with `VALID` high and `READY` low on both sides of a Master-Slave connection, look for combinatorial loops. 
 
-<img src="visual:wf-axi-deadlock" alt="Circular deadlock" />
+![Circular backpressure deadlock](visual:wf-axi-deadlock)

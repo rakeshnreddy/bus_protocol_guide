@@ -1,0 +1,51 @@
+{
+  "id": "topo-ahb-terminology-map",
+  "type": "topology",
+  "title": "AHB Transaction Vocabulary Map",
+  "description": "Connect system roles to the burst-beat-transfer hierarchy, then follow one transfer through its pipelined address and data phases.",
+  "regions": [
+    { "id": "roles", "label": "System roles", "x": 30, "y": 35, "width": 940, "height": 160, "tone": "source" },
+    { "id": "structure", "label": "Transaction structure", "x": 30, "y": 225, "width": 940, "height": 170, "tone": "concept" },
+    { "id": "timing", "label": "Pipelined completion", "x": 30, "y": 425, "width": 940, "height": 260, "tone": "fabric" }
+  ],
+  "nodes": [
+    { "id": "master", "label": "Master", "type": "master", "x": 150, "y": 120 },
+    { "id": "interconnect", "label": "Interconnect", "type": "bridge", "x": 500, "y": 120 },
+    { "id": "slave", "label": "Slave", "type": "slave", "x": 850, "y": 120 },
+    { "id": "burst", "label": "Burst", "type": "concept", "x": 160, "y": 310 },
+    { "id": "beat", "label": "Beat", "type": "concept", "x": 430, "y": 310 },
+    { "id": "transfer", "label": "Transfer", "type": "concept", "x": 700, "y": 310 },
+    { "id": "address", "label": "Address Phase", "type": "phase", "x": 300, "y": 525 },
+    { "id": "data", "label": "Data Phase", "type": "phase", "x": 610, "y": 525 },
+    { "id": "wait", "label": "Wait State", "type": "state", "x": 610, "y": 625 },
+    { "id": "response", "label": "Response", "type": "state", "x": 860, "y": 525 }
+  ],
+  "edges": [
+    { "id": "e-master-interconnect", "source": "master", "target": "interconnect", "label": "drives request", "kind": "request", "tone": "primary" },
+    { "id": "e-interconnect-slave", "source": "interconnect", "target": "slave", "label": "selects and routes\nreturn path", "bidirectional": true, "kind": "channel", "tone": "primary" },
+    { "id": "e-burst-beat", "source": "burst", "target": "beat", "label": "contains beats", "kind": "relationship", "tone": "secondary", "labelPosition": { "x": 295, "y": 265 } },
+    { "id": "e-beat-transfer", "source": "beat", "target": "transfer", "label": "each beat is one transfer", "kind": "relationship", "tone": "secondary", "labelPosition": { "x": 565, "y": 265 } },
+    {
+      "id": "e-transfer-address",
+      "source": "transfer",
+      "target": "address",
+      "label": "begins with",
+      "kind": "relationship",
+      "tone": "primary",
+      "waypoints": [{ "x": 700, "y": 405 }, { "x": 300, "y": 405 }],
+      "labelPosition": { "x": 470, "y": 405 }
+    },
+    { "id": "e-transfer-data", "source": "transfer", "target": "data", "label": "completes later in", "kind": "relationship", "tone": "primary", "labelPosition": { "x": 690, "y": 435 } },
+    { "id": "e-data-wait", "source": "data", "target": "wait", "label": "HREADY=0 extends", "kind": "relationship", "tone": "neutral", "labelPosition": { "x": 740, "y": 570 } },
+    { "id": "e-slave-response", "source": "slave", "target": "response", "label": "returns HRESP", "kind": "response", "tone": "secondary" },
+    { "id": "e-response-data", "source": "response", "target": "data", "label": "qualifies completion", "kind": "response", "tone": "secondary", "labelPosition": { "x": 735, "y": 475 } }
+  ],
+  "highlightedPath": ["master", "e-master-interconnect", "interconnect", "e-interconnect-slave", "slave", "e-slave-response", "response", "e-response-data", "data", "e-data-wait", "wait"],
+  "annotations": [
+    { "nodeId": "transfer", "message": "One AHB transfer consists of an accepted address phase and its corresponding data phase, including readiness and response." },
+    { "nodeId": "beat", "message": "A beat is one transfer within a burst. The first accepted beat is NONSEQ; continuing beats use SEQ." },
+    { "nodeId": "burst", "message": "A burst groups related beats with a stable transfer size, direction, and burst definition." },
+    { "nodeId": "wait", "message": "A wait state extends the current data phase and prevents the next address phase from being accepted." },
+    { "edgeId": "e-transfer-data", "message": "AHB pipelines the phases, so this data phase can overlap the address phase of the next transfer." }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "id": "sig-ahb-senior-recap",
+  "type": "signal-explorer",
+  "title": "AHB Senior DV Recall Map",
+  "description": "Open an interview anchor to rehearse the short answer, the deeper protocol reason, and the verification evidence a senior engineer should add.",
+  "signals": [
+    {
+      "name": "Who owns this phase?", "expansion": "Address now, data from an earlier accepted address", "role": "control", "group": "Interview anchors",
+      "description": "AHB pipelines address/control ahead of data. The data and response visible now belong to the previously accepted address phase, not necessarily the address currently on HADDR.",
+      "direction": "Address owner → later data/response owner", "sampled": "Accepted edges where HREADY is HIGH",
+      "values": ["Address phase N", "Data phase N-1"],
+      "typicalUse": "Explain scoreboard phase queues",
+      "verificationNote": "Draw two adjacent cycles and label both owners before diagnosing any data mismatch."
+    },
+    {
+      "name": "What freezes on a stall?", "expansion": "Pending valid transfer and its data owner", "role": "control", "group": "Interview anchors",
+      "description": "A valid pending address/control phase remains stable while HREADY is LOW, and stalled write data remains stable for its data phase.",
+      "direction": "Master outputs", "sampled": "Each low-HREADY edge",
+      "values": ["Hold valid address/control", "Hold stalled HWDATA"],
+      "typicalUse": "Spot early-advance RTL bugs",
+      "verificationNote": "Mention IDLE, BUSY, and ERROR exceptions instead of claiming every signal is unconditionally frozen."
+    },
+    {
+      "name": "Why two ERROR cycles?", "expansion": "Stall the already-pipelined next address, then complete", "role": "control", "group": "Interview anchors",
+      "description": "ERROR1 combines HRESP=1 with HREADY=0; ERROR2 keeps HRESP=1 and raises HREADY to finish the failed data phase.",
+      "direction": "Selected slave → master", "sampled": "Two consecutive response cycles",
+      "values": ["ERROR1: not complete", "ERROR2: complete"],
+      "typicalUse": "Explain optional cancellation of the following transfer",
+      "verificationNote": "Do not say the master must always abort the remainder; the specification permits cancellation or continuation."
+    },
+    {
+      "name": "How do burst addresses work?", "expansion": "HSIZE increment, HBURST count, wrap span, 1 KB rule", "role": "control", "group": "Interview anchors",
+      "description": "The byte increment is 2^HSIZE. Fixed bursts contain 4, 8, or 16 beats; wrapping occurs within beats × bytes, and no incrementing burst crosses 1 KB.",
+      "direction": "Master address generator", "sampled": "Each accepted SEQ beat",
+      "values": ["Increment", "Alignment", "Beat count", "Wrap boundary", "1 KB boundary"],
+      "typicalUse": "Do address math aloud",
+      "verificationNote": "Calculate an example rather than reciting encodings; it reveals whether phase acceptance and BUSY handling are understood."
+    },
+    {
+      "name": "Which AHB generation?", "expansion": "Shared AHB, single-master AHB-Lite, optional AHB5", "role": "sideband", "group": "Senior context",
+      "description": "Verification expectations change with the interface: original AHB includes shared-bus arbitration and legacy responses; AHB-Lite removes them; AHB5 adds declared optional capabilities.",
+      "direction": "Design configuration → verification architecture", "sampled": "Environment build",
+      "values": ["Original arbitration", "AHB-Lite OKAY/ERROR", "AHB5 security/exclusives/options"],
+      "typicalUse": "Avoid applying the wrong checker set",
+      "verificationNote": "Ask for the exact specification issue and configured properties before promising coverage or assertions."
+    },
+    {
+      "name": "What proves verification?", "expansion": "Assertions + scoreboard + coverage + reviewable failures", "role": "sideband", "group": "Senior context",
+      "description": "Protocol assertions catch cycle-level violations, scoreboards catch end-to-end corruption, coverage shows planned scenarios occurred, and debug artifacts explain failures and waivers.",
+      "direction": "Verification environment → signoff decision", "sampled": "Across stable regressions and targeted closure",
+      "values": ["Checker pass", "Data match", "Coverage closure", "No unexplained waiver"],
+      "typicalUse": "Answer 'how did you know it was done?'",
+      "verificationNote": "A senior answer connects each risk to independent evidence instead of quoting one coverage percentage."
+    }
+  ]
+}

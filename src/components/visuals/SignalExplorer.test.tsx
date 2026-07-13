@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import SignalExplorer from './SignalExplorer';
 import type { SignalExplorerData } from '../../types/visuals';
@@ -31,10 +32,21 @@ describe('SignalExplorer', () => {
     // Description shouldn't be visible initially
     expect(screen.queryByText('Asserted when data is valid.')).not.toBeInTheDocument();
     
-    // Click the signal item header
-    fireEvent.click(screen.getByText('VALID'));
+    fireEvent.click(screen.getByRole('button', { name: /VALID/ }));
     
     // Description should now be visible
     expect(screen.getByText('Asserted when data is valid.')).toBeInTheDocument();
+  });
+
+  it('uses a keyboard-accessible native control with a comfortable touch target', async () => {
+    const user = userEvent.setup();
+    render(<SignalExplorer data={mockData} />);
+    const button = screen.getByRole('button', { name: /VALID/ });
+
+    button.focus();
+    await user.keyboard('{Enter}');
+
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(getComputedStyle(button).minHeight).toBe('52px');
   });
 });

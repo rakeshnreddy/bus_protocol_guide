@@ -1,0 +1,41 @@
+{
+  "id": "tl-ahb-multi-master-contention",
+  "type": "timeline",
+  "title": "Fixed Priority and Round-Robin Contention",
+  "description": "The protocol defines request, grant, and legal handover; the SoC chooses the arbitration policy. Compare latency and fairness for the same sustained CPU and DMA requests.",
+  "labels": ["Implementation-defined policy", "Service", "Waiting", "Fairness"],
+  "transactions": [
+    {
+      "id": "fixed-cpu",
+      "label": "Fixed: CPU",
+      "phases": [
+        { "id": "fixed-cpu-service", "name": "CPU service", "startCycle": 1, "endCycle": 5, "description": "With CPU configured above DMA, a continuously requesting CPU can retain service across successive arbitration decisions." }
+      ]
+    },
+    {
+      "id": "fixed-dma",
+      "label": "Fixed: DMA",
+      "phases": [
+        { "id": "fixed-dma-wait", "name": "Waiting", "startCycle": 1, "endCycle": 5, "description": "DMA remains eligible but waits while the higher-priority CPU keeps requesting. A real design needs a starvation policy or bounded-latency requirement." },
+        { "id": "fixed-dma-service", "name": "DMA service", "startCycle": 5, "endCycle": 7, "description": "DMA is granted only after CPU releases its request in this example." }
+      ]
+    },
+    {
+      "id": "rr-cpu",
+      "label": "Round robin: CPU",
+      "phases": [
+        { "id": "rr-cpu-first", "name": "CPU service", "startCycle": 1, "endCycle": 3, "description": "CPU wins the first arbitration decision." },
+        { "id": "rr-cpu-wait", "name": "Waiting", "startCycle": 3, "endCycle": 5, "description": "CPU remains requesting while the rotating policy gives DMA an opportunity." },
+        { "id": "rr-cpu-second", "name": "CPU service", "startCycle": 5, "endCycle": 7, "description": "CPU returns after DMA's service window. Exact quantum and eligibility rules are implementation-defined." }
+      ]
+    },
+    {
+      "id": "rr-dma",
+      "label": "Round robin: DMA",
+      "phases": [
+        { "id": "rr-dma-wait", "name": "Waiting", "startCycle": 1, "endCycle": 3, "description": "DMA waits for the current owner's legal handover boundary." },
+        { "id": "rr-dma-service", "name": "DMA service", "startCycle": 3, "endCycle": 5, "description": "The rotating policy services DMA even though CPU is still requesting, preventing indefinite starvation in this example." }
+      ]
+    }
+  ]
+}

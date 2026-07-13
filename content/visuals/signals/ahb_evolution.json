@@ -1,0 +1,61 @@
+{
+  "id": "sig-ahb-evolution",
+  "type": "signal-explorer",
+  "title": "From Original AHB to AHB-Lite and AHB5",
+  "description": "Open each topic to separate actual interface changes from features that remained or became optional AHB5 properties.",
+  "signals": [
+    {
+      "name": "Interface topology", "expansion": "Shared bus versus single-master interface", "role": "control", "group": "What changed",
+      "description": "Original AMBA 2 AHB defines a shared bus with multiple masters and centralized arbitration. AHB-Lite and AHB5 define one master per interface; a system can still connect many such interfaces through an interconnect.",
+      "direction": "System architecture", "sampled": "Ownership changes only at legal accepted-transfer boundaries",
+      "values": ["AHB: shared multi-master", "AHB-Lite/AHB5: one master per interface"],
+      "verificationNote": "Choose assertions from the actual interface revision. Do not expect HBUSREQ/HGRANT on an AHB-Lite or AHB5 master interface."
+    },
+    {
+      "name": "Response encoding", "expansion": "Legacy four-state to OKAY/ERROR", "role": "control", "group": "What changed",
+      "description": "Original AHB uses a two-bit response encoding for OKAY, ERROR, RETRY, and SPLIT. AHB-Lite and AHB5 retain only OKAY and ERROR on a one-bit HRESP.",
+      "direction": "Selected slave → master", "sampled": "With HREADY HIGH for completion; ERROR uses its required two-cycle sequence",
+      "values": ["AHB: OKAY/ERROR/RETRY/SPLIT", "AHB-Lite/AHB5: OKAY/ERROR"],
+      "verificationNote": "Never decode legacy RETRY or SPLIT values on a one-bit AHB-Lite/AHB5 HRESP."
+    },
+    {
+      "name": "Secure_Transfers", "expansion": "Optional AHB5 HNONSEC property", "role": "sideband", "group": "AHB5 additions",
+      "description": "When the AHB5 Secure_Transfers property is True, HNONSEC is added and identifies the accepted address phase as Secure or Non-secure.",
+      "direction": "Master → decoder, interconnect, and selected target", "sampled": "With HADDR", "values": ["0 Secure", "1 Non-secure"],
+      "verificationNote": "Check adapters between interfaces that do and do not declare Secure_Transfers; never invent a default security state."
+    },
+    {
+      "name": "Exclusive_Transfers", "expansion": "Optional AHB5 HEXCL/HMASTER/HEXOKAY property", "role": "sideband", "group": "AHB5 additions",
+      "description": "When Exclusive_Transfers is True, AHB5 adds exclusive request, identity, and success signaling so a monitor can accept or reject a conditional write without locking the whole bus.",
+      "direction": "HEXCL/HMASTER forward; HEXOKAY returns", "sampled": "Exclusive address phase uses NONSEQ; result is sampled on completion",
+      "values": ["HEXCL request", "HMASTER identity", "HEXOKAY result"],
+      "verificationNote": "Matching read/write attributes include address, size, protection, burst, master identity, and HNONSEC when applicable."
+    },
+    {
+      "name": "Extended memory types", "expansion": "Optional AHB5 HPROT[6:4] property", "role": "sideband", "group": "AHB5 additions",
+      "description": "AHB5 can extend HPROT with memory-type information when Extended_Memory_Types is declared.",
+      "direction": "Master → selected target", "sampled": "With the accepted address phase",
+      "values": ["Property absent: base HPROT[3:0]", "Property present: HPROT[6:4] added"],
+      "verificationNote": "Gate checks by the declared interface property; optional signals must not be assumed universally present."
+    },
+    {
+      "name": "HMASTLOCK", "expansion": "Locked transfers remain defined", "role": "control", "group": "What did not disappear",
+      "description": "AHB5 still defines HMASTLOCK. Exclusive transfers are an additional conditional-atomic mechanism, not a deletion or automatic replacement of locked sequences.",
+      "direction": "Address-phase indication to the selected target/interconnect", "sampled": "With address and control", "values": ["0 normal", "1 locked sequence"],
+      "verificationNote": "Verify locking and exclusives independently; HEXCL does not imply HMASTLOCK."
+    },
+    {
+      "name": "HMASTER", "expansion": "The purpose changed; it was not simply removed", "role": "sideband", "group": "What did not disappear",
+      "description": "Original AHB uses arbiter-generated HMASTER for shared-bus identity and SPLIT handling. AHB5 supports HMASTER when Exclusive_Transfers is True so master threads and interconnect ports can form a unique monitor identity.",
+      "direction": "Original arbiter or AHB5 master/interconnect → slave/monitor", "sampled": "With address-phase controls",
+      "values": ["Original: shared-bus master number", "AHB5 exclusives: implementation-defined-width identity"],
+      "verificationNote": "Track the source and width of HMASTER for the implemented revision; never assume the original fixed four-bit role."
+    },
+    {
+      "name": "1 KB boundary", "expansion": "Burst restriction exists in both generations", "role": "control", "group": "What did not disappear",
+      "description": "Original AMBA 2 AHB and AHB-Lite/AHB5 all require incrementing bursts not to cross a 1 KB address boundary so a burst cannot cross the minimum decode region.",
+      "direction": "Master address-generation rule", "sampled": "Checked across every generated burst address", "values": ["Same 1 KB restriction"],
+      "verificationNote": "A version-comparison test must not mark 1 KB crossing as legal for original AHB."
+    }
+  ]
+}

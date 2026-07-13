@@ -9,7 +9,7 @@ order: 1
 tags: ["ahb", "basics", "amba"]
 relatedLessons: ["02_ahb_variants", "03_ahb_terminology"]
 prerequisites: ["01_bus_mental_models"]
-visualIds: []
+visualIds: ["tp-basic-ahb"]
 exerciseIds: []
 glossaryTerms: ["AHB", "AMBA", "APB", "AXI"]
 checklistIds: []
@@ -31,6 +31,10 @@ The AMBA family consists of several protocols, each optimized for a specific use
 1. **[glossary:APB] (Advanced Peripheral Bus):** APB is the "slow" bus. It is simple, unpipelined, and used to connect low-bandwidth peripherals like UARTs, timers, and simple control registers. It uses minimal power and minimal logic area.
 2. **AHB (Advanced High-performance Bus):** AHB sits in the middle. It is pipelined and supports bursts, making it much faster than APB. It is typically used for the "main" system bus in a microcontroller (connecting the CPU to SRAM and Flash).
 3. **[glossary:AXI] (Advanced eXtensible Interface):** AXI is the "heavyweight" bus. It features separate, independent channels for reads, writes, addresses, and responses. It supports multiple outstanding transactions and out-of-order completion. AXI is used in high-performance SoCs (connecting multi-core application processors to DDR memory controllers).
+
+Use the topology below to trace one selected SRAM access. Focus on which information leaves the master, how `HADDR` selects a slave, and which signals return to complete the transfer.
+
+![AHB master, interconnect, decoder, and selected slave data paths](visual:tp-basic-ahb)
 
 **Key Takeaway:** If you are building a simple, low-power microcontroller (like an IoT edge node), AHB is your primary system bus. If you are building a massive smartphone SoC, AXI is the backbone, and AHB is used for smaller subsystems.
 

@@ -1,54 +1,135 @@
 {
   "id": "topo-ahb-multi-master",
-  "title": "AHB Multi-Master System",
-  "description": "An AHB system featuring two masters, an arbiter, a decoder, and three slaves. The highlighted path shows Master 1 successfully being granted the bus to access Slave 2.",
   "type": "topology",
+  "title": "AHB Multi-Master Ownership and Selection",
+  "description": "Separate arbitration from transfer routing: the arbiter chooses an owner, the interconnect multiplexes that master's signals, and the decoder selects one target.",
+  "regions": [
+    { "id": "masters", "label": "Requesting masters", "x": 25, "y": 40, "width": 225, "height": 570, "tone": "source" },
+    { "id": "fabric", "label": "Shared AHB fabric", "x": 285, "y": 40, "width": 430, "height": 570, "tone": "fabric" },
+    { "id": "slaves", "label": "Address targets", "x": 750, "y": 40, "width": 230, "height": 570, "tone": "target" }
+  ],
   "nodes": [
-    {
-      "id": "m1",
-      "label": "Master 1 (CPU)",
-      "type": "master"
-    },
-    {
-      "id": "m2",
-      "label": "Master 2 (DMA)",
-      "type": "master"
-    },
-    {
-      "id": "arb",
-      "label": "Arbiter",
-      "type": "arbiter"
-    },
-    {
-      "id": "dec",
-      "label": "Address Decoder",
-      "type": "arbiter"
-    },
-    {
-      "id": "s1",
-      "label": "Slave 1 (ROM)",
-      "type": "slave"
-    },
-    {
-      "id": "s2",
-      "label": "Slave 2 (SRAM)",
-      "type": "slave"
-    },
-    {
-      "id": "s3",
-      "label": "Slave 3 (Bridge)",
-      "type": "slave"
-    }
+    { "id": "m1", "label": "Master 1\nCPU", "type": "master", "x": 135, "y": 165 },
+    { "id": "m2", "label": "Master 2\nDMA", "type": "master", "x": 135, "y": 475 },
+    { "id": "arb", "label": "Arbiter\nGrant + HMASTER", "type": "arbiter", "x": 410, "y": 165, "width": 172 },
+    { "id": "mux", "label": "Master Mux /\nAHB Interconnect", "type": "arbiter", "x": 410, "y": 475, "width": 175 },
+    { "id": "dec", "label": "Address Decoder\n+ Return Mux", "type": "arbiter", "x": 625, "y": 475, "width": 170 },
+    { "id": "s1", "label": "Boot ROM", "type": "slave", "x": 865, "y": 130 },
+    { "id": "s2", "label": "Internal SRAM", "type": "slave", "x": 865, "y": 270 },
+    { "id": "s3", "label": "Peripheral Bridge", "type": "bridge", "x": 865, "y": 410 },
+    { "id": "default", "label": "Default Slave\nUnmapped address", "type": "slave", "x": 865, "y": 550, "width": 165 }
   ],
   "edges": [
-    { "source": "m1", "target": "arb", "label": "HBUSREQ1", "active": true },
-    { "source": "arb", "target": "m1", "label": "HGRANT1", "active": true },
-    { "source": "m2", "target": "arb", "label": "HBUSREQ2" },
-    { "source": "arb", "target": "m2", "label": "HGRANT2" },
-    { "source": "m1", "target": "dec", "label": "HADDR (M1)", "active": true },
-    { "source": "m2", "target": "dec", "label": "HADDR (M2)" },
-    { "source": "dec", "target": "s1", "label": "HSEL1" },
-    { "source": "dec", "target": "s2", "label": "HSEL2", "active": true },
-    { "source": "dec", "target": "s3", "label": "HSEL3" }
+    {
+      "id": "e-m1-arb",
+      "source": "m1",
+      "target": "arb",
+      "label": "HBUSREQ1 →\nHGRANT1 ←",
+      "bidirectional": true,
+      "kind": "arbitration",
+      "tone": "primary",
+      "labelPosition": { "x": 270, "y": 125 }
+    },
+    {
+      "id": "e-m2-arb",
+      "source": "m2",
+      "target": "arb",
+      "label": "HBUSREQ2 →\nHGRANT2 ←",
+      "bidirectional": true,
+      "kind": "arbitration",
+      "tone": "neutral",
+      "waypoints": [{ "x": 270, "y": 475 }, { "x": 270, "y": 205 }],
+      "labelPosition": { "x": 250, "y": 295 }
+    },
+    {
+      "id": "e-arb-mux",
+      "source": "arb",
+      "target": "mux",
+      "label": "ownership select\nHMASTER",
+      "kind": "selection",
+      "tone": "primary",
+      "labelPosition": { "x": 500, "y": 320 }
+    },
+    {
+      "id": "e-m1-mux",
+      "source": "m1",
+      "target": "mux",
+      "label": "address/control/data",
+      "kind": "data",
+      "tone": "primary",
+      "waypoints": [{ "x": 315, "y": 165 }, { "x": 315, "y": 475 }],
+      "labelPosition": { "x": 360, "y": 400 }
+    },
+    {
+      "id": "e-m2-mux",
+      "source": "m2",
+      "target": "mux",
+      "label": "address/control/data",
+      "kind": "data",
+      "tone": "neutral",
+      "labelPosition": { "x": 275, "y": 540 }
+    },
+    {
+      "id": "e-mux-dec",
+      "source": "mux",
+      "target": "dec",
+      "label": "selected transfer\nreturn path",
+      "bidirectional": true,
+      "kind": "channel",
+      "tone": "primary",
+      "labelPosition": { "x": 518, "y": 405 }
+    },
+    {
+      "id": "e-dec-s1",
+      "source": "dec",
+      "target": "s1",
+      "label": "HSEL_ROM",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "waypoints": [{ "x": 720, "y": 475 }, { "x": 720, "y": 130 }],
+      "labelPosition": { "x": 720, "y": 205 }
+    },
+    {
+      "id": "e-dec-s2",
+      "source": "dec",
+      "target": "s2",
+      "label": "HSEL_SRAM",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "primary",
+      "waypoints": [{ "x": 735, "y": 475 }, { "x": 735, "y": 270 }],
+      "labelPosition": { "x": 735, "y": 330 }
+    },
+    {
+      "id": "e-dec-s3",
+      "source": "dec",
+      "target": "s3",
+      "label": "HSEL_PERIPH",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "waypoints": [{ "x": 750, "y": 475 }, { "x": 750, "y": 410 }],
+      "labelPosition": { "x": 690, "y": 365 }
+    },
+    {
+      "id": "e-dec-default",
+      "source": "dec",
+      "target": "default",
+      "label": "no address match\nERROR response",
+      "bidirectional": true,
+      "kind": "selection",
+      "tone": "neutral",
+      "labelPosition": { "x": 695, "y": 565 }
+    }
+  ],
+  "highlightedPath": ["m1", "e-m1-arb", "arb", "e-arb-mux", "e-m1-mux", "mux", "e-mux-dec", "dec", "e-dec-s2", "s2"],
+  "annotations": [
+    { "nodeId": "arb", "message": "The arbiter observes HBUSREQx, drives HGRANTx and HMASTER, and changes ownership only at a legal transfer boundary." },
+    { "nodeId": "mux", "message": "Only the granted master's address, control, and write-data path reaches the shared bus. Other masters must not drive the active transfer." },
+    { "nodeId": "dec", "message": "The decoder maps the active HADDR to one HSEL. The return mux forwards only the selected slave's HRDATA, HREADY, and HRESP." },
+    { "edgeId": "e-m1-arb", "message": "Request travels to the arbiter and grant returns to Master 1. Combining them on one routed connection prevents two arrows from occupying the same geometry." },
+    { "edgeId": "e-dec-s2", "message": "The highlighted transaction selects internal SRAM. The boot ROM, peripheral bridge, and default slave remain inactive." },
+    { "nodeId": "default", "message": "The default slave returns ERROR for valid NONSEQ/SEQ transfers to unmapped addresses. IDLE or BUSY at an unmapped address receives a zero-wait OKAY response." }
   ]
 }

@@ -9,7 +9,7 @@ order: 18
 tags: ["ahb", "timing", "performance"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
-visualIds: ["wf-ahb-pipelined-sequence", "wf-ahb-wait-state-heavy"]
+visualIds: ["wf-ahb-pipelined-sequence", "wf-ahb-wait-state-heavy", "tl-ahb-performance-comparison"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -24,13 +24,17 @@ When designing or verifying an AHB system, it's not enough that the protocol wor
 - Latency increases linearly with every wait state (`HREADY=0`) inserted by the slave.
 - A slow slave (e.g., an off-chip Flash memory controller) might have a latency of 10-20 clock cycles for a single read.
 
+The stalled burst below shows why a wait state affects more than one beat: delaying the current data phase also freezes the address phase queued behind it.
+
+![Wait-state-heavy AHB burst illustrating added latency and reduced completion rate](visual:wf-ahb-wait-state-heavy)
+
 ## Throughput
 
 **Throughput** is the total volume of data moved over a period of time.
 - Because AHB is pipelined, while the *latency* of a single transfer is 2 cycles, the *throughput* of a continuous burst with zero wait states is **1 transfer per cycle**. 
 - In our `wf-ahb-pipelined-sequence` example, we achieve 100% throughput utilization of the data bus during the burst.
 
-![wf-ahb-pipelined-sequence](visual:wf-ahb-pipelined-sequence)
+![Zero-wait AHB pipeline completing one data beat per cycle after initial fill](visual:wf-ahb-pipelined-sequence)
 
 ## The Impact of Bursts on Slow Slaves
 
@@ -46,3 +50,7 @@ If a master issues an `INCR4` burst:
 3. Total time = 20 + 1 + 1 + 1 = 23 cycles!
 
 By declaring its intent upfront via `HBURST`, the master gave the slave the information it needed to optimize its internal fetches, massively increasing throughput despite the high initial latency.
+
+Compare the three completion lanes below. Focus a beat to distinguish first-completion latency from the spacing between later completions.
+
+![Interactive timing comparison of zero-wait bursts, stalled bursts, and independent slow SINGLE transfers](visual:tl-ahb-performance-comparison)

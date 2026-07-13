@@ -9,7 +9,7 @@ order: 12
 tags: ["ahb", "semantics", "burst"]
 relatedLessons: []
 prerequisites: ["07_burst_and_size", "11_htrans_semantics"]
-visualIds: ["wf-ahb-incr4-burst"]
+visualIds: ["wf-ahb-incr4-burst", "sig-ahb-burst-size"]
 exerciseIds: []
 glossaryTerms: ["HBURST", "INCR", "Beat"]
 checklistIds: []
@@ -23,7 +23,9 @@ In an incrementing burst, the master specifies the start address (`HADDR`) on th
 
 Let's look at an `INCR4` (4-beat incrementing) burst where `HSIZE` is Word (4 bytes), starting at address `0x20`.
 
-![wf-ahb-incr4-burst](visual:wf-ahb-incr4-burst)
+Select each cycle to follow both the current address phase and the data beat belonging to the previous address.
+
+![INCR4 word burst showing NONSEQ, SEQ address increments, and one-cycle-later data ownership](visual:wf-ahb-incr4-burst)
 
 ### Cycle-by-Cycle Breakdown
 
@@ -37,6 +39,10 @@ Let's look at an `INCR4` (4-beat incrementing) burst where `HSIZE` is Word (4 by
 The `HBURST` signal has a value called `INCR` (as opposed to `INCR4`, `INCR8`, etc.). This indicates a burst of *undefined length*.
 - The master can keep issuing `SEQ` beats indefinitely.
 - The burst is only terminated when the master drops `HTRANS` to `NONSEQ` (starting a new burst) or `IDLE` (stopping altogether).
+
+Expand `INCR` and the fixed-length burst entries below to compare termination rules, beat counts, and the address checks a monitor must maintain.
+
+![Interactive comparison of undefined and fixed-length AHB burst progression rules](visual:sig-ahb-burst-size)
 
 ## Bug Gallery: Incorrect Address Calculation
 

@@ -1,32 +1,36 @@
 {
   "id": "tl-ahb-exclusive",
-  "title": "AHB Exclusive Access Sequence",
-  "description": "A successful exclusive read-modify-write sequence to implement a semaphore. Master 1 acquires the lock successfully.",
   "type": "timeline",
-  "phases": [
+  "title": "AHB5 Exclusive Success and Failure",
+  "description": "Compare two conditional read-modify-write attempts: the bus remains available in both, but only an unchanged monitored location permits the exclusive write to update memory.",
+  "labels": ["Exclusive_Transfers property", "Monitor identity", "Conditional write", "No bus lock"],
+  "transactions": [
     {
-      "id": "p1",
-      "name": "Exclusive Read",
-      "durationCycles": 2,
-      "description": "Master 1 reads the semaphore with HEXCL=1. The exclusive monitor records Master 1's ID and the address."
+      "id": "exclusive-success",
+      "label": "Successful attempt",
+      "phases": [
+        { "id": "success-read", "name": "Exclusive read", "startCycle": 1, "endCycle": 2, "description": "HEXCL=1 and HTRANS=NONSEQ. The monitor records the address, attributes, and unique HMASTER identity." },
+        { "id": "success-open-bus", "name": "Bus remains free", "startCycle": 2, "endCycle": 4, "description": "The initiating master performs local work; no global ownership lock is held." },
+        { "id": "success-write", "name": "Exclusive write", "startCycle": 4, "endCycle": 5, "description": "The matching exclusive write reaches a location that has remained unchanged." },
+        { "id": "success-result", "name": "HEXOKAY=1", "startCycle": 5, "endCycle": 6, "description": "The monitor reports success and the write updates memory." }
+      ]
     },
     {
-      "id": "p2",
-      "name": "Intermission",
-      "durationCycles": 4,
-      "description": "The bus is free! Other masters can perform normal transfers, but the exclusive monitor watches for any writes to the semaphore's address."
+      "id": "exclusive-failure",
+      "label": "Failed attempt",
+      "phases": [
+        { "id": "failure-read", "name": "Exclusive read", "startCycle": 1, "endCycle": 2, "description": "A second attempt establishes its own monitor state." },
+        { "id": "failure-open-bus", "name": "Bus remains free", "startCycle": 2, "endCycle": 4, "description": "Other traffic is allowed because this is not a locked sequence." },
+        { "id": "failure-write", "name": "Exclusive write", "startCycle": 4, "endCycle": 5, "description": "The master attempts the matching conditional write after interference." },
+        { "id": "failure-result", "name": "HEXOKAY=0", "startCycle": 5, "endCycle": 6, "description": "The monitor reports failure and memory is not updated. This conditional failure is distinct from HRESP ERROR." }
+      ]
     },
     {
-      "id": "p3",
-      "name": "Exclusive Write",
-      "durationCycles": 2,
-      "description": "Master 1 attempts to write the modified semaphore back with HEXCL=1."
-    },
-    {
-      "id": "p4",
-      "name": "HEXOKAY Response",
-      "durationCycles": 1,
-      "description": "The slave responds with HEXOKAY=1, indicating no other master wrote to the address during the intermission. Master 1 has the lock!"
+      "id": "interfering-master",
+      "label": "Other master",
+      "phases": [
+        { "id": "interfering-write", "name": "Writes monitored location", "startCycle": 3, "endCycle": 4, "description": "A write changes the location observed by the failed attempt, invalidating its monitor condition." }
+      ]
     }
   ]
 }

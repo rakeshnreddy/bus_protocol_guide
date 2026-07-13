@@ -1,55 +1,22 @@
 {
   "id": "wf-ahb-pipelined-sequence",
-  "title": "AHB Pipelined Sequence",
-  "description": "Notice how the Address Phase of Transfer N+1 overlaps with the Data Phase of Transfer N. This overlap is what allows AHB to achieve high throughput.",
+  "title": "AHB Address/Data Pipeline Ownership",
+  "description": "Three zero-wait SINGLE transfers make address/data overlap explicit: each data phase belongs to the address accepted one cycle earlier.",
   "type": "waveform",
+  "cycleCount": 5,
   "signals": [
-    {
-      "name": "HCLK",
-      "type": "clock",
-      "values": ["1", "0", "1", "0", "1", "0", "1", "0", "1", "0", "1", "0"]
-    },
-    {
-      "name": "HTRANS",
-      "type": "control",
-      "color": "var(--color-primary)",
-      "values": ["IDLE", "IDLE", "NONSEQ", "NONSEQ", "NONSEQ", "NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
-    },
-    {
-      "name": "HADDR",
-      "type": "data",
-      "color": "var(--color-secondary)",
-      "values": ["---", "---", "0x60", "0x60", "0x70", "0x70", "0x80", "0x80", "---", "---", "---", "---"]
-    },
-    {
-      "name": "HWDATA",
-      "type": "data",
-      "color": "var(--color-success)",
-      "values": ["---", "---", "---", "---", "D_60", "D_60", "D_70", "D_70", "D_80", "D_80", "---", "---"]
-    },
-    {
-      "name": "HREADY",
-      "type": "control",
-      "color": "var(--color-success)",
-      "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
-    }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1"] },
+    { "name": "ADDR PHASE", "type": "sideband", "color": "#2563eb", "values": ["A1", "A2", "A3", "IDLE", "IDLE"] },
+    { "name": "DATA PHASE", "type": "sideband", "color": "#047857", "values": ["—", "D1", "D2", "D3", "—"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x60", "0x70", "0x80", "—", "—"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "D_60", "D_70", "D_80", "—"] },
+    { "name": "HREADY", "type": "control", "color": "#047857", "values": ["1", "1", "1", "1", "1"] }
   ],
-  "cycleCount": 6,
   "annotations": [
-    {
-      "cycle": 1,
-      "signalName": "HTRANS",
-      "message": "Transfer 1 Address Phase starts (0x60)."
-    },
-    {
-      "cycle": 2,
-      "signalName": "HWDATA",
-      "message": "Transfer 1 Data Phase starts. AT THE SAME TIME, Transfer 2 Address Phase starts (0x70). This is pipelining!"
-    },
-    {
-      "cycle": 3,
-      "signalName": "HWDATA",
-      "message": "Transfer 2 Data Phase overlaps with Transfer 3 Address Phase."
-    }
+    { "cycle": 1, "message": "Transfer 1 has only an address phase. Its data cannot complete until the following cycle." },
+    { "cycle": 2, "message": "Address A2 overlaps Data D1. HWDATA D_60 belongs to the earlier 0x60 address, not the currently visible 0x70 address." },
+    { "cycle": 3, "message": "Address A3 overlaps Data D2. A monitor must queue accepted address/control so it attributes D_70 correctly." },
+    { "cycle": 4, "message": "Data D3 completes after the address stream has gone IDLE. The pipeline drains one cycle after the final address." }
   ]
 }

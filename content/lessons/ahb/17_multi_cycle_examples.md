@@ -19,7 +19,9 @@ To truly master AHB, you must be able to look at a waveform and mentally divide 
 
 Let's do a worked example using the "Wait-State Heavy Burst" waveform we saw earlier.
 
-![wf-ahb-wait-state-heavy](visual:wf-ahb-wait-state-heavy)
+The cycle selector is the worked-example navigator. Match its phase-owner label and annotation to each written breakdown below before moving to the next cycle.
+
+![Cycle-by-cycle AHB INCR4 worked example with two separate wait-state intervals](visual:wf-ahb-wait-state-heavy)
 
 ## Cycle-by-Cycle Breakdown
 

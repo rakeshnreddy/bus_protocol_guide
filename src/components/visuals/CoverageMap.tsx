@@ -8,18 +8,20 @@ interface CoverageMapProps {
 
 const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
   const [hoveredBin, setHoveredBin] = useState<{x: string, y: string} | null>(null);
+  const [selectedBin, setSelectedBin] = useState<{x: string, y: string} | null>(null);
 
   // Helper to get bin state
   const getBin = (x: string, y: string) => {
     return data.bins.find(b => b.x === x && b.y === y);
   };
 
-  const activeBin = hoveredBin ? getBin(hoveredBin.x, hoveredBin.y) : null;
+  const activeKey = hoveredBin ?? selectedBin;
+  const activeBin = activeKey ? getBin(activeKey.x, activeKey.y) : null;
 
   return (
     <div className="visual-container">
       <div className="visual-header">
-        <h4>{data.title}</h4>
+        <h2>{data.title}</h2>
         <div className="coverage-legend">
           <span className="legend-item"><span className="legend-color hole"></span> Hole (0 Hits)</span>
           <span className="legend-item"><span className="legend-color hit"></span> Covered</span>
@@ -35,7 +37,9 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
           <table className="coverage-table">
             <thead>
               <tr>
-                <th></th>
+                <th scope="col">
+                  <span className="visually-hidden">Response by burst type</span>
+                </th>
                 {data.xAxis.buckets.map(x => (
                   <th key={x} className="col-header">{x}</th>
                 ))}
@@ -59,17 +63,34 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
                     }
                     
                     const isHovered = hoveredBin?.x === x && hoveredBin?.y === y;
+                    const isSelected = selectedBin?.x === x && selectedBin?.y === y;
+                    const stateLabel = !bin
+                      ? 'unknown bin'
+                      : bin.illegal
+                        ? 'illegal combination'
+                        : bin.hits === 0
+                          ? 'coverage hole, zero hits'
+                          : `covered, ${bin.hits} hits`;
                     
                     return (
                       <td 
                         key={`${x}-${y}`} 
-                        className={`${cellClass} ${isHovered ? 'hovered' : ''}`}
-                        onMouseEnter={() => setHoveredBin({x, y})}
-                        onMouseLeave={() => setHoveredBin(null)}
-                        onClick={() => setHoveredBin({x, y})}
-                        style={{ minWidth: 44, height: 44 }}
+                        className={`${cellClass} ${isHovered || isSelected ? 'hovered' : ''}`}
                       >
-                        {bin?.hits ?? 0}
+                        <button
+                          type="button"
+                          className="coverage-cell-button"
+                          style={{ minWidth: 44, minHeight: 44 }}
+                          aria-label={`${x} by ${y}: ${stateLabel}`}
+                          aria-pressed={isSelected}
+                          onMouseEnter={() => setHoveredBin({x, y})}
+                          onMouseLeave={() => setHoveredBin(null)}
+                          onFocus={() => setHoveredBin({x, y})}
+                          onBlur={() => setHoveredBin(null)}
+                          onClick={() => setSelectedBin(isSelected ? null : {x, y})}
+                        >
+                          {bin?.hits ?? 0}
+                        </button>
                       </td>
                     );
                   })}
@@ -83,7 +104,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
       </div>
 
       {activeBin && activeBin.tooltip && (
-        <div className="annotation-panel">
+        <div className="annotation-panel" role="status" aria-live="polite">
           <strong>
             {activeBin.x} × {activeBin.y}
           </strong>

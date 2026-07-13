@@ -48,11 +48,13 @@ export default function SpecRuleExplorer({ data }: SpecRuleExplorerProps) {
         <input 
           type="text" 
           placeholder="Search rules..." 
+          aria-label="Search specification rules"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="sre-search"
         />
         <select 
+          aria-label="Filter by protocol"
           value={protocolFilter} 
           onChange={(e) => setProtocolFilter(e.target.value)}
           className="sre-select"
@@ -62,6 +64,7 @@ export default function SpecRuleExplorer({ data }: SpecRuleExplorerProps) {
           <option value="axi">AXI</option>
         </select>
         <select 
+          aria-label="Filter by category"
           value={categoryFilter} 
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="sre-select"
@@ -72,6 +75,7 @@ export default function SpecRuleExplorer({ data }: SpecRuleExplorerProps) {
           ))}
         </select>
         <select 
+          aria-label="Filter by severity"
           value={severityFilter} 
           onChange={(e) => setSeverityFilter(e.target.value)}
           className="sre-select"
@@ -88,21 +92,28 @@ export default function SpecRuleExplorer({ data }: SpecRuleExplorerProps) {
         ) : (
           filteredRules.map((rule) => {
             const isExpanded = expandedRules[rule.id] || false;
+            const detailsId = `spec-rule-${rule.id}-details`;
             return (
               <div key={rule.id} className={`sre-card severity-${rule.severity}`}>
-                <div className="sre-card-header" onClick={() => toggleExpand(rule.id)}>
+                <div className="sre-card-header">
                   <div className="sre-card-tags">
                     <span className="sre-tag protocol">{rule.protocol.toUpperCase()}</span>
                     <span className="sre-tag category">{rule.category.replace('_', ' ')}</span>
                     <span className={`sre-tag severity ${rule.severity}`}>{rule.severity}</span>
                   </div>
                   <div className="sre-statement">{rule.statement}</div>
-                  <button className="sre-expand-btn">
+                  <button
+                    type="button"
+                    className="sre-expand-btn"
+                    aria-expanded={isExpanded}
+                    aria-controls={detailsId}
+                    onClick={() => toggleExpand(rule.id)}
+                  >
                     {isExpanded ? 'Hide Bug Pattern' : 'Show Bug Pattern'}
                   </button>
                 </div>
                 {isExpanded && (
-                  <div className="sre-card-body">
+                  <div className="sre-card-body" id={detailsId}>
                     <div className="sre-bug-section">
                       <strong>Symptom:</strong> {rule.bugPattern.symptom}
                     </div>

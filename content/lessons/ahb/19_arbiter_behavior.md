@@ -9,7 +9,7 @@ order: 19
 tags: ["ahb", "architecture", "arbitration"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
-visualIds: ["topo-ahb-multi-master"]
+visualIds: ["wf-ahb-arbitration-handover", "topo-ahb-multi-master"]
 exerciseIds: ["ex-ahb-arbitration"]
 glossaryTerms: ["Arbitration"]
 checklistIds: []
@@ -30,8 +30,14 @@ Just because a master receives `HGRANTx` does not mean it can immediately drive 
 - The winning master monitors the global `HREADY` signal. 
 - It only takes ownership of the Address Bus on the clock edge where both `HGRANTx` is 1 **and** `HREADY` is 1.
 
-![topo-ahb-multi-master](visual:topo-ahb-multi-master)
+Inspect the stalled handover and identify the cycle where the grant finally becomes ownership.
+
+![AHB waveform showing a DMA grant waiting for HREADY before ownership changes](visual:wf-ahb-arbitration-handover)
+
+The same ownership decision controls which master's transfer reaches the decoder and selected slave.
+
+![Multi-master AHB topology tracing requests, grants, ownership selection, decoding, and response routing](visual:topo-ahb-multi-master)
 
 ## The Master Number (HMASTER)
 
-The Arbiter is also responsible for driving the **`HMASTER`** signal. This tells the rest of the system (specifically the slaves) the ID of the master currently performing a transfer. This is essential for features like Exclusive Accesses or Split transactions.
+In original AMBA 2 AHB, the Arbiter is also responsible for driving the **`HMASTER`** signal. This tells the system which shared-bus master currently owns the transfer and is required for legacy SPLIT handling. AHB5 also uses master identity when the optional Exclusive Transfers capability is present, but its identity can be formed by both the master and interconnect.

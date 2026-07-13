@@ -36,6 +36,6 @@ Before any data can be transferred, the bus must be properly powered, clocked, a
 
 When HRESETn is asserted, all masters and slaves must immediately drive their control signals to benign default values (usually 0, except for specific signals like `HTRANS` which must be driven to `IDLE`).
 
-![wf-ahb-reset](visual:wf-ahb-reset)
+![AHB reset assertion, safe IDLE state, synchronous release, and first legal transfer](visual:wf-ahb-reset)
 
 *Notice how HRESETn can drop to 0 at any time, but it only rises back to 1 aligned with the rising edge of HCLK. Notice also how the master is forced to drive HTRANS to IDLE while in reset.*

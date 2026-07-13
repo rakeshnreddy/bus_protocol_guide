@@ -12,5 +12,21 @@ export default function LessonPage() {
     return <div>Lesson not found (ID: {lessonId}).</div>;
   }
   
-  return <LessonRenderer lesson={lessonData.lesson} body={lessonData.body} />;
+  const protocolLessons = allLessons
+    .filter(item => item.lesson.protocol === lessonData.lesson.protocol)
+    .sort((a, b) => a.lesson.order - b.lesson.order);
+  const currentIndex = protocolLessons.findIndex(item => item.lesson.id === lessonData.lesson.id);
+
+  return (
+    <LessonRenderer
+      lesson={lessonData.lesson}
+      body={lessonData.body}
+      navigation={{
+        current: currentIndex + 1,
+        total: protocolLessons.length,
+        previous: currentIndex > 0 ? protocolLessons[currentIndex - 1].lesson : undefined,
+        next: currentIndex < protocolLessons.length - 1 ? protocolLessons[currentIndex + 1].lesson : undefined,
+      }}
+    />
+  );
 }
