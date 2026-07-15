@@ -1,27 +1,25 @@
 {
   "id": "wf-axi-stream",
-  "title": "AXI-Stream Packet Semantics",
   "type": "waveform",
+  "title": "AXI4-Stream Packet Under Backpressure",
+  "description": "Follow a three-beat packet from source to destination; inspect the stalled final beat to see that TDATA, TKEEP, TLAST, TID, and TDEST remain stable until TVALID and TREADY handshake.",
   "cycleCount": 6,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "TVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "1", "0"] },
-    { "name": "TREADY", "type": "control", "color": "green", "values": ["1", "1", "1", "0", "1", "1"] },
-    { "name": "TDATA", "type": "data", "color": "blue", "values": ["-", "D0", "D1", "D2", "D2", "-"] },
-    { "name": "TLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "0"] }
+    { "name": "TVALID", "type": "control", "values": ["0", "1", "1", "1", "1", "0"] },
+    { "name": "TREADY", "type": "control", "values": ["1", "1", "1", "0", "1", "1"] },
+    { "name": "TDATA", "type": "data", "values": ["INV", "D0", "D1", "D2", "D2", "INV"] },
+    { "name": "TKEEP", "type": "sideband", "values": ["INV", "1111", "1111", "0011", "0011", "INV"] },
+    { "name": "TLAST", "type": "control", "values": ["0", "0", "0", "1", "1", "0"] },
+    { "name": "TID", "type": "sideband", "values": ["INV", "3", "3", "3", "3", "INV"] },
+    { "name": "TDEST", "type": "sideband", "values": ["INV", "Display", "Display", "Display", "Display", "INV"] }
   ],
   "annotations": [
-    {
-      "cycle": 1,
-      "message": "First beat of the packet transfers."
-    },
-    {
-      "cycle": 3,
-      "message": "Receiver stalls (TREADY=0). The sender holds TDATA and TVALID."
-    },
-    {
-      "cycle": 4,
-      "message": "Final beat of the packet transfers. TLAST marks the end of the frame."
-    }
+    { "cycle": 1, "message": "No transfer occurs because TVALID is LOW, even though the destination is ready." },
+    { "cycle": 2, "message": "Packet beat D0 transfers on this rising edge because TVALID and TREADY are both HIGH." },
+    { "cycle": 3, "message": "Packet beat D1 transfers. TID and TDEST remain associated with the stream route." },
+    { "cycle": 4, "message": "The final beat is offered with TLAST=1, but TREADY is LOW. No transfer occurs, so every payload and sideband field must remain stable." },
+    { "cycle": 5, "message": "The same final beat now transfers. TLAST marks the packet boundary and TKEEP=0011 says only two byte positions carry data." },
+    { "cycle": 6, "message": "After the handshake, the source can deassert TVALID and change the payload fields." }
   ]
 }

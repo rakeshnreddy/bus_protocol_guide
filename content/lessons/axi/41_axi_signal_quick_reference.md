@@ -21,12 +21,12 @@ checklistIds: []
 
 # AXI Signal Quick Reference
 
-This is your day-to-day cheat sheet for the AXI interface. It lists every primary signal across all five channels.
+This is your day-to-day AXI4 memory-mapped cheat sheet. It groups the global signals and all five channel payloads, including optional region and user-defined fields, and calls out AXI4-specific behavior where AXI3 differs.
 
-![Interactive AXI signal reference table](visual:axi-signal-ref)
+![Interactive AXI4 memory-mapped signal reference grouped by channel with ownership, sampling, encodings, and DV watchpoints](visual:axi-signal-ref)
 
 ## Key Reminders
 - **AW / AR Channels:** Send the address *once* per burst.
 - **W Channel:** Send the data `AWLEN + 1` times. Assert `WLAST` on the final beat.
-- **B Channel:** Receive the response *once* per write burst (after all data is sent).
-- **R Channel:** Receive the data and response `ARLEN + 1` times. Assert `RLAST` on the final beat.
+- **B Channel:** Receive one response per write burst. In AXI4, the subordinate can assert `BVALID` only after accepting the AW request and the final W transfer.
+- **R Channel:** Receive data and a per-beat response `ARLEN + 1` times. The subordinate asserts `RLAST` on the final transfer.

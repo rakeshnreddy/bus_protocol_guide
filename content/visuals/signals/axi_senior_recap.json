@@ -1,0 +1,56 @@
+{
+  "id": "sig-axi-senior-recap",
+  "type": "signal-explorer",
+  "title": "AXI Senior DV Recall Map",
+  "description": "Open a recall anchor to rehearse the concise answer, the protocol qualification, and the verification evidence expected from senior-level reasoning.",
+  "signals": [
+    {
+      "name": "What makes a channel transfer?", "expansion": "VALID and READY on the same rising edge", "role": "control", "group": "Interview anchors",
+      "description": "Each AXI channel transfers independently on a rising ACLK edge where both VALID and READY are HIGH. The source owns VALID and payload; the destination owns READY.",
+      "direction": "Channel source ↔ destination", "sampled": "Rising ACLK",
+      "values": ["VALID-first", "READY-first", "Same-cycle", "Stable stall"],
+      "typicalUse": "Explain backpressure without conflating channels",
+      "verificationNote": "Add that a source must not wait for READY before asserting VALID and must hold the complete payload stable until acceptance."
+    },
+    {
+      "name": "How does an AXI4 write finish?", "expansion": "Independent AW/W, then one B response", "role": "control", "group": "Interview anchors",
+      "description": "AW defines the transaction, W transfers AWLEN+1 beats in address order with WLAST on the final beat, and AXI4 BVALID follows accepted AW plus accepted final W.",
+      "direction": "Manager AW/W → subordinate B", "sampled": "Accepted AW, W, and B edges",
+      "values": ["W can lead AW", "No AXI4 WID", "One BRESP per burst"],
+      "typicalUse": "Answer the five-channel dependency question",
+      "verificationNote": "Do not force AW-before-W in a checker. Track address and write data independently until both prerequisites exist."
+    },
+    {
+      "name": "What does ID ordering guarantee?", "expansion": "Response order within each ID stream", "role": "data", "group": "Interview anchors",
+      "description": "Responses to reads sharing one ID and responses to writes sharing one ID preserve request issue order. Different IDs can complete in another order.",
+      "direction": "AW/AR issue queues → BID/RID retirement", "sampled": "Accepted requests and responses",
+      "values": ["FIFO per ID", "Different-ID reorder", "Read/write channels separate"],
+      "typicalUse": "Describe an AXI scoreboard",
+      "verificationNote": "ID selects an ordering queue; the entry still needs address, burst attributes, expected data, byte enables, target context, and response expectations."
+    },
+    {
+      "name": "How are burst addresses checked?", "expansion": "AxLEN, AxSIZE, AxBURST, lanes, and 4 KB", "role": "control", "group": "Interview anchors",
+      "description": "The beat count is AxLEN+1, the byte increment is 2^AxSIZE, burst type controls progression, and the complete burst must stay inside one 4 KB region.",
+      "direction": "AW/AR context → address/data predictor", "sampled": "Accepted address and data transfers",
+      "values": ["FIXED", "INCR", "WRAP", "Unaligned first beat", "WSTRB"],
+      "typicalUse": "Work a concrete address example aloud",
+      "verificationNote": "Mention WRAP length/alignment and calculate byte lanes; checking only the displayed address can miss an illegal highest byte."
+    },
+    {
+      "name": "Is every long stall a violation?", "expansion": "Safety is protocol; bounded progress is a system contract", "role": "sideband", "group": "Senior context",
+      "description": "AXI requires VALID independence and stable payload but does not provide one universal finite READY or response-latency bound. Products add fairness and timeout requirements.",
+      "direction": "Protocol rules + integration policy", "sampled": "Stall interval and dependency graph",
+      "values": ["Legal backpressure", "Circular wait", "Configured bound", "QoS policy"],
+      "typicalUse": "Distinguish safety failure from liveness failure",
+      "verificationNote": "State the environment assumptions and configured bound before claiming a formal proof of no deadlock or starvation."
+    },
+    {
+      "name": "What proves AXI signoff?", "expansion": "Independent checking, coverage, and configuration evidence", "role": "sideband", "group": "Senior context",
+      "description": "Assertions prove cycle-level obligations, a reference model checks end-to-end data and ordering, coverage demonstrates planned scenarios, and reviews close configuration and liveness risks.",
+      "direction": "Verification plan → signoff decision", "sampled": "Stable regressions and targeted closure",
+      "values": ["Protocol properties", "Per-ID scoreboard", "Cross coverage", "Performance contract"],
+      "typicalUse": "Answer 'how did you know it was done?'",
+      "verificationNote": "A senior answer maps each risk to independent evidence and explains every waiver; one coverage percentage or a VIP pass flag is not enough."
+    }
+  ]
+}

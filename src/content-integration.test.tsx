@@ -31,11 +31,15 @@ describe('Content Integration Tests', () => {
     
     lessons.forEach(({ lesson, body }) => {
       try {
-        const { unmount } = render(
+        const { container, unmount } = render(
           <MemoryRouter>
             <LessonRenderer lesson={lesson} body={body} />
           </MemoryRouter>
         );
+        expect(container.querySelector('.lesson-workflow')).toBeInTheDocument();
+        expect(container.querySelector('.lesson-retention')).toBeInTheDocument();
+        expect(container.querySelectorAll('.visual-learning-frame')).toHaveLength(lesson.visualIds.length);
+        expect(container.querySelectorAll('.visual-learning-header')).toHaveLength(lesson.visualIds.length);
         unmount(); // Clean up to prevent DOM bloat
       } catch (error) {
         throw new Error(`Failed to render lesson ${lesson.id}: ${error}`);

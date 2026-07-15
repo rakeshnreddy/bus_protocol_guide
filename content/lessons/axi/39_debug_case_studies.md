@@ -31,12 +31,12 @@ Let's walk through two classic AXI debugging scenarios using the waveform topolo
 The simulation hangs at 50us. The waveform shows the W channel has finished sending data, but the B channel response never completes.
 
 **The Debug Flow:**
-1. Look at the B channel. `BVALID` is HIGH, but `BREADY` is LOW. The slave is trying to respond, but the master isn't listening.
-2. Look at the AW channel. `AWVALID` is HIGH, but `AWREADY` is LOW. The master is trying to send a new address, but the slave isn't listening.
-3. *Why?* Check the RTL code. The master designer wrote: `assign BREADY = AWREADY;` (Don't accept a response until the next address is accepted). The slave designer wrote: `assign AWREADY = BREADY;` (Don't accept a new address until the old response is cleared).
+1. Look at the B channel. `BVALID` is HIGH, but `BREADY` is LOW. The subordinate is holding a response while the manager's destination policy refuses it.
+2. Look at the W channel. `WVALID` is HIGH, but `WREADY` is LOW. The manager is holding write data while the subordinate's destination policy refuses it.
+3. *Why?* The manager policy waits to raise `BREADY` until W data is accepted, while the subordinate policy waits to raise `WREADY` until the pending B response is accepted. The dependency graph is circular.
 
 **The Root Cause:**
-Circular combinatorial logic dependency. This is a fatal protocol violation.
+Circular cross-channel progress policy. The shown VALID sources obey their channel safety rules, so the trace is a system-level liveness failure rather than automatically a single-interface safety violation. If either READY output is driven through a direct combinational path from an interface input, that construction separately violates AXI's no-combinational-input-to-output-path rule.
 
 ## Case Study 2: The Scrambled Read
 
@@ -52,4 +52,4 @@ The testbench reports a data mismatch on a read transaction. It expected `0xAAAA
 4. The testbench complains because it expected the data for `0x100` (`0xAAAA`). 
 
 **The Root Cause:**
-The slave completed the transactions out of order. This is perfectly legal in AXI because the IDs were different (`ARID=0` vs `ARID=1`). The bug is not in the RTL; the bug is in the testbench scoreboard, which is assuming in-order completion regardless of ID.
+The subordinate completed the responses out of order. This response order is permitted because the IDs differ (`ARID=0` vs `ARID=1`) and no additional system ordering constraint is shown. The bug is in the testbench scoreboard, which used one global issue queue instead of selecting the expected per-ID queue with `RID`.

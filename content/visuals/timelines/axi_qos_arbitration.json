@@ -1,0 +1,44 @@
+{
+  "id": "tl-axi-qos-arbitration",
+  "type": "timeline",
+  "title": "AXI4 QoS: Tag, Policy, and Ordering",
+  "description": "Follow an illustrative default higher-value-first policy, then inspect the ordering-constrained request to see why AxQOS is an input to system arbitration rather than a protocol guarantee of immediate service.",
+  "labels": [
+    "AxQOS is a 4-bit address-channel identifier",
+    "Higher-first is the specified default policy recommendation",
+    "AXI ordering constraints take precedence"
+  ],
+  "transactions": [
+    {
+      "id": "display-read",
+      "label": "Display read · ARQOS 0xE",
+      "phases": [
+        { "id": "display-request", "name": "AR request", "startCycle": 1, "endCycle": 2, "description": "The display master presents ARQOS with the read address. The tag is captured with the AR handshake." },
+        { "id": "display-choice", "name": "Chosen", "startCycle": 2, "endCycle": 3, "description": "In this illustrative default policy, the higher eligible QoS value is selected before the CPU request." },
+        { "id": "display-service", "name": "Service", "startCycle": 3, "endCycle": 4, "description": "The selected transaction progresses. AXI does not define an exact latency or service deadline from the tag alone." }
+      ]
+    },
+    {
+      "id": "cpu-read",
+      "label": "CPU read · ARQOS 0x3",
+      "phases": [
+        { "id": "cpu-request", "name": "AR request", "startCycle": 1, "endCycle": 2, "description": "The CPU request is simultaneously eligible but carries the lower value in this configured example." },
+        { "id": "cpu-wait", "name": "Policy wait", "startCycle": 2, "endCycle": 4, "description": "The request waits under the illustrated policy. A real implementation can use a more sophisticated compatible QoS method, including aging or bandwidth regulation." },
+        { "id": "cpu-service", "name": "Service", "startCycle": 4, "endCycle": 5, "description": "The CPU request progresses after the earlier selection. Verification needs the configured policy and fairness contract to judge this latency." }
+      ]
+    },
+    {
+      "id": "ordered-read",
+      "label": "Younger same-ID read · ARQOS 0xF",
+      "phases": [
+        { "id": "ordered-request", "name": "AR request", "startCycle": 2, "endCycle": 3, "description": "A high tag does not erase ordering relationships carried by the transaction ID and destination history." },
+        { "id": "ordered-block", "name": "Order blocked", "startCycle": 3, "endCycle": 5, "description": "This response cannot overtake an older same-ID transaction when the AXI ordering rules require order." },
+        { "id": "ordered-eligible", "name": "Eligible", "startCycle": 5, "endCycle": 6, "description": "Only after the ordering dependency clears can the system QoS policy choose this request." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "display-choice", "message": "Arm recommends higher values as higher priority, but the protocol permits additional interpretations and does not mandate an instantaneous grant." },
+    { "phase": "ordered-block", "message": "QoS selection applies only when no other AXI constraint already dictates transaction order." }
+  ]
+}

@@ -16,6 +16,7 @@ import App from './app/App';
 import SearchBar from './components/SearchBar';
 import LessonRenderer from './components/LessonRenderer';
 import TopologyViewer from './components/visuals/TopologyViewer';
+import Visuals from './pages/Visuals';
 import { getLessons } from './lib/loaders';
 import { getVisualById } from './lib/visualLoaders';
 import type { Lesson } from './types/content';
@@ -53,6 +54,12 @@ describe('Accessibility Audit (axe-core)', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('Visuals Explorer grouped catalog should have no a11y violations', async () => {
+    const { container } = render(<Visuals />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  }, 15000);
 
   it('LessonRenderer should have no a11y violations', async () => {
     const body = 'This is a test lesson body with a [link](glossary:axi).';
@@ -177,6 +184,28 @@ describe('Accessibility Audit (axe-core)', () => {
   it('AXI Batch 2 backpressure lesson should have no a11y violations', async () => {
     const lessonContent = getLessons().find(({ lesson }) => lesson.id === '21_backpressure_behavior');
     if (!lessonContent) throw new Error('Missing AXI backpressure lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('AXI Batch 4 verification topology should have no a11y violations', async () => {
+    const topology = getVisualById('topo-axi-dv-environment');
+    if (!topology || topology.type !== 'topology') throw new Error('Missing AXI DV environment topology');
+
+    const { container } = render(<TopologyViewer data={topology} />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('AXI Batch 4 expert checklist lesson should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '40_axi_expert_checklist');
+    if (!lessonContent) throw new Error('Missing AXI expert checklist lesson');
 
     const { container } = render(
       <MemoryRouter>

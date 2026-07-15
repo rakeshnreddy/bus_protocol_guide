@@ -1,0 +1,96 @@
+{
+  "id": "sig-axi4-lite-interface",
+  "type": "signal-explorer",
+  "title": "AXI4-Lite Interface Surface",
+  "description": "Inspect the five retained channels and the controls AXI4-Lite fixes or removes; each entry highlights the direction, transfer edge, and a common subset-verification trap.",
+  "signals": [
+    {
+      "name": "AW channel",
+      "expansion": "AWVALID, AWREADY, AWADDR, AWPROT",
+      "role": "control",
+      "group": "Retained five-channel interface",
+      "description": "The write-address channel retains the normal handshake, byte address, and protection attributes. AWPROT is part of the permitted AXI4-Lite signal set.",
+      "direction": "AWVALID/AWADDR/AWPROT: master to slave; AWREADY: slave to master",
+      "sampled": "Rising ACLK edge with AWVALID and AWREADY HIGH",
+      "values": ["One transaction address", "AWPROT retained", "No AWLEN/AWSIZE/AWBURST"],
+      "verificationNote": "Do not drop protection checking merely because AWCACHE is absent; AXI4-Lite conversion passes AxPROT through."
+    },
+    {
+      "name": "W channel",
+      "expansion": "WVALID, WREADY, WDATA, WSTRB",
+      "role": "data",
+      "group": "Retained five-channel interface",
+      "description": "Each write transaction carries one full-bus-width transfer. WSTRB still qualifies byte lanes and can support sparse register updates according to the slave's documented behavior.",
+      "direction": "WVALID/WDATA/WSTRB: master to slave; WREADY: slave to master",
+      "sampled": "Rising ACLK edge with WVALID and WREADY HIGH",
+      "values": ["32- or 64-bit data bus", "WSTRB retained", "WLAST implied and omitted"],
+      "verificationNote": "AW and W remain independent channels; a Lite slave must not assume their handshakes occur together."
+    },
+    {
+      "name": "B channel",
+      "expansion": "BVALID, BREADY, BRESP",
+      "role": "control",
+      "group": "Retained five-channel interface",
+      "description": "The slave returns one write response after the accepted address and data. OKAY, SLVERR, and DECERR remain meaningful; EXOKAY is not supported.",
+      "direction": "BVALID/BRESP: slave to master; BREADY: master to slave",
+      "sampled": "Rising ACLK edge with BVALID and BREADY HIGH",
+      "values": ["OKAY", "SLVERR", "DECERR", "No EXOKAY"],
+      "verificationNote": "Multiple requests can be outstanding even without protocol IDs; responses must remain in order."
+    },
+    {
+      "name": "AR channel",
+      "expansion": "ARVALID, ARREADY, ARADDR, ARPROT",
+      "role": "control",
+      "group": "Retained five-channel interface",
+      "description": "The read-address channel mirrors the Lite write-address subset and retains ARPROT while omitting burst, size, lock, and cache controls.",
+      "direction": "ARVALID/ARADDR/ARPROT: master to slave; ARREADY: slave to master",
+      "sampled": "Rising ACLK edge with ARVALID and ARREADY HIGH",
+      "values": ["One transaction address", "ARPROT retained", "No ARLEN/ARSIZE/ARBURST"],
+      "verificationNote": "Check AR independently from R; a design can accept more than one address before returning data if it preserves order."
+    },
+    {
+      "name": "R channel",
+      "expansion": "RVALID, RREADY, RDATA, RRESP",
+      "role": "data",
+      "group": "Retained five-channel interface",
+      "description": "Each read response is one full-bus-width transfer. RLAST is implied for the single transfer and therefore omitted from the interface.",
+      "direction": "RVALID/RDATA/RRESP: slave to master; RREADY: master to slave",
+      "sampled": "Rising ACLK edge with RVALID and RREADY HIGH",
+      "values": ["One data transfer", "RLAST implied", "No EXOKAY"],
+      "verificationNote": "Hold RVALID, RDATA, and RRESP stable during read-data backpressure just as on full AXI4."
+    },
+    {
+      "name": "Fixed subset",
+      "expansion": "Burst length 1 and full bus width",
+      "role": "sideband",
+      "group": "Removed or fixed behavior",
+      "description": "AXI4-Lite omits AxLEN, AxSIZE, and AxBURST because every transaction has one transfer defined to use the 32- or 64-bit interface width.",
+      "direction": "No corresponding interface signals",
+      "sampled": "The subset behavior applies to every accepted transaction",
+      "values": ["AxLEN equivalent 0", "AxSIZE fixed by bus width", "LAST equivalent 1"],
+      "verificationNote": "WSTRB can still select bytes; do not mistake sparse strobes for a narrower AxSIZE transfer on the Lite interface."
+    },
+    {
+      "name": "IDs and ordering",
+      "expansion": "Single fixed ordering domain",
+      "role": "sideband",
+      "group": "Removed or fixed behavior",
+      "description": "AXI4-Lite does not use AXI IDs for reordering, so transactions complete in order. Optional ID reflection can exist for direct interoperability with a full AXI connection.",
+      "direction": "Normally no ID signals on a pure AXI4-Lite interface",
+      "sampled": "Allocate and retire requests in issue order",
+      "values": ["No protocol reordering by ID", "Optional reflection for interoperability"],
+      "verificationNote": "No IDs does not mean only one outstanding transaction; use handshakes to enforce any smaller implementation limit."
+    },
+    {
+      "name": "LOCK and CACHE",
+      "expansion": "Normal, non-modifiable, non-bufferable",
+      "role": "sideband",
+      "group": "Removed or fixed behavior",
+      "description": "AXI4-Lite omits AxLOCK and AxCACHE. Accesses are Normal rather than exclusive, and are defined as Non-modifiable and Non-bufferable.",
+      "direction": "No corresponding interface signals",
+      "sampled": "Fixed attributes apply to every transaction",
+      "values": ["No exclusive accesses", "AxCACHE equivalent 0000"],
+      "verificationNote": "Keep this distinction separate from AxPROT, which remains available for privilege, security, and instruction/data attributes."
+    }
+  ]
+}

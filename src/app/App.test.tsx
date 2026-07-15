@@ -26,8 +26,8 @@ describe('App Routing and Lazy Loading', { timeout: 15000 }, () => {
     });
     // Home content is eager
     expect(screen.getByText(/A comprehensive, visual/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Explore 69 visuals' })).toBeInTheDocument();
-    expect(screen.getByText('interactive visuals').previousElementSibling).toHaveTextContent('69');
+    expect(screen.getByRole('link', { name: 'Explore 79 visuals' })).toBeInTheDocument();
+    expect(screen.getByText('interactive visuals').previousElementSibling).toHaveTextContent('79');
   });
 
   it('sidebar remains visible while lazy content loads', async () => {
@@ -107,8 +107,11 @@ describe('App Routing and Lazy Loading', { timeout: 15000 }, () => {
     fireEvent.click(screen.getByRole('link', { name: 'Glossary' }));
     expect(await screen.findByRole('heading', { name: 'Glossary' }, lazyRouteWait)).toBeInTheDocument();
     
-    // Go to Visuals Explorer
-    fireEvent.click(screen.getByRole('link', { name: 'Visuals Explorer' }));
-    expect(await screen.findByRole('heading', { name: /Visuals Explorer/i }, lazyRouteWait)).toBeInTheDocument();
+    // Continue to a second lazy route. The full Visuals catalog has dedicated
+    // integration tests; this routing check stays focused on chunk navigation.
+    fireEvent.click(screen.getByRole('link', { name: 'Specification rules' }));
+    expect(
+      await screen.findByRole('heading', { name: /Specification Rules/i }, lazyRouteWait)
+    ).toBeInTheDocument();
   }, 10000);
 });

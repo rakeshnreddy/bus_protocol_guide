@@ -35,7 +35,9 @@ describe('Formal Property Lessons Integration', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('AXI Safety: WLAST Exact Match')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'AXI Safety: WLAST Exact Match' })
+    ).toBeInTheDocument();
   });
 
   describe('Formal Property Exercises', () => {

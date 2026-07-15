@@ -25,7 +25,7 @@ A 4KB (4096 byte) boundary occurs at any address where the lower 12 bits are zer
 
 If a master initiates a burst, the starting address and the total length of the burst must be calculated such that the burst finishes *before* or *exactly on* the byte just prior to the next 4KB boundary (e.g., `0x0FFF`, `0x1FFF`).
 
-![wf-axi-4kb-boundary](visual:wf-axi-4kb-boundary)
+![Illegal four-beat AXI4 burst crossing 0x1000 compared with two legal split transactions](visual:wf-axi-4kb-boundary)
 
 In the visual above, the first burst attempts to write 16 bytes (4 beats of 4 bytes) starting at `0x0FF8`.
 *   Beat 1: `0x0FF8`
@@ -38,7 +38,7 @@ This burst crosses the `0x1000` boundary and is strictly illegal. The master mus
 
 This rule exists to simplify the design of memory controllers and interconnects.
 
-1.  **Memory Paging:** In modern operating systems and memory controllers (like DDR), memory is often managed in 4KB pages. Crossing a 4KB boundary might mean jumping from one physical memory page to a completely different, non-contiguous physical page, or hitting a page fault.
-2.  **Slave Boundaries:** In an interconnect, a 4KB region is often the smallest granularity for decoding slaves. Addresses `0x0000` to `0x0FFF` might belong to Slave A, while `0x1000` to `0x1FFF` might belong to Slave B. 
+1.  **Bounded address generation:** The rule limits the number of address increments a target must support. It also aligns with common 4KB page organization, but operating-system page-fault behavior is not itself an AXI transfer mechanism.
+2.  **Slave Boundaries:** The protocol rule prevents one burst from crossing a possible decode boundary. Addresses `0x0000` to `0x0FFF` might belong to Slave A, while `0x1000` to `0x1FFF` might belong to Slave B.
 
-If AXI allowed a single burst to cross a 4KB boundary, a single transaction might start in Slave A and finish in Slave B. The interconnect would have to magically split the transaction in half on the fly, manage two separate handshakes, and re-assemble the responses. By forcing the master to break the burst at the 4KB boundary, the interconnect design remains incredibly simple and fast.
+If a burst crossed a 4KB boundary, one transaction could require two decode destinations. AXI forbids that case, so the requester must issue separate legal transactions and each accepted burst retains one destination and one response context.

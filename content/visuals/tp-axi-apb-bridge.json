@@ -2,7 +2,7 @@
   "id": "tp-axi-apb-bridge",
   "type": "topology",
   "title": "AXI-to-APB Bridge Channel Translation",
-  "description": "The bridge terminates AXI channels as an AXI slave, serializes requests, and becomes the sole APB master for the selected low-bandwidth peripheral.",
+  "description": "The bridge terminates AXI channels as an AXI slave, converts accepted traffic into serialized APB transfers, and becomes the sole APB master for the selected low-bandwidth peripheral.",
   "regions": [
     { "id": "axi-side", "label": "AXI domain", "x": 30, "y": 55, "width": 250, "height": 360, "tone": "source" },
     { "id": "translation", "label": "Buffered conversion", "x": 320, "y": 55, "width": 320, "height": 360, "tone": "fabric" },
@@ -40,9 +40,9 @@
       "id": "e-bridge-timer",
       "source": "bridge",
       "target": "s2",
-      "label": "separate APB selection",
+      "label": "PSEL/PENABLE request →\ncompletion/data/error ←",
       "bidirectional": true,
-      "kind": "selection",
+      "kind": "channel",
       "tone": "neutral",
       "waypoints": [{ "x": 650, "y": 315 }],
       "labelPosition": { "x": 650, "y": 372 }
@@ -50,8 +50,9 @@
   ],
   "highlightedPath": ["m1", "e-axi-bridge", "bridge", "e-bridge-uart", "s1"],
   "annotations": [
-    { "nodeId": "bridge", "message": "AXI channel handshakes are decoupled, so the bridge buffers and correlates address, write data, and responses before issuing serialized APB transfers." },
+    { "nodeId": "bridge", "message": "AXI channel handshakes are decoupled. Buffer depth and accepted outstanding traffic are implementation choices; the bridge must still correlate address, write data, and responses before issuing serialized APB transfers." },
     { "edgeId": "e-axi-bridge", "message": "AXI requests and responses use independent channels. The single line is a readable topology summary, not a claim that AXI is one bidirectional wire." },
-    { "edgeId": "e-bridge-uart", "message": "One APB target is selected per transfer. The bridge maps APB completion and PSLVERR, when implemented, into the appropriate AXI response." }
+    { "edgeId": "e-bridge-uart", "message": "One APB target is selected per transfer. APB3 and later can return PSLVERR, which the bridge maps into the corresponding AXI RRESP or BRESP error." },
+    { "edgeId": "e-bridge-timer", "message": "APB uses a one-cycle SETUP phase followed by one or more ACCESS cycles. PREADY can extend the transfer; the two-cycle path is the minimum, not a fixed latency." }
   ]
 }

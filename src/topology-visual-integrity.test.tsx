@@ -44,6 +44,7 @@ describe('production topology visual integrity', () => {
       'topo-ahb-multi-master',
       'topo-ahb-security-filter',
       'topo-ahb-terminology-map',
+      'topo-axi-dv-environment',
       'topo-axi-five-channels',
       'topo-axi-terminology-map',
       'tp-axi-apb-bridge',

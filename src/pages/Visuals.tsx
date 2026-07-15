@@ -5,6 +5,7 @@ import type { VisualData } from '../types/visuals';
 import './Visuals.css';
 
 type ProtocolFilter = 'all' | 'ahb' | 'axi' | 'foundations';
+type VisualProtocol = Exclude<ProtocolFilter, 'all'>;
 
 const protocolLabels: Record<ProtocolFilter, string> = {
   all: 'All visuals',
@@ -12,6 +13,14 @@ const protocolLabels: Record<ProtocolFilter, string> = {
   axi: 'AXI',
   foundations: 'Foundations',
 };
+
+const protocolDescriptions: Record<VisualProtocol, string> = {
+  ahb: 'Pipelined address and data ownership, stalls, arbitration, responses, and AHB5 mechanisms.',
+  axi: 'Independent channels, burst geometry, IDs, ordering, backpressure, and verification evidence.',
+  foundations: 'Shared vocabulary and transaction concepts used across the protocol curriculum.',
+};
+
+const protocolOrder: VisualProtocol[] = ['ahb', 'axi', 'foundations'];
 
 const typeLabels: Record<VisualData['type'], string> = {
   waveform: 'Waveform',
@@ -33,7 +42,7 @@ const learningPrompts: Record<VisualData['type'], string> = {
   'spec-rule-explorer': 'Search protocol obligations and connect each rule to its bug signature.',
 };
 
-function getProtocol(visual: VisualData): Exclude<ProtocolFilter, 'all'> {
+function getProtocol(visual: VisualData): VisualProtocol {
   if (visual.id.toLowerCase().includes('ahb')) return 'ahb';
   if (visual.id.toLowerCase().includes('axi')) return 'axi';
   return 'foundations';
@@ -61,6 +70,29 @@ export default function Visuals() {
     });
   }, [protocol, query, type, visuals]);
 
+  const groupedVisuals = useMemo(
+    () => protocolOrder
+      .map(groupProtocol => ({
+        protocol: groupProtocol,
+        visuals: filteredVisuals.filter(visual => getProtocol(visual) === groupProtocol),
+      }))
+      .filter(group => group.visuals.length > 0),
+    [filteredVisuals],
+  );
+
+  const resultOrder = useMemo(
+    () => new Map(filteredVisuals.map((visual, index) => [visual.id, index + 1])),
+    [filteredVisuals],
+  );
+
+  const hasActiveFilters = protocol !== 'all' || type !== 'all' || query.trim().length > 0;
+
+  const clearFilters = () => {
+    setProtocol('all');
+    setType('all');
+    setQuery('');
+  };
+
   const toggleVisual = (id: string) => {
     setOpenVisuals(current => {
       const next = new Set(current);
@@ -87,6 +119,17 @@ export default function Visuals() {
       </header>
 
       <div className="visuals-toolbar" aria-label="Visual filters">
+        <div className="visuals-toolbar-heading">
+          <div>
+            <strong>Find a visual</strong>
+            <span>Filter the library without loading every interactive preview.</span>
+          </div>
+          {hasActiveFilters && (
+            <button type="button" className="visuals-clear-filters" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
+        </div>
         <div className="visuals-protocol-filters" role="group" aria-label="Filter by protocol">
           {(Object.keys(protocolLabels) as ProtocolFilter[]).map(filter => (
             <button
@@ -124,51 +167,78 @@ export default function Visuals() {
       </div>
 
       <div className="visuals-results-heading" aria-live="polite">
-        <span>{filteredVisuals.length} result{filteredVisuals.length === 1 ? '' : 's'}</span>
-        <span>Hover, focus, or tap inside a visual to inspect it.</span>
+        <span>
+          {filteredVisuals.length} result{filteredVisuals.length === 1 ? '' : 's'} across {groupedVisuals.length} protocol group{groupedVisuals.length === 1 ? '' : 's'}
+        </span>
+        <span>Open a preview, then use focus, Enter, Space, or touch to inspect it.</span>
       </div>
 
       {filteredVisuals.length > 0 ? (
         <div className="visuals-catalog">
-          {filteredVisuals.map((visual, index) => {
-            const visualProtocol = getProtocol(visual);
-            const isOpen = openVisuals.has(visual.id);
-            return (
-              <article className="visual-catalog-entry" key={visual.id}>
-                <header className="visual-catalog-header">
-                  <div className="visual-catalog-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
-                  <div>
-                    <div className="visual-catalog-meta">
-                      <span>{protocolLabels[visualProtocol]}</span>
-                      <span>{typeLabels[visual.type]}</span>
-                      <code>{visual.id}</code>
-                    </div>
-                    <h2>{visual.title}</h2>
-                    <p>{learningPrompts[visual.type]}</p>
-                    <button
-                      type="button"
-                      className="visual-preview-toggle"
-                      aria-expanded={isOpen}
-                      aria-controls={`preview-${visual.id}`}
-                      onClick={() => toggleVisual(visual.id)}
-                    >
-                      {isOpen ? 'Hide interactive visual' : 'Open interactive visual'}
-                    </button>
-                  </div>
-                </header>
-                {isOpen && (
-                  <div className="visual-catalog-preview" id={`preview-${visual.id}`}>
-                    <VisualRenderer visualRef={{ id: visual.id, type: visual.type, dataFile: '' }} />
-                  </div>
-                )}
-              </article>
-            );
-          })}
+          {groupedVisuals.map(group => (
+            <section
+              className={`visual-protocol-group protocol-${group.protocol}`}
+              key={group.protocol}
+              aria-label={`${protocolLabels[group.protocol]} visual library`}
+            >
+              <header className="visual-protocol-group-header">
+                <div>
+                  <strong>{protocolLabels[group.protocol]}</strong>
+                  <p>{protocolDescriptions[group.protocol]}</p>
+                </div>
+                <span>{group.visuals.length} visual{group.visuals.length === 1 ? '' : 's'}</span>
+              </header>
+              <div className="visual-catalog-list">
+                {group.visuals.map(visual => {
+                  const visualProtocol = getProtocol(visual);
+                  const isOpen = openVisuals.has(visual.id);
+                  const resultIndex = resultOrder.get(visual.id) ?? 0;
+                  return (
+                    <article className="visual-catalog-entry" key={visual.id}>
+                      <header className="visual-catalog-header">
+                        <div className="visual-catalog-index" aria-hidden="true">{String(resultIndex).padStart(2, '0')}</div>
+                        <div>
+                          <div className="visual-catalog-meta">
+                            <span>{protocolLabels[visualProtocol]}</span>
+                            <span>{typeLabels[visual.type]}</span>
+                            <code>{visual.id}</code>
+                          </div>
+                          <h2>{visual.title}</h2>
+                          <p>{learningPrompts[visual.type]}</p>
+                          <button
+                            type="button"
+                            className="visual-preview-toggle"
+                            aria-label={isOpen ? `Close ${visual.title}` : `Inspect ${visual.title}`}
+                            aria-expanded={isOpen}
+                            aria-controls={`preview-${visual.id}`}
+                            onClick={() => toggleVisual(visual.id)}
+                          >
+                            {isOpen ? 'Close visual' : 'Inspect visual'}
+                          </button>
+                        </div>
+                      </header>
+                      {isOpen && (
+                        <div
+                          className="visual-catalog-preview"
+                          id={`preview-${visual.id}`}
+                          role="region"
+                          aria-label={`${visual.title} interactive preview`}
+                        >
+                          <VisualRenderer visualRef={{ id: visual.id, type: visual.type, dataFile: '' }} />
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
       ) : (
         <div className="visuals-empty" role="status">
           <strong>No visuals match these filters.</strong>
-          <span>Clear the search or choose a different protocol and visual type.</span>
+          <span>Reset the filters to return to the complete AHB and AXI visual library.</span>
+          <button type="button" onClick={clearFilters}>Reset visual filters</button>
         </div>
       )}
     </section>

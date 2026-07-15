@@ -22,6 +22,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
     <div className="visual-container">
       <div className="visual-header">
         <h2>{data.title}</h2>
+        {data.description && <p className="visual-description">{data.description}</p>}
         <div className="coverage-legend">
           <span className="legend-item"><span className="legend-color hole"></span> Hole (0 Hits)</span>
           <span className="legend-item"><span className="legend-color hit"></span> Covered</span>

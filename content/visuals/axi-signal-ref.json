@@ -1,286 +1,335 @@
 {
   "id": "axi-signal-ref",
-  "title": "AXI Signal Quick Reference",
-  "type": "signals",
+  "type": "signal-explorer",
+  "title": "AXI4 Memory-Mapped Signal Quick Reference",
+  "description": "Expand a signal to review its owner, accepting edge, encoding or role, and the monitor mistake most likely to corrupt transaction reconstruction.",
   "signals": [
     {
-      "name": "ACLK",
-      "expansion": "Global clock signal",
-      "role": "clock",
-      "description": "Global clock signal. All signals are sampled on the rising edge.",
-      "direction": "Global",
-      "width": 1,
-      "relatedTermId": "ACLK"
+      "name": "ACLK", "expansion": "AXI interface clock", "role": "clock", "group": "Global",
+      "description": "All AXI transfers are recognized on the rising edge of ACLK.",
+      "direction": "Clock source → all interface components", "sampled": "Rising edge",
+      "values": ["Rising edge accepts VALID&&READY"],
+      "verificationNote": "Sample every channel in one clocking discipline and account explicitly for any clock-domain bridge.", "relatedTermId": "ACLK"
     },
     {
-      "name": "ARESETn",
-      "expansion": "Global reset signal",
-      "role": "control",
-      "description": "Global reset signal. Active-LOW.",
-      "direction": "Global",
-      "width": 1,
-      "relatedTermId": "ARESETn"
+      "name": "ARESETn", "expansion": "Active-LOW reset", "role": "control", "group": "Global",
+      "description": "Reset can assert asynchronously but deasserts synchronously with a rising ACLK edge.",
+      "direction": "Reset source → interface", "sampled": "Assertion and rising-edge deassertion",
+      "values": ["0 reset", "1 normal operation"],
+      "verificationNote": "During reset, a manager drives AWVALID, WVALID, and ARVALID LOW; prevent the monitor from creating phantom transactions at release.", "relatedTermId": "ARESETn"
+    },
+
+    {
+      "name": "AWID", "expansion": "Write transaction ID", "role": "sideband", "group": "Write address (AW)",
+      "description": "Selects the write response-ordering stream and is reflected on BID.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["Configured width", "May be reused while outstanding"],
+      "verificationNote": "Allocate a queue entry per accepted AW; one slot per numeric ID is insufficient.", "relatedTermId": "AWID"
     },
     {
-      "name": "AWID",
-      "expansion": "Write address ID",
-      "role": "control",
-      "description": "Write address ID. Identifies the write transaction.",
-      "direction": "Master -> Slave",
-      "width": "Varies",
-      "relatedTermId": "AWID"
+      "name": "AWADDR", "expansion": "Write start address", "role": "data", "group": "Write address (AW)",
+      "description": "Address of the first byte transfer in the write burst.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["May be unaligned for supported INCR transfers"],
+      "verificationNote": "Keep the accepted address with AWLEN/AWSIZE/AWBURST; later W beats carry no address.", "relatedTermId": "AWADDR"
     },
     {
-      "name": "AWADDR",
-      "expansion": "Write address",
-      "role": "control",
-      "description": "Write address. The starting physical address for a write burst.",
-      "direction": "Master -> Slave",
-      "width": "Varies",
-      "relatedTermId": "AWADDR"
+      "name": "AWLEN", "expansion": "Write burst length minus one", "role": "control", "group": "Write address (AW)",
+      "description": "AWLEN+1 is the exact number of W transfers in the burst.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["0 = 1 beat", "255 = 256 beats for AXI4 INCR", "FIXED/WRAP max 16"],
+      "verificationNote": "Count accepted W beats only and require WLAST on the declared final transfer.", "relatedTermId": "AWLEN"
     },
     {
-      "name": "AWLEN",
-      "expansion": "Burst length",
-      "role": "control",
-      "description": "Burst length. The exact number of transfers in a burst is AWLEN + 1.",
-      "direction": "Master -> Slave",
-      "width": "8 (AXI4)",
-      "relatedTermId": "AWLEN"
+      "name": "AWSIZE", "expansion": "Bytes per write transfer", "role": "control", "group": "Write address (AW)",
+      "description": "Each W transfer covers up to 2^AWSIZE bytes, subject to bus width and byte strobes.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["000 = 1 byte", "001 = 2 bytes", "010 = 4 bytes"],
+      "verificationNote": "Reject sizes wider than the interface and derive byte lanes together with AWADDR and WSTRB.", "relatedTermId": "AWSIZE"
     },
     {
-      "name": "AWSIZE",
-      "expansion": "Burst size",
-      "role": "control",
-      "description": "Burst size. The size of each transfer in the burst (e.g., 0b010 = 4 bytes).",
-      "direction": "Master -> Slave",
-      "width": 3,
-      "relatedTermId": "AWSIZE"
+      "name": "AWBURST", "expansion": "Write burst address progression", "role": "control", "group": "Write address (AW)",
+      "description": "Selects FIXED, INCR, or WRAP address generation for the write burst.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["00 FIXED", "01 INCR", "10 WRAP", "11 reserved"],
+      "verificationNote": "Check WRAP length/alignment and that the complete burst remains inside one 4 KB region.", "relatedTermId": "AWBURST"
     },
     {
-      "name": "AWBURST",
-      "expansion": "Burst type",
-      "role": "control",
-      "description": "Burst type. Indicates FIXED, INCR, or WRAP.",
-      "direction": "Master -> Slave",
-      "width": 2,
-      "relatedTermId": "AWBURST"
+      "name": "AWLOCK", "expansion": "Exclusive write indicator", "role": "sideband", "group": "Write address (AW)",
+      "description": "In AXI4, indicates a normal or exclusive write request.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["0 normal", "1 exclusive"],
+      "verificationNote": "Match an exclusive write to its completed exclusive read and check all exclusive span and attribute restrictions.", "relatedTermId": "AWLOCK"
     },
     {
-      "name": "AWVALID",
-      "expansion": "Write address valid",
-      "role": "control",
-      "description": "Write address valid. Indicates that valid write address and control information are available.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "AWVALID"
+      "name": "AWCACHE", "expansion": "Write memory attributes", "role": "sideband", "group": "Write address (AW)",
+      "description": "Defines Bufferable, Modifiable, Read-allocate, and Write-allocate transaction attributes in AXI4.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["4-bit AXI4 memory attribute"],
+      "verificationNote": "Do not decode bit 1 as the AXI3 Cacheable meaning; AXI4 names it Modifiable.", "relatedTermId": "AWCACHE"
     },
     {
-      "name": "AWREADY",
-      "expansion": "Write address ready",
-      "role": "control",
-      "description": "Write address ready. Indicates that the slave is ready to accept an address and associated control signals.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "AWREADY"
+      "name": "AWPROT", "expansion": "Write protection attributes", "role": "sideband", "group": "Write address (AW)",
+      "description": "Carries privileged/unprivileged, secure/non-secure, and instruction/data attributes.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["[0] privilege", "[1] non-secure when 1", "[2] instruction when 1"],
+      "verificationNote": "Check system permission policy separately from the protocol encoding.", "relatedTermId": "AWPROT"
     },
     {
-      "name": "WDATA",
-      "expansion": "Write data",
-      "role": "data",
-      "description": "Write data.",
-      "direction": "Master -> Slave",
-      "width": "Varies",
-      "relatedTermId": "WDATA"
+      "name": "AWQOS", "expansion": "Write QoS identifier", "role": "sideband", "group": "Write address (AW)",
+      "description": "A 4-bit identifier available to an implementation-defined system QoS policy.",
+      "direction": "Manager → interconnect/subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["0000 no QoS participation", "Higher value recommended as higher priority"],
+      "verificationNote": "AXI does not mandate one arbitration algorithm or starvation bound; verify the documented system policy.", "relatedTermId": "AWQOS"
     },
     {
-      "name": "WSTRB",
-      "expansion": "Write strobes",
-      "role": "data",
-      "description": "Write strobes. Indicates which byte lanes hold valid data.",
-      "direction": "Master -> Slave",
-      "width": "WDATA/8",
-      "relatedTermId": "WSTRB"
+      "name": "AWREGION", "expansion": "Write region identifier", "role": "sideband", "group": "Write address (AW)",
+      "description": "Distinguishes up to 16 logical regions that can share an address range.",
+      "direction": "Manager → interconnect/subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["4-bit region value", "Optional/defaultable"],
+      "verificationNote": "Do not treat AWREGION as extra address bits; its interpretation is system-specific.", "relatedTermId": "AWREGION"
     },
     {
-      "name": "WLAST",
-      "expansion": "Write last",
-      "role": "control",
-      "description": "Write last. Indicates the last transfer in a write burst.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "WLAST"
+      "name": "AWUSER", "expansion": "User-defined write-address sideband", "role": "sideband", "group": "Write address (AW)",
+      "description": "Optional application-defined information carried with the AW payload.",
+      "direction": "Manager → subordinate", "sampled": "AWVALID&&AWREADY",
+      "values": ["Optional, implementation-defined width and meaning"],
+      "verificationNote": "If implemented, include AWUSER in stalled-payload stability and end-to-end route checks."
     },
     {
-      "name": "WVALID",
-      "expansion": "Write valid",
-      "role": "control",
-      "description": "Write valid. Indicates that valid write data and strobes are available.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "WVALID"
+      "name": "AWVALID", "expansion": "Write address valid", "role": "control", "group": "Write address (AW)",
+      "description": "Asserted by the manager when the complete AW payload is valid.",
+      "direction": "Manager → subordinate", "sampled": "With AWREADY on rising ACLK",
+      "values": ["1 payload valid"],
+      "verificationNote": "Must not depend on AWREADY and must remain asserted with stable payload until acceptance.", "relatedTermId": "AWVALID"
     },
     {
-      "name": "WREADY",
-      "expansion": "Write ready",
-      "role": "control",
-      "description": "Write ready. Indicates that the slave can accept the write data.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "WREADY"
+      "name": "AWREADY", "expansion": "Write address ready", "role": "control", "group": "Write address (AW)",
+      "description": "Asserted by the subordinate when it can accept the AW payload.",
+      "direction": "Subordinate → manager", "sampled": "With AWVALID on rising ACLK",
+      "values": ["1 destination ready"],
+      "verificationNote": "READY may wait for VALID, but the interface must not create a combinational input-to-output path.", "relatedTermId": "AWREADY"
+    },
+
+    {
+      "name": "WDATA", "expansion": "Write data", "role": "data", "group": "Write data (W)",
+      "description": "Carries one write-data transfer; AXI4 associates W bursts with AW requests in address order.",
+      "direction": "Manager → subordinate", "sampled": "WVALID&&WREADY",
+      "values": ["Interface data width"],
+      "verificationNote": "AXI4 has no WID. Preserve accepted AW order while allowing W to arrive before its AW handshake.", "relatedTermId": "WDATA"
     },
     {
-      "name": "BID",
-      "expansion": "Response ID tag",
-      "role": "control",
-      "description": "Response ID tag. Must match the AWID of the transaction to which the slave is responding.",
-      "direction": "Slave -> Master",
-      "width": "Varies",
-      "relatedTermId": "BID"
+      "name": "WSTRB", "expansion": "Write byte strobes", "role": "data", "group": "Write data (W)",
+      "description": "One bit per WDATA byte lane indicates which bytes carry valid write data.",
+      "direction": "Manager → subordinate", "sampled": "WVALID&&WREADY",
+      "values": ["1 byte lane valid", "0 byte lane not updated"],
+      "verificationNote": "Check strobes against address, transfer size, and supported unaligned behavior; hold them stable during stalls.", "relatedTermId": "WSTRB"
     },
     {
-      "name": "BRESP",
-      "expansion": "Write response",
-      "role": "control",
-      "description": "Write response. Indicates OKAY, EXOKAY, SLVERR, or DECERR.",
-      "direction": "Slave -> Master",
-      "width": 2,
-      "relatedTermId": "BRESP"
+      "name": "WLAST", "expansion": "Final write-data transfer", "role": "control", "group": "Write data (W)",
+      "description": "Asserted with the final W transfer declared by AWLEN.",
+      "direction": "Manager → subordinate", "sampled": "WVALID&&WREADY",
+      "values": ["1 only on accepted beat AWLEN+1"],
+      "verificationNote": "Flag both early assertion and absence on the final accepted beat; AXI does not support early burst termination.", "relatedTermId": "WLAST"
     },
     {
-      "name": "BVALID",
-      "expansion": "Write response valid",
-      "role": "control",
-      "description": "Write response valid. Indicates that the channel is signaling a valid write response.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "BVALID"
+      "name": "WUSER", "expansion": "User-defined write-data sideband", "role": "sideband", "group": "Write data (W)",
+      "description": "Optional application-defined information carried per W transfer.",
+      "direction": "Manager → subordinate", "sampled": "WVALID&&WREADY",
+      "values": ["Optional, implementation-defined"],
+      "verificationNote": "Include WUSER in stability and data-route checking when present."
     },
     {
-      "name": "BREADY",
-      "expansion": "Response ready",
-      "role": "control",
-      "description": "Response ready. Indicates that the master can accept a write response.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "BREADY"
+      "name": "WVALID", "expansion": "Write data valid", "role": "control", "group": "Write data (W)",
+      "description": "Asserted by the manager when WDATA, WSTRB, WLAST, and optional WUSER are valid.",
+      "direction": "Manager → subordinate", "sampled": "With WREADY on rising ACLK",
+      "values": ["1 payload valid"],
+      "verificationNote": "Must not wait for WREADY and can assert before AW is accepted.", "relatedTermId": "WVALID"
     },
     {
-      "name": "ARID",
-      "expansion": "Read address ID",
-      "role": "control",
-      "description": "Read address ID. Identifies the read transaction.",
-      "direction": "Master -> Slave",
-      "width": "Varies",
-      "relatedTermId": "ARID"
+      "name": "WREADY", "expansion": "Write data ready", "role": "control", "group": "Write data (W)",
+      "description": "Asserted by the subordinate when it can accept a W transfer.",
+      "direction": "Subordinate → manager", "sampled": "With WVALID on rising ACLK",
+      "values": ["1 destination ready"],
+      "verificationNote": "Randomize independently from AWREADY and BREADY to expose channel-skew FIFO boundaries.", "relatedTermId": "WREADY"
+    },
+
+    {
+      "name": "BID", "expansion": "Write response ID", "role": "sideband", "group": "Write response (B)",
+      "description": "Identifies the accepted AW transaction receiving this write response.",
+      "direction": "Subordinate → manager", "sampled": "BVALID&&BREADY",
+      "values": ["Reflects AWID"],
+      "verificationNote": "Match the head outstanding entry for BID and preserve response issue order for repeated IDs.", "relatedTermId": "BID"
     },
     {
-      "name": "ARADDR",
-      "expansion": "Read address",
-      "role": "control",
-      "description": "Read address. The starting physical address for a read burst.",
-      "direction": "Master -> Slave",
-      "width": "Varies",
-      "relatedTermId": "ARADDR"
+      "name": "BRESP", "expansion": "Write burst response", "role": "control", "group": "Write response (B)",
+      "description": "One response qualifies the complete write burst.",
+      "direction": "Subordinate → manager", "sampled": "BVALID&&BREADY",
+      "values": ["OKAY", "EXOKAY", "SLVERR", "DECERR"],
+      "verificationNote": "EXOKAY is only an exclusive success; an unsuccessful exclusive write returns OKAY without updating the location.", "relatedTermId": "BRESP"
     },
     {
-      "name": "ARLEN",
-      "expansion": "Burst length",
-      "role": "control",
-      "description": "Burst length. The exact number of transfers in a burst is ARLEN + 1.",
-      "direction": "Master -> Slave",
-      "width": "8 (AXI4)",
-      "relatedTermId": "ARLEN"
+      "name": "BUSER", "expansion": "User-defined response sideband", "role": "sideband", "group": "Write response (B)",
+      "description": "Optional application-defined information returned with BRESP.",
+      "direction": "Subordinate → manager", "sampled": "BVALID&&BREADY",
+      "values": ["Optional, implementation-defined"],
+      "verificationNote": "Include BUSER in stable-payload and route/correlation checks when present."
     },
     {
-      "name": "ARSIZE",
-      "expansion": "Burst size",
-      "role": "control",
-      "description": "Burst size. The size of each transfer in the burst (e.g., 0b010 = 4 bytes).",
-      "direction": "Master -> Slave",
-      "width": 3,
-      "relatedTermId": "ARSIZE"
+      "name": "BVALID", "expansion": "Write response valid", "role": "control", "group": "Write response (B)",
+      "description": "Asserted when BID, BRESP, and optional BUSER form a valid response.",
+      "direction": "Subordinate → manager", "sampled": "With BREADY on rising ACLK",
+      "values": ["1 response valid"],
+      "verificationNote": "For AXI4, do not assert before an AW handshake and the accepted WLAST transfer; never wait for BREADY before asserting.", "relatedTermId": "BVALID"
     },
     {
-      "name": "ARBURST",
-      "expansion": "Burst type",
-      "role": "control",
-      "description": "Burst type. Indicates FIXED, INCR, or WRAP.",
-      "direction": "Master -> Slave",
-      "width": 2,
-      "relatedTermId": "ARBURST"
+      "name": "BREADY", "expansion": "Write response ready", "role": "control", "group": "Write response (B)",
+      "description": "Asserted by the manager when it can accept a write response.",
+      "direction": "Manager → subordinate", "sampled": "With BVALID on rising ACLK",
+      "values": ["1 destination ready"],
+      "verificationNote": "Backpressure must not cause BID, BRESP, BUSER, or BVALID to change.", "relatedTermId": "BREADY"
+    },
+
+    {
+      "name": "ARID", "expansion": "Read transaction ID", "role": "sideband", "group": "Read address (AR)",
+      "description": "Selects the read response-ordering stream and is reflected on every RID beat.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["Configured width", "May be reused while outstanding"],
+      "verificationNote": "Allocate a FIFO entry within ARID so repeated-ID reads retire in request order.", "relatedTermId": "ARID"
     },
     {
-      "name": "ARVALID",
-      "expansion": "Read address valid",
-      "role": "control",
-      "description": "Read address valid. Indicates that valid read address and control information are available.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "ARVALID"
+      "name": "ARADDR", "expansion": "Read start address", "role": "data", "group": "Read address (AR)",
+      "description": "Address of the first byte transfer in the read burst.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["May be unaligned for supported INCR transfers"],
+      "verificationNote": "Predict all later byte addresses and lanes because the R channel carries no address.", "relatedTermId": "ARADDR"
     },
     {
-      "name": "ARREADY",
-      "expansion": "Read address ready",
-      "role": "control",
-      "description": "Read address ready. Indicates that the slave is ready to accept an address and associated control signals.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "ARREADY"
+      "name": "ARLEN", "expansion": "Read burst length minus one", "role": "control", "group": "Read address (AR)",
+      "description": "ARLEN+1 is the exact number of R transfers in the burst.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["0 = 1 beat", "255 = 256 beats for AXI4 INCR", "FIXED/WRAP max 16"],
+      "verificationNote": "Count accepted R beats and require RLAST on the declared final beat even after an error response.", "relatedTermId": "ARLEN"
     },
     {
-      "name": "RID",
-      "expansion": "Read ID tag",
-      "role": "data",
-      "description": "Read ID tag. Must match the ARID of the read transaction.",
-      "direction": "Slave -> Master",
-      "width": "Varies",
-      "relatedTermId": "RID"
+      "name": "ARSIZE", "expansion": "Bytes per read transfer", "role": "control", "group": "Read address (AR)",
+      "description": "Each R transfer covers up to 2^ARSIZE bytes, subject to interface width.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["000 = 1 byte", "001 = 2 bytes", "010 = 4 bytes"],
+      "verificationNote": "Use ARADDR and ARSIZE to select the meaningful RDATA byte lanes.", "relatedTermId": "ARSIZE"
     },
     {
-      "name": "RDATA",
-      "expansion": "Read data",
-      "role": "data",
-      "description": "Read data.",
-      "direction": "Slave -> Master",
-      "width": "Varies",
-      "relatedTermId": "RDATA"
+      "name": "ARBURST", "expansion": "Read burst address progression", "role": "control", "group": "Read address (AR)",
+      "description": "Selects FIXED, INCR, or WRAP address generation for the read burst.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["00 FIXED", "01 INCR", "10 WRAP", "11 reserved"],
+      "verificationNote": "Check generated addresses, legal WRAP configuration, and the complete 4 KB span.", "relatedTermId": "ARBURST"
     },
     {
-      "name": "RRESP",
-      "expansion": "Read response",
-      "role": "control",
-      "description": "Read response. Indicates OKAY, EXOKAY, SLVERR, or DECERR.",
-      "direction": "Slave -> Master",
-      "width": 2,
-      "relatedTermId": "RRESP"
+      "name": "ARLOCK", "expansion": "Exclusive read indicator", "role": "sideband", "group": "Read address (AR)",
+      "description": "In AXI4, indicates a normal or exclusive read request.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["0 normal", "1 exclusive"],
+      "verificationNote": "An EXOKAY read records monitor state; an OKAY response means failed or unsupported exclusive handling.", "relatedTermId": "ARLOCK"
     },
     {
-      "name": "RLAST",
-      "expansion": "Read last",
-      "role": "control",
-      "description": "Read last. Indicates the last transfer in a read burst.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "RLAST"
+      "name": "ARCACHE", "expansion": "Read memory attributes", "role": "sideband", "group": "Read address (AR)",
+      "description": "Defines Bufferable, Modifiable, Read-allocate, and Write-allocate attributes in AXI4.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["4-bit AXI4 memory attribute"],
+      "verificationNote": "Verify downstream transformations preserve the permitted visibility and ordering behavior.", "relatedTermId": "ARCACHE"
     },
     {
-      "name": "RVALID",
-      "expansion": "Read valid",
-      "role": "control",
-      "description": "Read valid. Indicates that the channel is signaling the required read data.",
-      "direction": "Slave -> Master",
-      "width": 1,
-      "relatedTermId": "RVALID"
+      "name": "ARPROT", "expansion": "Read protection attributes", "role": "sideband", "group": "Read address (AR)",
+      "description": "Carries privileged/unprivileged, secure/non-secure, and instruction/data attributes.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["[0] privilege", "[1] non-secure when 1", "[2] instruction when 1"],
+      "verificationNote": "Check denied accesses and returned DECERR/SLVERR behavior against the system security architecture.", "relatedTermId": "ARPROT"
     },
     {
-      "name": "RREADY",
-      "expansion": "Read ready",
-      "role": "control",
-      "description": "Read ready. Indicates that the master can accept the read data and response information.",
-      "direction": "Master -> Slave",
-      "width": 1,
-      "relatedTermId": "RREADY"
+      "name": "ARQOS", "expansion": "Read QoS identifier", "role": "sideband", "group": "Read address (AR)",
+      "description": "A 4-bit identifier available to an implementation-defined system QoS policy.",
+      "direction": "Manager → interconnect/subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["0000 no QoS participation", "Higher value recommended as higher priority"],
+      "verificationNote": "Measure the configured arbitration/fairness policy; do not infer mandatory service from the numeric value alone.", "relatedTermId": "ARQOS"
+    },
+    {
+      "name": "ARREGION", "expansion": "Read region identifier", "role": "sideband", "group": "Read address (AR)",
+      "description": "Distinguishes up to 16 logical regions that can share an address range.",
+      "direction": "Manager → interconnect/subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["4-bit region value", "Optional/defaultable"],
+      "verificationNote": "Preserve the field through routing where the system uses region-based target behavior.", "relatedTermId": "ARREGION"
+    },
+    {
+      "name": "ARUSER", "expansion": "User-defined read-address sideband", "role": "sideband", "group": "Read address (AR)",
+      "description": "Optional application-defined information carried with the AR payload.",
+      "direction": "Manager → subordinate", "sampled": "ARVALID&&ARREADY",
+      "values": ["Optional, implementation-defined"],
+      "verificationNote": "If implemented, include ARUSER in stability, scoreboard context, and route preservation."
+    },
+    {
+      "name": "ARVALID", "expansion": "Read address valid", "role": "control", "group": "Read address (AR)",
+      "description": "Asserted by the manager when the complete AR payload is valid.",
+      "direction": "Manager → subordinate", "sampled": "With ARREADY on rising ACLK",
+      "values": ["1 payload valid"],
+      "verificationNote": "Must not depend on ARREADY and must remain asserted with stable payload until acceptance.", "relatedTermId": "ARVALID"
+    },
+    {
+      "name": "ARREADY", "expansion": "Read address ready", "role": "control", "group": "Read address (AR)",
+      "description": "Asserted by the subordinate when it can accept the AR payload.",
+      "direction": "Subordinate → manager", "sampled": "With ARVALID on rising ACLK",
+      "values": ["1 destination ready"],
+      "verificationNote": "Exercise independent AR stalls while other channels progress.", "relatedTermId": "ARREADY"
+    },
+
+    {
+      "name": "RID", "expansion": "Read response ID", "role": "sideband", "group": "Read data (R)",
+      "description": "Identifies the accepted AR transaction owning this R transfer.",
+      "direction": "Subordinate → manager", "sampled": "RVALID&&RREADY",
+      "values": ["Reflects ARID on every beat"],
+      "verificationNote": "Keep RID stable through stalls and retire the per-ID entry only with accepted RLAST.", "relatedTermId": "RID"
+    },
+    {
+      "name": "RDATA", "expansion": "Read data", "role": "data", "group": "Read data (R)",
+      "description": "Carries one read-data transfer for the transaction identified by RID.",
+      "direction": "Subordinate → manager", "sampled": "RVALID&&RREADY",
+      "values": ["Interface data width"],
+      "verificationNote": "Select meaningful bytes from the predicted address/size and keep the complete payload stable during backpressure.", "relatedTermId": "RDATA"
+    },
+    {
+      "name": "RRESP", "expansion": "Per-beat read response", "role": "control", "group": "Read data (R)",
+      "description": "Qualifies each R transfer independently; different beats in one burst can carry different responses.",
+      "direction": "Subordinate → manager", "sampled": "RVALID&&RREADY",
+      "values": ["OKAY", "EXOKAY", "SLVERR", "DECERR"],
+      "verificationNote": "All declared R transfers still occur after an error; do not terminate the scoreboard entry early.", "relatedTermId": "RRESP"
+    },
+    {
+      "name": "RLAST", "expansion": "Final read-data transfer", "role": "control", "group": "Read data (R)",
+      "description": "Asserted with the final R transfer declared by ARLEN.",
+      "direction": "Subordinate → manager", "sampled": "RVALID&&RREADY",
+      "values": ["1 only on accepted beat ARLEN+1"],
+      "verificationNote": "Flag early, missing, or late RLAST and retire only when the final beat is accepted.", "relatedTermId": "RLAST"
+    },
+    {
+      "name": "RUSER", "expansion": "User-defined read-data sideband", "role": "sideband", "group": "Read data (R)",
+      "description": "Optional application-defined information returned per R transfer.",
+      "direction": "Subordinate → manager", "sampled": "RVALID&&RREADY",
+      "values": ["Optional, implementation-defined"],
+      "verificationNote": "Include RUSER in stability, beat attribution, and end-to-end checking when present."
+    },
+    {
+      "name": "RVALID", "expansion": "Read data valid", "role": "control", "group": "Read data (R)",
+      "description": "Asserted when RID, RDATA, RRESP, RLAST, and optional RUSER form a valid transfer.",
+      "direction": "Subordinate → manager", "sampled": "With RREADY on rising ACLK",
+      "values": ["1 payload valid"],
+      "verificationNote": "Must follow an accepted AR request, must not wait for RREADY, and must hold payload stable through stalls.", "relatedTermId": "RVALID"
+    },
+    {
+      "name": "RREADY", "expansion": "Read data ready", "role": "control", "group": "Read data (R)",
+      "description": "Asserted by the manager when it can accept an R transfer.",
+      "direction": "Manager → subordinate", "sampled": "With RVALID on rising ACLK",
+      "values": ["1 destination ready"],
+      "verificationNote": "Randomize long and single-cycle stalls, especially on RLAST and error beats.", "relatedTermId": "RREADY"
     }
   ]
 }

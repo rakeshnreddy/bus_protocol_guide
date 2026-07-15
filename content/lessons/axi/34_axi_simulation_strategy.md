@@ -15,7 +15,7 @@ tags:
   - vip
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["topo-axi-dv-environment"]
 glossaryTerms: []
 checklistIds: []
 ---
@@ -24,9 +24,13 @@ checklistIds: []
 
 Verifying an AXI interconnect or IP block is meaningfully harder than verifying AHB. While AHB requires strict pipelined tracking, AXI requires decoupled, out-of-order, multi-ID tracking. Your simulation strategy must reflect this complexity.
 
+Follow one transaction through the environment before choosing stimulus or checker architecture. The learner question is: **which accepted channel event creates, updates, or retires each scoreboard entry?**
+
+![AXI verification environment linking channel stimulus, accepted-handshake monitoring, per-ID scoreboarding, assertions, and coverage](visual:topo-axi-dv-environment)
+
 ## VIP-Based Sequence Design
 
-Because AXI relies on independent channels, manual stimulus generation (e.g., bit-banging a BFM) is virtually impossible to scale. You *must* use a Verification IP (VIP) component (such as UVM AXI VIP) that allows you to abstract transactions.
+Because AXI relies on independent channels, manually bit-banging every signal becomes difficult to scale. A transaction-level BFM or reusable VIP is normally the practical choice; the verification plan determines whether commercial VIP, an internal agent, or a smaller purpose-built component is appropriate.
 
 When designing sequences:
 1. **Stress ID generation:** Do not just use ID=0 for everything. Constrain your sequence to generate a pool of IDs, sometimes reusing them (forcing in-order returns) and sometimes varying them (allowing out-of-order returns).
@@ -35,9 +39,9 @@ When designing sequences:
 
 ## The AXI Scoreboard Challenge
 
-An AHB scoreboard is essentially a FIFO. A request goes in, and the response comes out in the exact same order.
+For a simple in-order interface, a scoreboard can look like one FIFO. That model is not sufficient for AXI response correlation.
 
-An AXI scoreboard is **not** a FIFO; it is an associative array or a pool of queues keyed by the transaction ID. 
+An AXI scoreboard is **not one global FIFO**; it normally uses a pool of issue-order queues keyed by transaction ID, separately tracking reads and writes.
 
 ### Why the Scoreboard is Harder
 Because AXI supports out-of-order completion, you cannot simply expect the first read request to yield the first read response. If you issue ARID=1, ARID=2, and ARID=3, the responses might return as RID=3, RID=1, RID=2.
@@ -45,7 +49,7 @@ Because AXI supports out-of-order completion, you cannot simply expect the first
 Your scoreboard must:
 1. Store the expected response when the Address channel handshake completes.
 2. Key the expected response by the `AxID`.
-3. When a response arrives on the B or R channel, look up the expected response using the `BID` or `RID`.
+3. When a response arrives on the B or R channel, use `BID` or `RID` to select the corresponding outstanding queue, then compare the complete expected context at its head.
 4. If multiple transactions share the same ID (e.g., two ARID=1 requests), they *must* return in order. Thus, your scoreboard needs a FIFO *per ID*.
 
-If you try to build an AXI scoreboard by matching addresses instead of IDs, your environment will immediately report false failures as soon as out-of-order traffic is enabled.
+The ID selects the ordering stream; it is not the entire expected result. Each queue entry still needs the address, burst attributes, expected data, byte enables, target context, and response expectation. A global address-issue FIFO reports false failures as soon as different-ID responses reorder, while an ID-only checker can miss data being returned for the wrong address.

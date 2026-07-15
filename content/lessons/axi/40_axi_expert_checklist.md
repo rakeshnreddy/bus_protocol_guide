@@ -14,15 +14,15 @@ tags:
   - review
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["sig-axi-signoff-evidence"]
 glossaryTerms: []
-checklistIds: []
+checklistIds: ["axi-expert"]
 ---
 
 # AXI Expert Checklist
 
-Before taping out an AXI-based IP or interconnect, run through this expert checklist. If you cannot answer "yes" to every question, your verification is incomplete and your chip is at risk of deadlocking in silicon.
+Before signing off an AXI-based IP or interconnect, run through this expert checklist. A “yes” is meaningful only when it points to reviewable evidence and the checker configuration matches the implemented AXI revision and options.
 
-<div className="checklist-container">
-  <ChecklistViewer checklistId="axi-expert" />
-</div>
+Use the evidence board first to connect each risk with an assertion, scoreboard result, coverage report, configuration audit, or performance contract. Then complete the interactive checklist below the lesson.
+
+![AXI signoff evidence board connecting protocol, ordering, stress, configuration, coverage, and progress risks to concrete artifacts](visual:sig-axi-signoff-evidence)

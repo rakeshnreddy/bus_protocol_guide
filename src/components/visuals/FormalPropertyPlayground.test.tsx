@@ -7,6 +7,7 @@ const mockAhbData: FormalPropertyData = {
   id: 'fp-ahb-test',
   type: 'formal-property',
   title: 'AHB Bounded Liveness Test',
+  description: 'Formal interaction description.',
   property: {
     name: 'Bounded Liveness',
     description: 'Test description for bounded liveness.',
@@ -55,6 +56,7 @@ describe('FormalPropertyPlayground', () => {
   it('renders title, SVA string, and description', () => {
     render(<FormalPropertyPlayground data={mockAhbData} />);
     expect(screen.getByText('AHB Bounded Liveness Test')).toBeInTheDocument();
+    expect(screen.getByText('Formal interaction description.')).toBeInTheDocument();
     expect(screen.getByText('assert property...')).toBeInTheDocument();
     expect(screen.getByText('Test description for bounded liveness.')).toBeInTheDocument();
   });

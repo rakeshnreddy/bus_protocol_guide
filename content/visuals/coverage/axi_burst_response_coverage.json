@@ -2,6 +2,7 @@
   "id": "cm-axi-burst-resp",
   "type": "coverage-map",
   "title": "AXI Burst Type vs Response Coverage",
+  "description": "Inspect an illustrative burst/response cross. EXOKAY bins are conditional on an exclusive transaction and its full restriction set; burst type alone does not make the response legal or illegal.",
   "xAxis": {
     "label": "Burst Type (AxBURST)",
     "buckets": ["FIXED", "INCR", "WRAP"]
@@ -36,22 +37,22 @@
       "x": "FIXED",
       "y": "EXOKAY",
       "hits": 0,
-      "illegal": true,
-      "tooltip": "Exclusive accesses cannot use FIXED bursts per AXI spec."
+      "illegal": false,
+      "tooltip": "Conditional coverage hole: EXOKAY is permitted only for a successful exclusive access. Check AxLOCK and all exclusive span, alignment, attribute, and matching-read/write restrictions before counting this bin."
     },
     {
       "x": "INCR",
       "y": "EXOKAY",
       "hits": 5,
       "illegal": false,
-      "tooltip": "Exclusive INCR burst successfully completed."
+      "tooltip": "Successful exclusive INCR access. The full exclusive restriction set, not INCR by itself, makes this legal."
     },
     {
       "x": "WRAP",
       "y": "EXOKAY",
       "hits": 2,
       "illegal": false,
-      "tooltip": "Exclusive WRAP burst successfully completed."
+      "tooltip": "Successful exclusive WRAP access. Confirm total-byte alignment, legal span, matching read/write attributes, and monitor support."
     },
     {
       "x": "FIXED",

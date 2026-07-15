@@ -1,0 +1,72 @@
+{
+  "id": "sig-axi-signoff-evidence",
+  "type": "signal-explorer",
+  "title": "AXI Signoff Evidence Board",
+  "description": "Select a review area to see which independent assertion, scoreboard, coverage, configuration, or performance artifact should justify signoff.",
+  "signals": [
+    {
+      "name": "Reset and channel restart", "expansion": "VALID reset requirements and clean recovery", "role": "control", "group": "Protocol evidence",
+      "description": "Verify required VALID outputs are LOW during reset and that no monitor invents a transfer until a post-reset VALID/READY handshake occurs.",
+      "direction": "Reset source and every AXI interface", "sampled": "Reset assertion, synchronous deassertion, first channel handshakes",
+      "values": ["AWVALID/WVALID/ARVALID LOW during reset", "No phantom outstanding entry"],
+      "typicalUse": "Reset assertions and reset-under-traffic tests",
+      "verificationNote": "Retain traces for reset during idle, backpressure, outstanding reads, and outstanding writes, with recovery behavior tied to the product contract."
+    },
+    {
+      "name": "Channel handshake safety", "expansion": "VALID independence and stable stalled payload", "role": "control", "group": "Protocol evidence",
+      "description": "Prove all five source VALID signals are independent of READY and all payload fields remain stable through stalls.",
+      "direction": "Every channel source and destination", "sampled": "All VALID/READY combinations",
+      "values": ["VALID-first", "READY-first", "Simultaneous", "Long stall"],
+      "typicalUse": "Assertion suite plus randomized backpressure",
+      "verificationNote": "Review every payload member and the no-combinational-path rule; a green VALID-only property is incomplete evidence."
+    },
+    {
+      "name": "Burst and byte-lane legality", "expansion": "Length, size, type, boundary, LAST, and strobes", "role": "control", "group": "Protocol evidence",
+      "description": "Demonstrate correct address generation and data-lane ownership for aligned/unaligned FIXED, INCR, and WRAP bursts, including errors and the 4 KB boundary.",
+      "direction": "Address prediction ↔ W/R transfer tracking", "sampled": "Accepted AW/AR and every accepted W/R beat",
+      "values": ["AxLEN+1", "2^AxSIZE", "WSTRB", "WLAST/RLAST", "4 KB"],
+      "typicalUse": "Protocol checker, predictor, and crossed coverage",
+      "verificationNote": "Tie every coverage hit to an assertion/scoreboard pass. Exercise first, middle, and final read errors without canceling the declared beat count."
+    },
+    {
+      "name": "ID and ordering", "expansion": "Outstanding match and per-ID response queues", "role": "data", "group": "Data-integrity evidence",
+      "description": "Show correct response routing, different-ID completion freedom, and same-ID response order for repeated outstanding requests.",
+      "direction": "AW/AR allocation → BID/RID retirement", "sampled": "Accepted requests, response beats, B completion, and RLAST",
+      "values": ["Same-ID queue", "Different-ID reorder", "ID reuse", "Cross-target route"],
+      "typicalUse": "Independent reference model and scoreboard",
+      "verificationNote": "Expected and actual logic must be independent. Track full transaction context; ID selects the ordering stream but is not the expected address or data itself."
+    },
+    {
+      "name": "Outstanding capacity", "expansion": "Full/empty transitions and channel skew", "role": "sideband", "group": "Stress evidence",
+      "description": "Reach every supported read/write outstanding depth while independently stalling address, data, and response channels.",
+      "direction": "Configured capacity → constrained traffic", "sampled": "Allocation, full, simultaneous retire/allocate, and drain",
+      "values": ["0", "1", "Maximum-1", "Maximum", "Simultaneous retire/allocate"],
+      "typicalUse": "Targeted stress regression and coverage",
+      "verificationNote": "Force same-ID and different-ID occupancy, route contention, and response backpressure; average random traffic rarely sustains the exact boundary state."
+    },
+    {
+      "name": "Errors and optional features", "expansion": "Response semantics, exclusives, and configured attributes", "role": "sideband", "group": "Configuration evidence",
+      "description": "Align checker behavior with the implemented AXI revision, optional signals, exclusive support, user fields, and documented error/timeout policy.",
+      "direction": "Interface configuration → all verification components", "sampled": "Environment build and option-specific traffic",
+      "values": ["OKAY/EXOKAY/SLVERR/DECERR", "Exclusive supported/unsupported", "Optional USER fields"],
+      "typicalUse": "Configuration audit and option-gated properties",
+      "verificationNote": "Do not treat EXOKAY as a generic success or an absent optional signal as zero without checking the specification's default/interoperability rules."
+    },
+    {
+      "name": "Coverage closure", "expansion": "Legal holes, conditional bins, and exclusions", "role": "sideband", "group": "Closure evidence",
+      "description": "Review each legal hole and conditional combination against the verification plan, with reproducible tests and justified exclusions.",
+      "direction": "Regression database → signoff review", "sampled": "After stable assertion and scoreboard results",
+      "values": ["Covered", "Legal hole", "Conditional", "Justified exclusion"],
+      "typicalUse": "Coverage review with requirement traceability",
+      "verificationNote": "A response-by-burst cross cannot alone decide exclusive legality because AxLOCK and exclusive restrictions are additional dimensions."
+    },
+    {
+      "name": "Progress and performance", "expansion": "Documented bounds, fairness, and bottlenecks", "role": "sideband", "group": "Closure evidence",
+      "description": "Validate configured latency, service, throughput, and starvation-prevention requirements under realistic contention and backpressure assumptions.",
+      "direction": "System contract → performance monitors and liveness proofs", "sampled": "Request-to-accept and accept-to-completion windows",
+      "values": ["Configured latency", "Service bound", "No circular wait", "Channel utilization"],
+      "typicalUse": "Formal liveness plus long-running stress",
+      "verificationNote": "Separate protocol compliance from a product performance promise. Record the QoS policy, arbitration assumptions, traffic envelope, and proof bound."
+    }
+  ]
+}

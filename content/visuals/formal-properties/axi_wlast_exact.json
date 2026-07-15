@@ -2,17 +2,19 @@
   "id": "fp-axi-wlast-exact",
   "type": "formal-property",
   "title": "AXI Safety: WLAST Exact Match",
+  "description": "Toggle WLAST on accepted write-data beats to see why a complete property must reject both early assertion and a missing final indication.",
   "property": {
     "name": "WLAST Exact Match",
-    "description": "WLAST must be asserted on the exact last beat of a burst (when WVALID and WREADY are high), and nowhere else. This checks a 4-beat burst.",
-    "svaString": "assert property (@(posedge ACLK) (WVALID && WREADY && (beat_count == AWLEN)) |-> WLAST);",
+    "description": "On every accepted W transfer, WLAST must equal whether the accepted-beat index has reached AWLEN. This four-beat teaching trace checks both directions; a production property also binds the counter to the correct accepted AW transaction.",
+    "svaString": "assert property (@(posedge ACLK) (WVALID && WREADY) |-> (WLAST == (beat_index == AWLEN)));",
     "evaluatorRule": "axi-wlast-exact"
   },
   "editableSignals": ["WLAST"],
   "waveform": {
     "id": "wf-axi-wlast-base",
     "type": "waveform",
-    "title": "AXI WLAST Base Waveform",
+    "title": "Four-Beat AXI Write: Exact WLAST Position",
+    "description": "AWLEN=3 declares four accepted W transfers; the editable WLAST row must be LOW on beats 1–3 and HIGH on beat 4.",
     "cycleCount": 7,
     "signals": [
       {
@@ -37,7 +39,17 @@
         "type": "control",
         "color": "#8b5cf6",
         "values": ["0", "0", "0", "0", "1", "0", "0"]
+      },
+      {
+        "name": "ACCEPTED_BEAT",
+        "type": "sideband",
+        "values": ["-", "1 of 4", "2 of 4", "3 of 4", "4 of 4", "-", "-"]
       }
+    ],
+    "annotations": [
+      { "cycle": 2, "message": "Beat 1 is accepted. WLAST must remain LOW because three declared transfers still follow." },
+      { "cycle": 4, "message": "Beat 3 is accepted. Asserting WLAST here would be early; AXI does not support early burst termination." },
+      { "cycle": 5, "message": "Beat 4 is accepted and must carry WLAST=1 because AWLEN=3 declared four transfers." }
     ]
   }
 }

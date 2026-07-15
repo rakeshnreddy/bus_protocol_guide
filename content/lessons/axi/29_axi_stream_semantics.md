@@ -26,7 +26,7 @@ Enter **AXI-Stream (AXI4-Stream)**.
 
 AXI-Stream is fundamentally different from memory-mapped AXI. 
 *   **No Addresses:** There is no AW or AR channel.
-*   **No Responses:** There is no B channel. (If a pixel gets dropped, you don't stall the pipeline to return an error; you just move on).
+*   **No memory-mapped response channel:** There is no B or R response channel. This does **not** mean a destination silently drops a beat: when `TREADY` is LOW, the source holds `TVALID` and the payload stable until transfer.
 *   **One Channel Only:** AXI-Stream consists of a single, unidirectional channel going from a Master (the source) to a Slave (the destination).
 
 ## The Core Signals
@@ -36,9 +36,10 @@ AXI-Stream relies entirely on the universal `VALID`/`READY` handshake you alread
 *   **`TVALID`:** Master has data.
 *   **`TREADY`:** Slave can accept data.
 *   **`TDATA`:** The payload (e.g., the video pixel or the network packet payload).
-*   **`TLAST`:** Indicates the boundary of a packet or frame. 
+*   **`TLAST`:** Indicates the boundary of a packet or frame.
+*   **`TKEEP` (optional):** Marks which byte positions contain data, especially on a partial final beat.
 
-![wf-axi-stream](visual:wf-axi-stream)
+![Three-beat AXI4-Stream packet holding TDATA, TKEEP, TLAST, TID, and TDEST stable during backpressure](visual:wf-axi-stream)
 
 ## Sidebands and Packets
 

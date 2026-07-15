@@ -3,6 +3,8 @@ import specRulesData from '../../../content/reference/spec-rules.json';
 import './SpecRuleExplorer.css';
 
 interface SpecRuleExplorerData {
+  title?: string;
+  description?: string;
   defaultProtocol?: 'ahb' | 'axi' | 'foundations';
 }
 
@@ -44,6 +46,8 @@ export default function SpecRuleExplorer({ data }: SpecRuleExplorerProps) {
   
   return (
     <div className="spec-rule-explorer">
+      {data?.title && <h2 className="visual-title">{data.title}</h2>}
+      {data?.description && <p className="visual-description">{data.description}</p>}
       <div className="sre-filters">
         <input 
           type="text" 

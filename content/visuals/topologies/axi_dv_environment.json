@@ -1,0 +1,59 @@
+{
+  "id": "topo-axi-dv-environment",
+  "type": "topology",
+  "title": "AXI Verification Environment and Correlation Flow",
+  "description": "Trace independent channel stimulus into the DUT, then follow accepted handshakes into per-ID prediction, protocol assertions, and coverage evidence.",
+  "regions": [
+    { "id": "axi-dv-stimulus", "label": "Stimulus and channel agents", "x": 25, "y": 45, "width": 240, "height": 520, "tone": "source" },
+    { "id": "axi-dv-interface", "label": "DUT and observed interface", "x": 295, "y": 45, "width": 330, "height": 520, "tone": "fabric" },
+    { "id": "axi-dv-analysis", "label": "Independent verification evidence", "x": 655, "y": 45, "width": 380, "height": 520, "tone": "target" }
+  ],
+  "nodes": [
+    { "id": "axi-sequences", "label": "Scenario Sequences\nIDs, stalls, bursts, routes", "type": "concept", "x": 145, "y": 135, "width": 180, "height": 72 },
+    { "id": "axi-agents", "label": "Channel Agents / VIP\nAW · W · B · AR · R", "type": "concept", "x": 145, "y": 400, "width": 190, "height": 88 },
+    { "id": "axi-dut", "label": "AXI DUT\nManager, Subordinate, or Fabric", "type": "concept", "x": 460, "y": 235, "width": 210, "height": 88 },
+    { "id": "axi-monitor", "label": "Passive Monitor\nAccepted-handshake reconstruction", "type": "concept", "x": 460, "y": 450, "width": 220, "height": 88 },
+    { "id": "axi-scoreboard", "label": "Reference Model + Scoreboard\nPer-ID issue-order queues", "type": "concept", "x": 855, "y": 125, "width": 210, "height": 86 },
+    { "id": "axi-assertions", "label": "Channel + Transaction\nAssertions", "type": "concept", "x": 855, "y": 285, "width": 190, "height": 72 },
+    { "id": "axi-coverage", "label": "Functional Coverage\nShapes · depth · ordering", "type": "concept", "x": 855, "y": 455, "width": 190, "height": 72 }
+  ],
+  "edges": [
+    {
+      "id": "axi-sequence-agent", "source": "axi-sequences", "target": "axi-agents", "label": "transaction intent", "kind": "relationship", "tone": "primary",
+      "labelPosition": { "x": 215, "y": 270 }
+    },
+    {
+      "id": "axi-agent-dut", "source": "axi-agents", "target": "axi-dut", "label": "AW/W/AR requests\n↔ B/R responses", "bidirectional": true, "kind": "channel", "tone": "primary",
+      "waypoints": [{ "x": 285, "y": 400 }, { "x": 285, "y": 235 }], "labelPosition": { "x": 315, "y": 330 }
+    },
+    {
+      "id": "axi-dut-monitor", "source": "axi-dut", "target": "axi-monitor", "label": "sample every ACLK", "kind": "data", "tone": "primary",
+      "labelPosition": { "x": 565, "y": 350 }
+    },
+    {
+      "id": "axi-sequence-scoreboard", "source": "axi-sequences", "target": "axi-scoreboard", "label": "independent expected intent", "kind": "relationship", "tone": "neutral",
+      "waypoints": [{ "x": 270, "y": 135 }, { "x": 270, "y": 65 }, { "x": 700, "y": 65 }, { "x": 700, "y": 125 }], "labelPosition": { "x": 485, "y": 82 }
+    },
+    {
+      "id": "axi-monitor-scoreboard", "source": "axi-monitor", "target": "axi-scoreboard", "label": "actual events", "kind": "data", "tone": "primary",
+      "waypoints": [{ "x": 650, "y": 450 }, { "x": 650, "y": 125 }, { "x": 720, "y": 125 }], "labelPosition": { "x": 690, "y": 370 }
+    },
+    {
+      "id": "axi-dut-assertions", "source": "axi-dut", "target": "axi-assertions", "label": "cycle-level obligations", "kind": "relationship", "tone": "secondary",
+      "waypoints": [{ "x": 650, "y": 235 }, { "x": 650, "y": 285 }], "labelPosition": { "x": 700, "y": 215 }
+    },
+    {
+      "id": "axi-monitor-coverage", "source": "axi-monitor", "target": "axi-coverage", "label": "accepted scenarios", "kind": "relationship", "tone": "neutral",
+      "waypoints": [{ "x": 650, "y": 450 }, { "x": 650, "y": 530 }, { "x": 710, "y": 530 }, { "x": 710, "y": 455 }], "labelPosition": { "x": 680, "y": 552 }
+    }
+  ],
+  "highlightedPath": ["axi-sequences", "axi-sequence-agent", "axi-agents", "axi-agent-dut", "axi-dut", "axi-dut-monitor", "axi-monitor", "axi-monitor-scoreboard", "axi-scoreboard"],
+  "annotations": [
+    { "nodeId": "axi-sequences", "message": "Create independent AW, W, and AR timing, vary IDs, reuse IDs, fill outstanding queues, inject response errors, and drive contention across targets." },
+    { "edgeId": "axi-agent-dut", "message": "Each channel handshakes independently. The agent must never make source VALID depend on destination READY, and stalled payload must remain stable." },
+    { "nodeId": "axi-monitor", "message": "Allocate only on accepted AW or AR handshakes, count only accepted W or R beats, and retire only on accepted B or RLAST. Observing VALID alone is not a transfer." },
+    { "nodeId": "axi-scoreboard", "message": "Match BID and RID to outstanding transaction context, then preserve issue order within each ID. Address, ID, burst attributes, byte enables, and channel direction all contribute to the expected result." },
+    { "nodeId": "axi-assertions", "message": "Assertions cover channel stability, dependency rules, burst legality, LAST timing, and response correlation. Bounded progress belongs to the documented system contract, not the base AXI safety rules." },
+    { "nodeId": "axi-coverage", "message": "Cross burst shape, response, ID reuse, outstanding depth, backpressure, and route contention. A hit proves the scenario occurred, not that the scoreboard result was correct." }
+  ]
+}

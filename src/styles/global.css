@@ -718,6 +718,83 @@ pre {
   font-size: 0.7rem;
 }
 
+.lesson-workflow {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.72fr) minmax(0, 2fr);
+  gap: 1.5rem;
+  align-items: start;
+  margin: 0 0 2.75rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.lesson-workflow-heading h2 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+
+.lesson-workflow-heading p {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.lesson-workflow ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  counter-reset: lesson-workflow;
+  list-style: none;
+}
+
+.lesson-workflow li {
+  position: relative;
+  min-width: 0;
+  padding-left: 2.4rem;
+  counter-increment: lesson-workflow;
+}
+
+.lesson-workflow li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--brand-ink);
+  background: var(--surface-raised);
+  content: counter(lesson-workflow, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
+.lesson-workflow li strong,
+.lesson-workflow li span {
+  display: block;
+}
+
+.lesson-workflow li strong {
+  color: var(--ink-strong);
+  font-size: 0.88rem;
+}
+
+.lesson-workflow li span {
+  margin-top: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.48;
+}
+
 .lesson-body {
   color: var(--ink);
   font-size: 1.02rem;
@@ -772,16 +849,83 @@ pre {
 }
 
 .inline-visual-wrapper {
-  margin: 2.4rem 0 !important;
+  margin: 2.75rem 0 !important;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.visual-learning-header {
+  display: grid;
+  grid-template-columns: minmax(175px, auto) minmax(0, 1fr);
+  gap: 1rem 1.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.visual-learning-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.visual-learning-meta span {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0.25rem 0.58rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.visual-learning-meta span:last-child {
+  color: var(--brand-ink);
+  background: var(--brand-soft);
+}
+
+.visual-learning-header p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.visual-learning-stage > .waveform-container,
+.visual-learning-stage > .timeline-container,
+.visual-learning-stage > .signal-explorer-container,
+.visual-learning-stage > .topology-container,
+.visual-learning-stage > .formal-playground-container,
+.visual-learning-stage > .visual-container,
+.visual-learning-stage > .spec-rule-explorer {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .inline-visual-caption {
-  margin-top: 0.75rem;
+  max-width: 76ch;
+  margin-top: 0.85rem;
   color: var(--ink-soft) !important;
-  font-family: var(--font-mono);
-  font-size: 0.76rem !important;
+  font-size: 0.8rem !important;
   font-style: normal !important;
-  text-align: center;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.inline-visual-caption span {
+  margin-right: 0.4rem;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .lesson-image {
@@ -793,6 +937,122 @@ pre {
   margin-top: 3.25rem;
   padding-top: 2rem;
   border-top: 1px solid var(--line);
+}
+
+.lesson-retention {
+  overflow: hidden;
+  margin: 0 0 2.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.lesson-retention-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+}
+
+.lesson-retention-heading h2 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 1.08rem;
+  letter-spacing: -0.015em;
+}
+
+.lesson-retention-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+}
+
+.lesson-retention-heading > span {
+  flex: none;
+  padding: 0.28rem 0.58rem;
+  border-radius: 999px;
+  color: var(--success-ink);
+  background: var(--success-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.lesson-retention details {
+  border-top: 1px solid var(--line);
+}
+
+.lesson-retention summary {
+  display: flex;
+  min-height: 52px;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.15rem;
+  color: var(--brand-ink);
+  cursor: pointer;
+  font-weight: 750;
+  list-style: none;
+  transition: color 180ms var(--ease-out), background-color 180ms var(--ease-out);
+}
+
+.lesson-retention summary::-webkit-details-marker {
+  display: none;
+}
+
+.lesson-retention summary:hover {
+  background: var(--control-hover);
+}
+
+.lesson-retention summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.retention-summary-count {
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.lesson-retention ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0 1.15rem 1.15rem;
+  list-style: none;
+}
+
+.lesson-retention li {
+  min-width: 0;
+  padding: 0.35rem 1rem;
+}
+
+.lesson-retention li:first-child {
+  padding-left: 0;
+}
+
+.lesson-retention li + li {
+  border-left: 1px solid var(--line);
+}
+
+.lesson-retention li strong,
+.lesson-retention li span {
+  display: block;
+}
+
+.lesson-retention li strong {
+  color: var(--ink-strong);
+  font-size: 0.84rem;
+}
+
+.lesson-retention li span {
+  margin-top: 0.3rem;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  line-height: 1.52;
+  text-wrap: pretty;
 }
 
 .resource-section {
@@ -1082,6 +1342,11 @@ pre {
     max-width: none;
     font-size: clamp(1.8rem, 8vw, 2.45rem);
   }
+
+  .lesson-workflow {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 @media (max-width: 470px) {
@@ -1105,6 +1370,29 @@ pre {
 
   .lesson-body {
     font-size: 0.98rem;
+  }
+
+  .lesson-workflow ol,
+  .lesson-retention ol {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-workflow li {
+    min-height: 44px;
+  }
+
+  .visual-learning-header {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .lesson-retention li {
+    padding: 0.75rem 0;
+  }
+
+  .lesson-retention li + li {
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .lesson-sequence-nav {

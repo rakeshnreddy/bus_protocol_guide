@@ -7,7 +7,9 @@ vi.mock('./SpecRuleExplorer.css', () => ({}));
 
 describe('SpecRuleExplorer Component', () => {
   it('renders without crashing and shows rules', () => {
-    render(<SpecRuleExplorer />);
+    render(<SpecRuleExplorer data={{ title: 'Specification Rules', description: 'Search the protocol obligations.' }} />);
+    expect(screen.getByRole('heading', { name: 'Specification Rules' })).toBeInTheDocument();
+    expect(screen.getByText('Search the protocol obligations.')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Search rules/i)).toBeInTheDocument();
     // At least one rule should be visible
     expect(screen.getAllByText(/MUST/i).length).toBeGreaterThan(0);

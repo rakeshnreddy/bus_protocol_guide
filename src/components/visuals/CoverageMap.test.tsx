@@ -7,6 +7,7 @@ const mockData: CoverageMapData = {
   id: 'test-cm',
   type: 'coverage-map',
   title: 'Test Coverage',
+  description: 'Coverage interaction description.',
   xAxis: {
     label: 'X',
     buckets: ['A', 'B']
@@ -25,6 +26,7 @@ describe('CoverageMap', () => {
   it('renders title and axis labels', () => {
     render(<CoverageMap data={mockData} />);
     expect(screen.getByText('Test Coverage')).toBeInTheDocument();
+    expect(screen.getByText('Coverage interaction description.')).toBeInTheDocument();
     expect(screen.getByText('X')).toBeInTheDocument();
     expect(screen.getByText('Y')).toBeInTheDocument();
   });

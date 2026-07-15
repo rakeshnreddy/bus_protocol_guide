@@ -14,7 +14,7 @@ tags:
   - review
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["tl-axi-ordering-review"]
 glossaryTerms: []
 checklistIds: []
 ---
@@ -25,9 +25,13 @@ Ordering is the hardest part of AXI. Review these core rules until they are seco
 
 ## The 3 Golden Rules of AXI Ordering
 
-1. **Different IDs = No Ordering.** Transactions with different IDs (e.g., `AWID=0` and `AWID=1`) have no relationship. The slave can complete them in any order it wants.
-2. **Same ID = Strict Ordering.** Transactions with the same ID (e.g., two requests with `AWID=0`) MUST be completed by the slave in the exact order they were issued.
-3. **Reads vs. Writes = No Ordering.** An `AWID=0` and an `ARID=0` have no relationship. Write channels and Read channels are completely independent.
+1. **Different IDs permit response reordering.** Read responses using different IDs, and write responses using different IDs, can complete in another order when no additional memory, barrier, or system constraint applies.
+2. **Same ID preserves response issue order.** Responses to reads sharing one ID and responses to writes sharing one ID must return in the order their requests were issued.
+3. **Matching read/write ID values do not create cross-channel order.** `AWID=0` and `ARID=0` name separate read and write transaction streams. Memory type, address dependencies, barriers, or an extended ordering feature can still impose system-level ordering beyond this base ID rule.
+
+The timeline makes the scoreboard decision concrete: **which response is at the head of each ID queue?** Focus or select any response to inspect why its position is legal or illegal.
+
+![AXI ordering timeline comparing legal and illegal response sequences for two same-ID writes and one different-ID write](visual:tl-axi-ordering-review)
 
 ## Scenario Self-Test
 
@@ -39,8 +43,8 @@ Think through this scenario:
 In what order is the slave allowed to send the `BVALID` responses?
 
 **Answer:**
-The slave *must* respond to Write A before Write B, because they share `AWID=5`.
-The slave can respond to Write C at any time.
+The subordinate *must* return Write A's response before Write B's response because they share `AWID=5`.
+Write C's response can appear at any position relative to them when no other ordering constraint applies.
 Legal response orders:
 * A, B, C
 * A, C, B

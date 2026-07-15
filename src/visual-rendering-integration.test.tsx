@@ -97,6 +97,35 @@ const axiBatchTwoChangedVisualIds = [
   'wf-axi-throughput',
 ] as const;
 
+const axiBatchThreeChangedVisualIds = [
+  'tl-axi-burst-address-progression',
+  'wf-axi-alignment-byte-lanes',
+  'wf-axi-4kb-boundary',
+  'sig-axi-legality-patterns',
+  'tl-axi3-axi4-write-order',
+  'sig-axi4-lite-interface',
+  'wf-axi-stream',
+  'tp-axi-crossbar',
+  'tl-axi-qos-arbitration',
+  'tp-axi-apb-bridge',
+] as const;
+
+const axiBatchFourChangedVisualIds = [
+  'topo-axi-dv-environment',
+  'sig-axi-assertion-library',
+  'cm-axi-burst-resp',
+  'fp-axi-wlast-exact',
+  'wf-axi-out-of-order',
+  'wf-axi-debug-wlast',
+  'wf-axi-deadlock',
+  'spec-rule-explorer-axi',
+  'sig-axi-signoff-evidence',
+  'axi-signal-ref',
+  'tl-axi-ordering-review',
+  'wf-axi-throughput',
+  'sig-axi-senior-recap',
+] as const;
+
 function renderProductionVisual(id: string) {
   const visual = getVisualById(id);
   if (!visual) throw new Error(`Missing production visual '${id}'`);
@@ -138,6 +167,14 @@ describe('production visual rendering', () => {
   });
 
   it.each(axiBatchTwoChangedVisualIds)('renders AXI Batch 2 changed visual %s', id => {
+    renderProductionVisual(id);
+  });
+
+  it.each(axiBatchThreeChangedVisualIds)('renders AXI Batch 3 changed visual %s', id => {
+    renderProductionVisual(id);
+  });
+
+  it.each(axiBatchFourChangedVisualIds)('renders AXI Batch 4 changed visual %s', id => {
     renderProductionVisual(id);
   });
 
@@ -277,6 +314,124 @@ describe('production visual rendering', () => {
     fireEvent.keyDown(cycle, { key: 'Enter' });
     expect(cycle).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/WLAST asserted before accepted beat count/i)).toBeInTheDocument();
+  });
+
+  it('reveals the byte-lane transition after an unaligned AXI start', () => {
+    renderProductionVisual('wf-axi-alignment-byte-lanes');
+    const cycle = screen.getByRole('button', { name: 'Inspect cycle 5' });
+    cycle.focus();
+    fireEvent.keyDown(cycle, { key: 'Enter' });
+    expect(cycle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/next INCR transfer address is aligned to 0x1004/i)).toBeInTheDocument();
+  });
+
+  it('opens the accepted-transfer response dependency in the legality debugger', () => {
+    renderProductionVisual('sig-axi-legality-patterns');
+    fireEvent.click(screen.getByRole('button', { name: /B response/i }));
+    expect(screen.getByText(/accepted the write address and accepted the final write-data transfer/i))
+      .toBeInTheDocument();
+  });
+
+  it('compares AXI3 WID interleaving with AXI4 address-order association', () => {
+    renderProductionVisual('tl-axi3-axi4-write-order');
+    const beat = screen.getByRole('button', { name: /AXI4 W channel: A1 · WLAST/i });
+    fireEvent.focus(beat);
+    expect(screen.getByText(/All data for A completes before any data for B/i)).toBeInTheDocument();
+  });
+
+  it('reveals that AXI4-Lite retains protection attributes', () => {
+    renderProductionVisual('sig-axi4-lite-interface');
+    fireEvent.click(screen.getByRole('button', { name: /AW channel/i }));
+    expect(screen.getByText(/AWPROT is part of the permitted AXI4-Lite signal set/i)).toBeInTheDocument();
+  });
+
+  it('holds the AXI4-Stream final packet beat during keyboard-inspected backpressure', () => {
+    renderProductionVisual('wf-axi-stream');
+    const cycle = screen.getByRole('button', { name: 'Inspect cycle 4' });
+    cycle.focus();
+    fireEvent.keyDown(cycle, { key: ' ' });
+    expect(screen.getByText(/final beat is offered with TLAST=1.*TREADY is LOW/i)).toBeInTheDocument();
+  });
+
+  it('explains why QoS cannot bypass a same-ID ordering dependency', () => {
+    renderProductionVisual('tl-axi-qos-arbitration');
+    const blocked = screen.getByRole('button', { name: /Younger same-ID read.*Order blocked/i });
+    fireEvent.focus(blocked);
+    expect(screen.getByText(/cannot overtake an older same-ID transaction/i)).toBeInTheDocument();
+  });
+
+  it('supports keyboard inspection of the AXI-to-APB error-return route', () => {
+    renderProductionVisual('tp-axi-apb-bridge');
+    const route = screen.getByRole('button', { name: /Inspect route PSEL\/PENABLE.*PSLVERR/i });
+    route.focus();
+    fireEvent.keyDown(route, { key: 'Enter' });
+    expect(route).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/APB3 and later can return PSLVERR/i)).toBeInTheDocument();
+  });
+
+  it('supports keyboard inspection of the AXI per-ID scoreboard evidence path', async () => {
+    const user = userEvent.setup();
+    renderProductionVisual('topo-axi-dv-environment');
+    const scoreboard = screen.getByRole('button', { name: /Inspect.*Reference Model.*Scoreboard/i });
+    act(() => scoreboard.focus());
+    await user.keyboard('{Enter}');
+    expect(scoreboard).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/Match BID and RID.*preserve issue order within each ID/i))
+      .toBeInTheDocument();
+  });
+
+  it('opens the configured-liveness boundary in the AXI assertion explorer', () => {
+    renderProductionVisual('sig-axi-assertion-library');
+    fireEvent.click(screen.getByRole('button', { name: /Bounded progress contract/i }));
+    expect(screen.getByText(/Base AXI does not impose one finite READY or response-latency bound/i))
+      .toBeInTheDocument();
+  });
+
+  it('selects conditional EXOKAY coverage without labeling FIXED as illegal', () => {
+    renderProductionVisual('cm-axi-burst-resp');
+    const bin = screen.getByRole('button', { name: /FIXED by EXOKAY: coverage hole, zero hits/i });
+    fireEvent.click(bin);
+    expect(bin).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent(/Conditional coverage hole.*AxLOCK/i);
+  });
+
+  it('lets the formal playground expose early WLAST on accepted beat three', () => {
+    renderProductionVisual('fp-axi-wlast-exact');
+    fireEvent.click(screen.getByTestId('interaction-WLAST-4'));
+    expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect cycle 4' }));
+    expect(screen.getByText(/WLAST is asserted early.*beat 3/i)).toBeInTheDocument();
+  });
+
+  it('opens per-ID signoff evidence from a keyboard-sized explorer control', () => {
+    renderProductionVisual('sig-axi-signoff-evidence');
+    const control = screen.getByRole('button', { name: /ID and ordering/i });
+    fireEvent.click(control);
+    expect(control).toHaveStyle({ minHeight: '52px' });
+    expect(screen.getByText(/ID selects the ordering stream but is not the expected address or data itself/i))
+      .toBeInTheDocument();
+  });
+
+  it('reveals the exact AXI4 BVALID prerequisites in the signal reference', () => {
+    renderProductionVisual('axi-signal-ref');
+    fireEvent.click(screen.getByRole('button', { name: /BVALID/i }));
+    expect(screen.getByText(/do not assert before an AW handshake and the accepted WLAST transfer/i))
+      .toBeInTheDocument();
+  });
+
+  it('flags the first younger same-ID response in the ordering timeline', () => {
+    renderProductionVisual('tl-axi-ordering-review');
+    const phase = screen.getByRole('button', { name: /Illegal response B-C-A: B · ID 5.*cycles 4 to 5/i });
+    fireEvent.focus(phase);
+    expect(phase).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/head of that ID's outstanding queue is still A/i)).toBeInTheDocument();
+  });
+
+  it('opens the protocol-versus-product distinction in the AXI senior recap', () => {
+    renderProductionVisual('sig-axi-senior-recap');
+    fireEvent.click(screen.getByRole('button', { name: /Is every long stall a violation/i }));
+    expect(screen.getByText(/does not provide one universal finite READY or response-latency bound/i))
+      .toBeInTheDocument();
   });
 });
 
@@ -427,6 +582,58 @@ describe('AXI Batch 2 lesson rendering', () => {
 
       expect(screen.getByRole('heading', { level: 1, name: lessonContent.lesson.title }))
         .toBeInTheDocument();
+      expect(screen.queryByText(/Visual not found/i)).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.inline-visual-wrapper'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+      expect(document.querySelectorAll('.inline-visual-caption'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+    },
+  );
+});
+
+describe('AXI Batch 3 lesson rendering', () => {
+  it.each(Array.from({ length: 11 }, (_, index) => index + 23))(
+    'renders lesson %i with all declared visuals and captions',
+    order => {
+      const lessonContent = getLessons().find(({ lesson }) =>
+        lesson.protocol === 'axi' && lesson.order === order,
+      );
+      if (!lessonContent) throw new Error(`Missing AXI lesson ${order}`);
+
+      render(
+        <MemoryRouter>
+          <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole('heading', { level: 1, name: lessonContent.lesson.title }))
+        .toBeInTheDocument();
+      expect(screen.queryByText(/Visual not found/i)).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.inline-visual-wrapper'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+      expect(document.querySelectorAll('.inline-visual-caption'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+    },
+  );
+});
+
+describe('AXI Batch 4 lesson rendering', () => {
+  it.each(Array.from({ length: 11 }, (_, index) => index + 34))(
+    'renders lesson %i with all declared visuals and captions',
+    order => {
+      const lessonContent = getLessons().find(({ lesson }) =>
+        lesson.protocol === 'axi' && lesson.order === order,
+      );
+      if (!lessonContent) throw new Error(`Missing AXI lesson ${order}`);
+
+      render(
+        <MemoryRouter>
+          <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getAllByRole('heading', { level: 1, name: lessonContent.lesson.title }).length)
+        .toBeGreaterThan(0);
       expect(screen.queryByText(/Visual not found/i)).not.toBeInTheDocument();
       expect(document.querySelectorAll('.inline-visual-wrapper'))
         .toHaveLength(lessonContent.lesson.visualIds.length);

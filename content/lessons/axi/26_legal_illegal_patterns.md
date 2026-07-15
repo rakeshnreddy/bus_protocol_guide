@@ -9,13 +9,17 @@ order: 26
 tags: ["axi", "rules", "bugs"]
 relatedLessons: []
 prerequisites: ["25_4kb_boundary_rule"]
-visualIds: []
+visualIds: ["sig-axi-legality-patterns"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
 ---
 
 Before we move on to system architecture, let's consolidate the rules we've learned into a quick-reference guide of legal and illegal patterns.
+
+The debugger below answers: **which endpoint owns the rule, and what state must a monitor retain to diagnose the failure?**
+
+![Interactive AXI4 legality debugger covering handshakes, responses, bursts, LAST, IDs, and cross-channel hazards](visual:sig-axi-legality-patterns)
 
 ## 1. Handshake Dependencies
 *   **ILLEGAL:** A master waits for `AWREADY` to go HIGH before it asserts `AWVALID`.
@@ -24,8 +28,8 @@ Before we move on to system architecture, let's consolidate the rules we've lear
 
 ## 2. Channel Independence
 *   **LEGAL:** A master asserts `WVALID` and sends data beats before it has even asserted `AWVALID` for the write address.
-*   **ILLEGAL:** A slave asserts `BVALID` (Write Response) before the master has asserted `WLAST` for the final data beat.
-*   **ILLEGAL:** A slave asserts `RVALID` (Read Data) before it has accepted the `ARVALID` read address.
+*   **ILLEGAL:** In AXI4, a slave asserts `BVALID` before it has accepted both the write address and the final write-data transfer with `WLAST` HIGH.
+*   **ILLEGAL:** A slave asserts `RVALID` (Read Data) before it has accepted the corresponding read address.
 
 ## 3. Burst Constraints
 *   **ILLEGAL:** A master initiates a burst that starts at `0x1FF0` and attempts to write 32 bytes (crossing the `0x2000` 4KB boundary).
@@ -39,4 +43,4 @@ Before we move on to system architecture, let's consolidate the rules we've lear
 ## 5. Ordering
 *   **ILLEGAL:** A master issues Write A (ID:0) and Write B (ID:0). The slave returns the `BRESP` for B before returning the `BRESP` for A.
 *   **LEGAL:** A master issues Write A (ID:0) and Write B (ID:1). The slave returns the `BRESP` for B before returning the `BRESP` for A.
-*   **LEGAL:** A master issues a Write to Address X, then a Read to Address X. The slave returns the Read data before the Write response has been sent (the master is responsible for avoiding read-after-write hazards, not the slave).
+*   **LEGAL at the channel level, subject to system ordering:** A master issues a Write to Address X, then a Read to Address X, and the Read data can appear before the Write response. Independent read and write channels do not create a universal response-order guarantee; the requester and system ordering mechanism must establish any required read-after-write dependency.

@@ -28,7 +28,7 @@ In verification, you don't just want to know that your tests passed; you want to
 Your AXI coverage model should cross multiple dimensions. A single transaction hitting a specific burst type is not enough; you need to see that burst type with various lengths, sizes, and responses.
 
 ### 1. Burst Attributes Cross
-You must cover the cross-product of:
+Your verification plan should cover the supported cross-product of:
 * **Burst Type:** `FIXED`, `INCR`, `WRAP`
 * **Burst Size:** 1 byte up to the maximum bus width (e.g., 128 bytes)
 * **Burst Length:** 1 beat up to 256 beats (for INCR) or 16 beats (for WRAP)
@@ -36,26 +36,20 @@ You must cover the cross-product of:
 *Why?* To ensure your address calculation logic (or the slave's memory pointer logic) works for all legal shapes.
 
 ### 2. Response Cross
-You must cover the cross-product of:
+You should cover responses in the context where each response is meaningful:
 * **Response Type:** `OKAY`, `EXOKAY`, `SLVERR`, `DECERR`
-* **Transaction Phase:** Does the error happen on the first beat of a read burst, the middle, or the last?
+* **Transaction Phase:** For reads, does the response occur on the first, middle, or last R beat? For writes, the single BRESP qualifies the complete burst.
 
-*Why?* Error handling logic often works fine for single transfers but fails when an error occurs in the middle of a long burst. Furthermore, crossing Response with Burst Type reveals structural impossibilities. For example, an `EXOKAY` response is illegal for a `FIXED` burst because exclusive accesses must not use FIXED bursts.
+*Why?* Error handling logic often works for single transfers but fails during a long read burst or while a write burst is draining. `EXOKAY` is conditional: it is legal only for a successful exclusive access, and its legality depends on `AxLOCK` plus the complete exclusive alignment, span, attribute, and matching read/write restrictions. Burst type alone is not enough to mark the bin legal or illegal.
 
-The grid below shows this cross-coverage space interactively—crossing AXI Burst Types against Responses. Hover over any cell to see its status. Notice how coverage holes for `WRAP` bursts or `DECERR` responses easily stand out, and how the `FIXED` + `EXOKAY` illegal bin is excluded from the metric.
+The grid below shows one slice of the cross-coverage space. Focus, hover, or select a cell to inspect its status. Notice how holes for `WRAP` bursts or `DECERR` responses stand out, while `EXOKAY` cells explicitly require additional exclusive-access dimensions before they can be judged.
 
-```visual
-cm-axi-burst-resp
-```
+![Interactive AXI burst-type and response coverage map with conditional exclusive-response guidance](visual:cm-axi-burst-resp)
 
-*Caption: A 2D coverage map slicing AXI Burst Types against Responses.*
-
-```exercise
-ex-axi-coverage-holes
-```
+Use the exercise below to decide which zero-hit cells are actionable holes and which require a more precise cross or exclusion rationale.
 
 ### 3. Outstanding Depth and IDs
-You must measure the concurrent state of the interface:
+Your coverage model should measure the concurrent state of the interface:
 * **Outstanding Transactions:** 0, 1, 2, ..., Max Capacity.
 * **ID Utilization:** Single ID in flight vs. Multiple different IDs in flight.
 

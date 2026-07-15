@@ -16,7 +16,7 @@ export default function ChecklistViewer({ checklist }: { checklist: Checklist })
   return (
     <div className="checklist-container">
       <div className="checklist-header">
-        <h4 className="checklist-title">Checklist: {checklist.title}</h4>
+        <h3 className="checklist-title">Checklist: {checklist.title}</h3>
         <div className="checklist-progress" aria-live="polite">{completedCount} / {totalCount}</div>
       </div>
       

@@ -15,21 +15,25 @@ tags:
   - sva
 prerequisites: []
 relatedLessons: []
-visualIds: []
+visualIds: ["sig-axi-assertion-library"]
 glossaryTerms: []
 checklistIds: []
 ---
 
 # AXI Assertions and Protocol Checking
 
-Protocol checkers (often implemented using SystemVerilog Assertions, or SVA) are mandatory in an AXI environment. AXI has rigid rules; violating them can silently corrupt data or deadlock the system.
+Protocol checkers (often implemented using SystemVerilog Assertions, or SVA) are a core part of a serious AXI environment. AXI has precise rules; violating them can corrupt data, lose transaction ownership, or contribute to system deadlock.
+
+The useful question is not merely “which assertion should I write?” but **what event triggers it, what state must it remember, and which legal behavior must it avoid rejecting?**
+
+![AXI assertion library connecting channel and transaction rules to triggers, tracked state, and false-positive traps](visual:sig-axi-assertion-library)
 
 ## Key Properties to Check Continuously
 
 A robust AXI protocol monitor should assert the following properties on every interface:
 
-### 1. Ready/Valid Stability
-Once `VALID` is asserted, it must remain HIGH, and the payload (e.g., Address, Data) must remain perfectly stable until `READY` is asserted to complete the handshake.
+### 1. VALID and Payload Stability
+Once `VALID` is asserted, it must remain HIGH, and the complete channel payload must remain stable until a rising edge with `READY` HIGH completes the handshake. `READY` itself can change according to destination capacity.
 * **Failure Symptom:** Dropped transactions or corrupted data due to the master changing its mind while waiting for the slave.
 
 ### 2. WLAST / RLAST Correctness
@@ -41,9 +45,11 @@ The `BID` returned by the slave must match an `AWID` that is currently outstandi
 * **Failure Symptom:** The master receives a response but doesn't know which thread to route it to, leading to software crashes or data corruption.
 
 ### 4. 4KB Boundary Compliance
-A burst must never cross a physical 4KB boundary (`0x1000`).
-* **Failure Symptom:** The transaction might cross from one memory slave's address region into another slave's region, which a standard slave cannot handle without an interconnect intervening.
+A burst must never cross a 4KB address boundary (`0x1000`).
+* **Failure Symptom:** One burst can require two decode targets or more address increments than the receiving component is required to support.
 
 ### 5. WRAP Burst Alignment
-If `AxBURST == WRAP`, the starting address must be aligned to the `AxSIZE`. The length must be 2, 4, 8, or 16.
+If `AxBURST == WRAP`, the starting address must be aligned to the transfer size, and the length must be 2, 4, 8, or 16 transfers.
 * **Failure Symptom:** Cache line fetches return scrambled data because the wrap boundary math in the slave breaks down.
+
+These are protocol safety properties. “READY eventually rises,” “every request completes within N cycles,” and “low-priority traffic is eventually served” are useful liveness properties only after the project defines the bound and environment or arbitration assumptions; AXI does not provide one universal finite service limit.

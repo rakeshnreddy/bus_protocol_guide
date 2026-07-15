@@ -1,0 +1,23 @@
+{
+  "id": "wf-axi-alignment-byte-lanes",
+  "type": "waveform",
+  "title": "AXI4 Alignment and Byte-Lane Selection",
+  "description": "Compare an aligned transfer with an unaligned INCR start on a 64-bit data bus; inspect each snapshot to connect AxSIZE, the byte address, and the WSTRB lanes that may carry valid bytes.",
+  "cycleCount": 5,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": [] },
+    { "name": "Phase", "type": "sideband", "values": ["Aligned AW", "Aligned W", "Unaligned AW", "First W", "Next W"] },
+    { "name": "AWADDR", "type": "data", "values": ["0x1000", "INV", "0x1001", "INV", "INV"] },
+    { "name": "AWLEN", "type": "data", "values": ["0 (1 beat)", "INV", "1 (2 beats)", "INV", "INV"] },
+    { "name": "AWSIZE", "type": "data", "values": ["2 (4 B)", "INV", "2 (4 B)", "INV", "INV"] },
+    { "name": "Beat addr", "type": "data", "values": ["INV", "0x1000", "INV", "0x1001", "0x1004"] },
+    { "name": "WSTRB[7:0]", "type": "data", "values": ["INV", "00001111", "INV", "00001110", "11110000"] }
+  ],
+  "annotations": [
+    { "cycle": 1, "message": "Aligned case: AWSIZE=2 permits up to four bytes and AWADDR 0x1000 is a four-byte boundary." },
+    { "cycle": 2, "message": "The aligned write uses byte lanes 0–3. WSTRB, not WDATA position alone, identifies the bytes that update." },
+    { "cycle": 3, "message": "Unaligned INCR case: the accepted start address is 0x1001. AXI permits this start; a WRAP start would have to be transfer-size aligned." },
+    { "cycle": 4, "message": "The first unaligned transfer uses lanes 1–3 of the aligned 0x1000 word. Address low bits and WSTRB must describe a consistent byte selection." },
+    { "cycle": 5, "message": "The next INCR transfer address is aligned to 0x1004 and uses lanes 4–7. The slave derives this beat address from the accepted burst controls." }
+  ]
+}

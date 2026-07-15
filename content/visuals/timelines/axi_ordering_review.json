@@ -1,0 +1,42 @@
+{
+  "id": "tl-axi-ordering-review",
+  "type": "timeline",
+  "title": "AXI Response Ordering: Three Writes, Two IDs",
+  "description": "Compare legal and illegal response sequences after Write A and Write B reuse ID 5 while Write C uses independent ID 2.",
+  "labels": ["Same-ID issue order", "Different-ID freedom", "Response acceptance"],
+  "transactions": [
+    {
+      "id": "request-order", "label": "AW issue order", "phases": [
+        { "id": "issue-a", "name": "A · ID 5", "startCycle": 1, "endCycle": 2, "description": "Write A is the older transaction in ID-5's ordering stream." },
+        { "id": "issue-b", "name": "B · ID 5", "startCycle": 2, "endCycle": 3, "description": "Write B reuses ID 5. Its response must not be accepted before A's response." },
+        { "id": "issue-c", "name": "C · ID 2", "startCycle": 3, "endCycle": 4, "description": "Write C uses ID 2, so the AXI ID response-order rule does not order C relative to A or B." }
+      ]
+    },
+    {
+      "id": "legal-cab", "label": "Legal response C-A-B", "phases": [
+        { "id": "cab-c", "name": "C · ID 2", "startCycle": 4, "endCycle": 5, "description": "C can complete first because ID 2 is independent from the ID-5 response stream." },
+        { "id": "cab-a", "name": "A · ID 5", "startCycle": 5, "endCycle": 6, "description": "A is the first accepted ID-5 response." },
+        { "id": "cab-b", "name": "B · ID 5", "startCycle": 6, "endCycle": 7, "description": "B follows A, preserving issue order within ID 5." }
+      ]
+    },
+    {
+      "id": "legal-acb", "label": "Legal response A-C-B", "phases": [
+        { "id": "acb-a", "name": "A · ID 5", "startCycle": 4, "endCycle": 5, "description": "A retires first from the ID-5 queue." },
+        { "id": "acb-c", "name": "C · ID 2", "startCycle": 5, "endCycle": 6, "description": "C can be placed anywhere relative to A and B as long as other system ordering constraints do not apply." },
+        { "id": "acb-b", "name": "B · ID 5", "startCycle": 6, "endCycle": 7, "description": "B remains after A in the same-ID response order." }
+      ]
+    },
+    {
+      "id": "illegal-bca", "label": "Illegal response B-C-A", "phases": [
+        { "id": "bca-b", "name": "B · ID 5 ✕", "startCycle": 4, "endCycle": 5, "description": "Protocol violation: B is the younger ID-5 write but its response appears before A's response." },
+        { "id": "bca-c", "name": "C · ID 2", "startCycle": 5, "endCycle": 6, "description": "C's placement is not the problem; it belongs to a different ID stream." },
+        { "id": "bca-a", "name": "A · ID 5", "startCycle": 6, "endCycle": 7, "description": "A arrives too late to repair the earlier same-ID ordering violation." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "issue-b", "message": "A per-ID FIFO records A before B even though both entries use the same numeric ID." },
+    { "phase": "cab-c", "message": "Different IDs permit response reordering; they do not override address, memory-type, barrier, or product-specific ordering constraints elsewhere in the system." },
+    { "phase": "bca-b", "message": "The monitor flags the first accepted B response for ID 5 because the head of that ID's outstanding queue is still A." }
+  ]
+}

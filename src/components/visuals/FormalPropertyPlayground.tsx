@@ -120,6 +120,7 @@ export default function FormalPropertyPlayground({ data }: { data: FormalPropert
     <div className="formal-playground-container">
       <div className="formal-property-header">
         <h2 className="formal-property-title">{data.title}</h2>
+        {data.description && <p className="visual-description">{data.description}</p>}
         <div className="formal-property-sva">
           <code>{data.property.svaString}</code>
         </div>

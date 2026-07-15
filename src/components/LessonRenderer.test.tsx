@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import LessonRenderer from './LessonRenderer';
 import type { Lesson } from '../types/content';
 
@@ -19,6 +20,12 @@ vi.mock('../lib/loaders', () => ({
   ])
 }));
 
+vi.mock('../lib/visualLoaders', () => ({
+  getVisualById: vi.fn((id: string) => id === 'wf-1'
+    ? { id: 'wf-1', type: 'waveform', title: 'Mock Waveform' }
+    : undefined),
+}));
+
 // Mock VisualRenderer to isolate its test
 vi.mock('./visuals/VisualRenderer', () => ({
   default: ({ visualRef }: any) => <div data-testid={`mock-visual-${visualRef.id}`} />
@@ -34,7 +41,7 @@ const mockLesson: Lesson = {
   tags: ['test'],
   prerequisites: [],
   relatedLessons: [],
-  visualIds: [],
+  visualIds: ['wf-1'],
   exerciseIds: ['ex-1'],
   glossaryTerms: ['master'],
   checklistIds: ['cl-1'],
@@ -65,7 +72,48 @@ describe('LessonRenderer', () => {
     );
     
     expect(screen.getByTestId('mock-visual-wf-1')).toBeInTheDocument();
-    expect(screen.getByText('Figure: Caption')).toBeInTheDocument();
+    expect(document.querySelector('.inline-visual-caption')).toHaveTextContent('Figure Caption');
+    expect(screen.getByText('Visual 1 of 1')).toBeInTheDocument();
+    expect(screen.getByText('Waveform')).toBeInTheDocument();
+    expect(screen.getByText(/Identify the accepting edge, phase owner/i)).toBeInTheDocument();
+  });
+
+  it('provides a visual-first lesson workflow and retrieval prompts', () => {
+    render(
+      <MemoryRouter>
+        <LessonRenderer lesson={mockLesson} body="Lesson content." />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: 'Lesson workflow' })).toBeInTheDocument();
+    expect(screen.getByText('Inspect 1 visual')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Retain the model' })).toBeInTheDocument();
+    expect(screen.getByText('Which component or protocol boundary owns each part of the transaction?'))
+      .toBeInTheDocument();
+  });
+
+  it('supports pointer, Enter, and Space activation for the retention disclosure', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <LessonRenderer lesson={mockLesson} body="Lesson content." />
+      </MemoryRouter>
+    );
+
+    const summary = screen.getByText('Run the retrieval check').closest('summary');
+    if (!summary) throw new Error('Expected retention summary');
+    expect(summary.tagName).toBe('SUMMARY');
+    await user.click(summary);
+
+    expect(summary.closest('details')).toHaveAttribute('open');
+
+    summary.focus();
+    expect(summary).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(summary.closest('details')).not.toHaveAttribute('open');
+
+    await user.keyboard(' ');
+    expect(summary.closest('details')).toHaveAttribute('open');
   });
 
   it('renders interactive exercises from exerciseIds', () => {

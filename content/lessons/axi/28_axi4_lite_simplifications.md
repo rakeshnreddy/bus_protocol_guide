@@ -9,7 +9,7 @@ order: 28
 tags: ["axi", "axi-lite", "registers"]
 relatedLessons: ["27_axi3_vs_axi4_differences", "02_axi_variants"]
 prerequisites: ["04_five_channel_model"]
-visualIds: []
+visualIds: ["sig-axi4-lite-interface"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -26,15 +26,19 @@ AXI4-Lite retains the five-channel `VALID`/`READY` architecture of AXI4, but str
 1.  **No Bursts:** All transactions must be exactly 1 beat long.
     *   There is no `AxLEN`, `AxBURST`, or `AxSIZE`.
     *   Since every transaction is 1 beat, there is no `WLAST` or `RLAST` signal.
-2.  **No IDs (Effectively):** 
-    *   All transactions must complete in order. 
-    *   The specification allows `AxID` signals to exist, but the slave is not allowed to use them to reorder traffic. Most AXI4-Lite interfaces just drop the ID signals entirely.
+2.  **No ID-based reordering:**
+    *   AXI4-Lite does not support AXI IDs as ordering domains, so transactions complete in order.
+    *   Optional ID reflection can be added for direct interoperability with a full AXI connection, but it does not turn the Lite slave into an out-of-order endpoint.
 3.  **Data Width:** The data bus must be exactly 32-bits or 64-bits wide.
 4.  **No Exclusive Accesses:** No `AxLOCK` signal.
-5.  **No Cache/Protection:** Often strips away `AxCACHE` and `AxPROT`, though some implementations keep them for basic security checking.
+5.  **Fixed cache behavior, retained protection:** `AxCACHE` is absent and every access is defined as Non-modifiable and Non-bufferable. `AWPROT` and `ARPROT` remain in the AXI4-Lite signal set.
+
+The explorer below answers: **which signals actually remain on each Lite channel, and which full-AXI controls are fixed or omitted?**
+
+![Interactive AXI4-Lite five-channel signal surface with retained and omitted controls](visual:sig-axi4-lite-interface)
 
 ## Why use AXI4-Lite?
 
-AXI4-Lite is incredibly easy to implement. A basic AXI4-Lite slave state machine can be written in a few dozen lines of Verilog. 
+AXI4-Lite has a substantially smaller state and checking surface than full AXI4, while retaining independent channel handshakes and backpressure behavior.
 
-In a typical System-on-Chip (SoC), the high-speed CPU and DDR controllers talk to each other using full AXI4. A bridge then converts full AXI4 down to AXI4-Lite to talk to the slow, simple peripherals (like GPIO or UART) on the edge of the chip.
+In a typical System-on-Chip (SoC), the high-speed CPU and DDR controllers talk using full AXI4 while control peripherals expose AXI4-Lite. A direct connection is possible when the requester emits only the Lite subset; otherwise an adapter must convert, protect against, or detect unsupported full-AXI transactions.

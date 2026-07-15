@@ -1,0 +1,37 @@
+{
+  "id": "tl-axi3-axi4-write-order",
+  "type": "timeline",
+  "title": "AXI3 Interleaving vs AXI4 Write Order",
+  "description": "Both examples assume write addresses A then B were accepted; inspect the W-channel beats to see how AXI3 WID could identify interleaved data while AXI4 must finish A before B.",
+  "labels": [
+    "AXI3: WID identifies each write-data beat",
+    "AXI4: no WID",
+    "AXI4 write data follows address order"
+  ],
+  "transactions": [
+    {
+      "id": "axi3-w",
+      "label": "AXI3 W channel",
+      "phases": [
+        { "id": "axi3-a0", "name": "A0 · WID 0", "startCycle": 1, "endCycle": 2, "description": "First beat of transaction A. AXI3 carries WID so the destination can associate this beat with AWID 0." },
+        { "id": "axi3-b0", "name": "B0 · WID 1", "startCycle": 2, "endCycle": 3, "description": "A beat from transaction B is interleaved before A finishes. AXI3 permits this only within its write-data interleaving rules and declared capability." },
+        { "id": "axi3-a1", "name": "A1 · WLAST", "startCycle": 3, "endCycle": 4, "description": "Transaction A finishes; WID still identifies its write-data stream." },
+        { "id": "axi3-b1", "name": "B1 · WLAST", "startCycle": 4, "endCycle": 5, "description": "Transaction B finishes after the interleaved A beat." }
+      ]
+    },
+    {
+      "id": "axi4-w",
+      "label": "AXI4 W channel",
+      "phases": [
+        { "id": "axi4-a0", "name": "A0", "startCycle": 1, "endCycle": 2, "description": "AXI4 has no WID. The first data beat belongs to the first accepted write address, transaction A." },
+        { "id": "axi4-a1", "name": "A1 · WLAST", "startCycle": 2, "endCycle": 3, "description": "All data for A completes before any data for B is forwarded." },
+        { "id": "axi4-b0", "name": "B0", "startCycle": 3, "endCycle": 4, "description": "Only after A finishes can the W channel begin transaction B." },
+        { "id": "axi4-b1", "name": "B1 · WLAST", "startCycle": 4, "endCycle": 5, "description": "The W stream remains attributable through accepted address order rather than a per-beat WID." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "axi3-b0", "message": "Interleaving is an AXI3 capability, not permission to mix beats without WID and the required component support." },
+    { "phase": "axi4-a1", "message": "AXI4 removes WID and requires a master—and a combining interconnect—to issue write data in write-address order." }
+  ]
+}

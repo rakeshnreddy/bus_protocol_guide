@@ -1,0 +1,74 @@
+{
+  "id": "sig-axi-legality-patterns",
+  "type": "signal-explorer",
+  "title": "AXI4 Legal-Pattern Debugger",
+  "description": "Open a rule family to decide whether the example is legal, identify the responsible channel owner, and see the assertion or scoreboard state a verifier needs.",
+  "signals": [
+    {
+      "name": "VALID independence",
+      "expansion": "Source must not wait for READY",
+      "role": "control",
+      "group": "Handshake and response dependencies",
+      "description": "LEGAL: a destination may wait for VALID before asserting READY. ILLEGAL: an address or data source waits for READY before asserting its VALID, because mutually waiting endpoints can deadlock.",
+      "direction": "VALID is source-driven; READY is destination-driven on each channel",
+      "sampled": "A transfer occurs on a rising ACLK edge with both VALID and READY HIGH",
+      "values": ["LEGAL: READY waits for VALID", "ILLEGAL: VALID waits for READY"],
+      "verificationNote": "Assert that once VALID rises it remains asserted, with a stable payload, until a handshake. Liveness analysis must separately examine READY policies."
+    },
+    {
+      "name": "B response",
+      "expansion": "Accepted AW plus accepted final W",
+      "role": "control",
+      "group": "Handshake and response dependencies",
+      "description": "In AXI4, a slave can assert BVALID only after it has accepted the write address and accepted the final write-data transfer with WLAST asserted.",
+      "direction": "BVALID/BRESP are slave-driven; BREADY is master-driven",
+      "sampled": "Dependencies are established by AW and final W handshakes, not by signal assertion alone",
+      "values": ["LEGAL: BVALID after both dependencies", "ILLEGAL: early BVALID"],
+      "verificationNote": "Track AW acceptance and final-W acceptance independently, then allow exactly one B response for the transaction."
+    },
+    {
+      "name": "Burst bounds",
+      "expansion": "Length, size, wrap, and 4 KB checks",
+      "role": "data",
+      "group": "Burst structure",
+      "description": "A burst is illegal if a transfer is wider than either interface, a WRAP length is not 2/4/8/16, a WRAP start is not size-aligned, or any byte crosses a 4 KB boundary.",
+      "direction": "AxADDR, AxLEN, AxSIZE, and AxBURST are master-driven on AW or AR",
+      "sampled": "The complete burst contract is captured by the address-channel handshake",
+      "values": ["WRAP beats: 2, 4, 8, 16", "Maximum bytes/beat: 2^AxSIZE", "One 4 KB region"],
+      "verificationNote": "Compute every derived beat address and active byte range from the accepted controls; do not check only the start address."
+    },
+    {
+      "name": "LAST count",
+      "expansion": "No early burst termination",
+      "role": "data",
+      "group": "Burst structure",
+      "description": "WLAST and RLAST identify the final transfer declared by AxLEN. A write source may deassert all WSTRB bits on unwanted remaining beats, but it must still complete the declared number of transfers.",
+      "direction": "WLAST is master-driven; RLAST is slave-driven",
+      "sampled": "LAST matters on an accepted data transfer where VALID and READY are HIGH",
+      "values": ["Final index = AxLEN", "Zero WSTRB may suppress writes", "No early abort"],
+      "verificationNote": "Count accepted beats rather than clock cycles, because backpressure can hold one beat for multiple cycles."
+    },
+    {
+      "name": "ID ordering",
+      "expansion": "Order is scoped by transaction ID",
+      "role": "sideband",
+      "group": "Ordering and hazards",
+      "description": "Responses for transactions in the same required ordering domain must remain ordered. Different IDs can permit out-of-order completion, subject to the rest of the AXI ordering rules and target capabilities.",
+      "direction": "Request IDs are master-driven; BID and RID are returned with responses",
+      "sampled": "Allocate on an address handshake and retire on the matching B or final R handshake",
+      "values": ["Same ID: preserve required order", "Different IDs: reordering can be legal"],
+      "verificationNote": "Maintain per-ID queues and never use address alone as the response key."
+    },
+    {
+      "name": "Read after write",
+      "expansion": "Cross-channel completion is not implied",
+      "role": "sideband",
+      "group": "Ordering and hazards",
+      "description": "The independent read and write channels do not, by themselves, guarantee that a write response appears before data for a later read. The master and system ordering mechanism must establish any required dependency.",
+      "direction": "The dependency spans independent AW/W/B and AR/R channel flows",
+      "sampled": "Use accepted transactions and architectural completion rules, not issue order alone",
+      "values": ["Protocol channel independence", "System-level dependency required"],
+      "verificationNote": "A scoreboard must model the intended memory-ordering policy instead of inventing a universal cross-channel response order."
+    }
+  ]
+}

@@ -1,26 +1,27 @@
 {
   "id": "wf-axi-4kb-boundary",
-  "title": "4KB Boundary Rule",
   "type": "waveform",
-  "cycleCount": 5,
+  "title": "AXI4 4 KB Boundary Check",
+  "description": "Trace the derived addresses of an illegal four-beat INCR burst, then compare the two legal transactions that keep every transferred byte inside one 4 KB region.",
+  "cycleCount": 6,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "AWADDR", "type": "data", "color": "orange", "values": ["-", "0x0FF8", "0x0FF8", "-", "-"] },
-    { "name": "AWLEN", "type": "data", "color": "orange", "values": ["-", "3 (4 beats)", "1 (2 beats)", "-", "-"] },
-    { "name": "AWSIZE", "type": "data", "color": "orange", "values": ["-", "2 (4 bytes)", "2 (4 bytes)", "-", "-"] },
-    { "name": "Status", "type": "data", "color": "red", "values": ["-", "ILLEGAL", "LEGAL", "-", "-"] }
+    { "name": "Case", "type": "sideband", "values": ["Illegal", "Illegal", "Illegal", "Illegal", "Split A", "Split B"] },
+    { "name": "AWADDR", "type": "data", "values": ["0x0FF8", "INV", "INV", "INV", "0x0FF8", "0x1000"] },
+    { "name": "AWLEN", "type": "data", "values": ["3 (4 beats)", "INV", "INV", "INV", "1 (2 beats)", "1 (2 beats)"] },
+    { "name": "AWSIZE", "type": "data", "values": ["2 (4 B)", "INV", "INV", "INV", "2 (4 B)", "2 (4 B)"] },
+    { "name": "Beat address", "type": "data", "values": ["B0 0x0FF8", "B1 0x0FFC", "B2 0x1000", "B3 0x1004", "0x0FF8→0x0FFC", "0x1000→0x1004"] },
+    { "name": "4 KB region", "type": "data", "values": ["0x0000", "0x0000", "0x1000", "0x1000", "0x0000 only", "0x1000 only"] }
   ],
   "violations": [
-    { "cycle": 2, "signal": "Status", "rule": "Burst crosses 4KB boundary (0x0FF8 + 4*4 = 0x1008)" }
+    { "cycle": 3, "message": "The derived beat address enters the 0x1000–0x1FFF region, so the original burst crosses a 4 KB boundary." }
   ],
   "annotations": [
-    {
-      "cycle": 2,
-      "message": "Illegal Burst: Starts at 0x0FF8 with 4 beats of 4 bytes. 0x0FF8, 0x0FFC, 0x1000, 0x1004. It crosses 0x1000 (4KB boundary)!"
-    },
-    {
-      "cycle": 3,
-      "message": "Legal Alternative: Break it into two bursts. First burst is 2 beats (0x0FF8, 0x0FFC). Second burst starts at 0x1000."
-    }
+    { "cycle": 1, "message": "The accepted controls declare four INCR transfers of up to four bytes, beginning at 0x0FF8." },
+    { "cycle": 2, "message": "Beat 1 remains in the original 4 KB region and accesses bytes ending at 0x0FFF." },
+    { "cycle": 3, "message": "Beat 2 starts at 0x1000. Even though that address is aligned, entering a second 4 KB region makes the declared burst illegal." },
+    { "cycle": 4, "message": "The remaining derived address confirms the transaction spans two independently decoded regions; a compliant master must not issue it." },
+    { "cycle": 5, "message": "Legal split A is a separate two-beat burst at 0x0FF8 and 0x0FFC, entirely below the boundary." },
+    { "cycle": 6, "message": "Legal split B is a new two-beat transaction beginning at 0x1000. Each accepted burst now stays within one 4 KB region." }
   ]
 }

@@ -9,7 +9,7 @@ order: 27
 tags: ["axi", "axi3", "axi4", "history"]
 relatedLessons: ["28_axi4_lite_simplifications"]
 prerequisites: ["04_five_channel_model"]
-visualIds: []
+visualIds: ["tl-axi3-axi4-write-order"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -28,9 +28,13 @@ This is the biggest difference between AXI3 and AXI4.
 *   Cycle 2: Beat 1 of Write B (`WID = 1`)
 *   Cycle 3: Beat 2 of Write A (`WID = 0`)
 
-**In AXI4:** Write interleaving is strictly forbidden, and the `WID` signal was entirely removed from the W channel. 
-If a master starts sending write data for Transaction A, it **must** finish all beats of Transaction A before it can send any data for Transaction B. 
-*Why?* Because write interleaving required massive, complex reorder buffers inside every slave and interconnect, eating up silicon area and increasing power consumption.
+**In AXI4:** The `WID` signal was removed. A master must issue write data in the same order as its write addresses, and an interconnect combining writes from different masters must forward the write data in address order. Beats from Transaction B therefore cannot be inserted into the W stream before Transaction A finishes.
+
+The side-by-side timeline answers: **how could AXI3 identify an interleaved beat, and what replaces that association in AXI4?**
+
+![AXI3 WID-based interleaving compared with AXI4 write data completing in accepted address order](visual:tl-axi3-axi4-write-order)
+
+*Why remove it?* Eliminating per-beat WID routing and interleaving reduces write-data association and buffering complexity. That engineering motivation is distinct from the normative AXI4 ordering rule shown above.
 
 ## 2. Expanded Burst Lengths
 
@@ -42,7 +46,7 @@ If a master starts sending write data for Transaction A, it **must** finish all 
 
 **In AXI3:** Supported both Locked and Exclusive accesses (via the `AxLOCK` signal).
 **In AXI4:** Locked accesses were removed. `AxLOCK` was reduced to a single bit that only supports Exclusive accesses.
-*Why?* Locked accesses freeze the entire interconnect to guarantee atomicity, destroying system performance. Exclusive accesses (which use monitors instead of physical locks) achieve atomicity without halting other traffic.
+*Why?* A locked sequence can exclude competing accesses along the affected path and complicate shared-fabric progress. Exclusive accesses use monitors and a success/failure response instead of treating exclusivity as locked bus ownership.
 
 ## 4. QoS and Region Identifiers Added
 

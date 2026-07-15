@@ -21,16 +21,16 @@ To connect them, you use a Bridge.
 
 ## The AXI-to-APB Bridge
 
-![tp-axi-apb-bridge](visual:tp-axi-apb-bridge)
+![AXI4-to-APB3 or APB4 bridge separating AXI channel acceptance, buffered conversion, APB selection, and error return](visual:tp-axi-apb-bridge)
 
 The most common bridge in the industry is the AXI-to-APB bridge. 
 
 The bridge acts as an AXI Slave on one side, and an APB Master on the other. 
-Because APB is incredibly simple (no bursts, no pipelines, strict 2-cycle transfers), the bridge has to do a lot of translation work:
+Because APB is intentionally simple (no bursts and no pipelined overlap), the bridge has to translate between very different transaction models. An APB transfer has a one-cycle SETUP phase followed by one or more ACCESS cycles; two cycles is the minimum, while `PREADY` can add wait states.
 
-1.  **Burst Breakdown:** If the AXI master sends an INCR burst of 4 beats, the bridge must accept the address, and then execute four completely separate, sequential APB transfers. It cannot accept the next beat of AXI data until the previous APB transfer completes.
-2.  **Backpressure:** Because APB is slow, the bridge will heavily backpressure the AXI master, holding `WREADY` or `ARREADY` low while it waits for the APB peripheral to respond.
-3.  **Response Synthesis:** APB does not have a concept of OKAY vs EXOKAY vs SLVERR (prior to APB4). The bridge must synthesize an `OKAY` response on the AXI `BRESP`/`RRESP` channels to satisfy the AXI master.
+1.  **Burst Breakdown:** If the AXI master sends an INCR burst of 4 beats, a converting bridge issues separate sequential APB transfers with derived addresses. How much AXI address and write data it accepts ahead of APB completion depends on its documented buffering and outstanding-depth design.
+2.  **Backpressure:** When those buffers or read-request resources are unavailable, the bridge backpressures the relevant AXI channels. It is not required to stall every channel for the full APB latency if it has capacity to accept more work.
+3.  **Response Mapping:** APB3 and later define optional `PSLVERR`; an APB error maps back to AXI `RRESP` for reads or `BRESP` for writes. If the downstream interface has no error signal, the bridge follows its specified system policy—commonly returning `OKAY` when the APB transfer completes normally—rather than detecting an error that APB never reported.
 
 ## AXI-to-AHB Bridges
 

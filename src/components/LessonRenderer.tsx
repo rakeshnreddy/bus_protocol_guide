@@ -9,6 +9,8 @@ import { getExerciseById, getChecklistById, getGlossaryEntries } from '../lib/lo
 import { Link } from 'react-router-dom';
 import GlossaryTermInline from './interactive/GlossaryTermInline';
 import type { Components } from 'react-markdown';
+import { getVisualById } from '../lib/visualLoaders';
+import type { VisualData } from '../types/visuals';
 import './interactive/interactive.css';
 
 interface LessonRendererProps {
@@ -20,6 +22,106 @@ interface LessonRendererProps {
     previous?: Pick<Lesson, 'id' | 'title'>;
     next?: Pick<Lesson, 'id' | 'title'>;
   };
+}
+
+const visualTypeLabels: Record<VisualData['type'], string> = {
+  waveform: 'Waveform',
+  timeline: 'Timeline',
+  topology: 'Block diagram',
+  'signal-explorer': 'Signal explorer',
+  'coverage-map': 'Coverage map',
+  'formal-property': 'Formal property',
+  'spec-rule-explorer': 'Rule explorer',
+};
+
+const visualInspectionPrompts: Record<VisualData['type'], string> = {
+  waveform: 'Move across the cycles. Identify the accepting edge, phase owner, stalled state, and any payload that must remain stable.',
+  timeline: 'Follow the lanes in order, then select a phase to explain overlap, completion, and transaction ownership.',
+  topology: 'Trace the highlighted path from source to destination, then inspect blocks and routes to explain responsibility and direction.',
+  'signal-explorer': 'Open signals by group and connect direction, sampling, important values, and the verification watchpoint.',
+  'coverage-map': 'Inspect covered bins, holes, and exclusions. Explain which transaction context makes each combination meaningful.',
+  'formal-property': 'Change the editable scenario, compare pass and fail states, and explain the sampled obligation at the failing edge.',
+  'spec-rule-explorer': 'Filter to the relevant rule, then connect its obligation to the waveform symptom and checker evidence.',
+};
+
+const ownershipRecallPrompts: Record<Lesson['protocol'], string> = {
+  ahb: 'Which accepted address phase owns the data and response phase you would debug?',
+  axi: 'Which VALID and READY edge creates the event, and how would you correlate its later response?',
+  foundations: 'Which component or protocol boundary owns each part of the transaction?',
+};
+
+function LessonWorkflow({ lesson }: { lesson: Lesson }) {
+  const visualCount = lesson.visualIds.length;
+  const hasAssessment = lesson.exerciseIds.length > 0 || lesson.checklistIds.length > 0;
+
+  return (
+    <section className="lesson-workflow" aria-labelledby={`${lesson.id}-workflow-title`}>
+      <div className="lesson-workflow-heading">
+        <h2 id={`${lesson.id}-workflow-title`}>Lesson workflow</h2>
+        <p>Build the model, inspect the evidence, then retrieve the rule from memory.</p>
+      </div>
+      <ol>
+        <li>
+          <strong>Read the concept</strong>
+          <span>Track ownership, sampling, and the protocol condition being taught.</span>
+        </li>
+        {visualCount > 0 && (
+          <li>
+            <strong>Inspect {visualCount} visual{visualCount === 1 ? '' : 's'}</strong>
+            <span>Use focus, Enter, Space, or touch to open the annotations.</span>
+          </li>
+        )}
+        <li>
+          <strong>{hasAssessment ? 'Test the model' : 'Recall the rule'}</strong>
+          <span>{hasAssessment
+            ? 'Complete the lesson check, then explain why the answer is correct.'
+            : 'Name the critical edge and the verifier evidence without looking back.'}</span>
+        </li>
+      </ol>
+    </section>
+  );
+}
+
+function LessonRetentionPanel({ lesson }: { lesson: Lesson }) {
+  const handleSummaryKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    event.preventDefault();
+    const details = event.currentTarget.closest('details');
+    if (details) details.open = !details.open;
+  };
+
+  return (
+    <section className="lesson-retention" aria-labelledby={`${lesson.id}-retention-title`}>
+      <div className="lesson-retention-heading">
+        <div>
+          <h2 id={`${lesson.id}-retention-title`}>Retain the model</h2>
+          <p>Close the loop before moving to the next lesson.</p>
+        </div>
+        <span>60 seconds</span>
+      </div>
+      <details>
+        <summary onKeyDown={handleSummaryKeyDown}>
+          <span>Run the retrieval check</span>
+          <span className="retention-summary-count">3 prompts</span>
+        </summary>
+        <ol>
+          <li>
+            <strong>Explain</strong>
+            <span>Describe {lesson.title} in your own words without repeating the lesson summary.</span>
+          </li>
+          <li>
+            <strong>Locate</strong>
+            <span>{ownershipRecallPrompts[lesson.protocol]}</span>
+          </li>
+          <li>
+            <strong>Verify</strong>
+            <span>What assertion, scoreboard state, or coverage point would expose the most important failure?</span>
+          </li>
+        </ol>
+      </details>
+    </section>
+  );
 }
 
 export default function LessonRenderer({ lesson, body, navigation }: LessonRendererProps) {
@@ -40,16 +142,38 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
     img: ({ src, alt }) => {
       if (src && src.startsWith('visual:')) {
         const visualId = src.replace('visual:', '');
+        const visual = getVisualById(visualId);
+        const visualType = visual?.type;
+        const visualPosition = Math.max(lesson.visualIds.indexOf(visualId), 0) + 1;
+        const visualTotal = Math.max(lesson.visualIds.length, 1);
+        const contextId = `${lesson.id}-${visualId}-inspection-guide`;
         // We pass 'waveform' as a dummy type; VisualRenderer resolves the true type via getVisualById
         return (
-          <div className="inline-visual-wrapper">
-            <VisualRenderer visualRef={{ id: visualId, type: 'waveform', dataFile: '' }} altText={alt} />
+          <section
+            className="inline-visual-wrapper visual-learning-frame"
+            aria-label={`${visual?.title ?? alt ?? visualId}, visual ${visualPosition} of ${visualTotal}`}
+            aria-describedby={contextId}
+          >
+            <header className="visual-learning-header">
+              <div className="visual-learning-meta" aria-label={`Visual ${visualPosition} of ${visualTotal}`}>
+                <span>Visual {visualPosition} of {visualTotal}</span>
+                <span>{visualType ? visualTypeLabels[visualType] : 'Interactive visual'}</span>
+              </div>
+              <p id={contextId}>
+                {visualType
+                  ? visualInspectionPrompts[visualType]
+                  : 'Inspect the visual and connect its selected state to the lesson rule.'}
+              </p>
+            </header>
+            <div className="visual-learning-stage">
+              <VisualRenderer visualRef={{ id: visualId, type: 'waveform', dataFile: '' }} altText={alt} />
+            </div>
             {alt && (
               <div className="inline-visual-caption">
-                Figure: {alt}
+                <span>Figure</span> {alt}
               </div>
             )}
-          </div>
+          </section>
         );
       }
       return <img className="lesson-image" src={src} alt={alt} />;
@@ -91,6 +215,8 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
           </div>
         )}
       </header>
+
+      <LessonWorkflow lesson={lesson} />
       
       <div className="lesson-body">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={components} urlTransform={(url) => url}>
@@ -99,6 +225,7 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
       </div>
       
       <footer className="lesson-footer">
+        <LessonRetentionPanel lesson={lesson} />
         
         {lesson.checklistIds && lesson.checklistIds.length > 0 && (
           <div className="resource-section">
