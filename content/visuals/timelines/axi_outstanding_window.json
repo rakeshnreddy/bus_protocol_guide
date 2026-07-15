@@ -1,0 +1,45 @@
+{
+  "id": "tl-axi-outstanding-window",
+  "type": "timeline",
+  "title": "AXI Read Scoreboard: Allocate, Wait, Retire",
+  "description": "Three accepted AR requests overlap in flight; inspect each phase to see when a master allocates tracking state and when an accepted RLAST beat retires it.",
+  "labels": [
+    "AR handshake allocates an accepted request",
+    "RID selects the per-ID issue-order queue",
+    "RVALID && RREADY && RLAST retires the burst"
+  ],
+  "transactions": [
+    {
+      "id": "read-a",
+      "label": "Read A · ID 0",
+      "phases": [
+        { "id": "a-allocate", "name": "AR accepted", "startCycle": 1, "endCycle": 2, "description": "ARVALID and ARREADY are HIGH at the accepting edge. The master records ID 0, address, length, destination, and return context." },
+        { "id": "a-outstanding", "name": "Outstanding", "startCycle": 2, "endCycle": 5, "description": "Read A remains in the scoreboard while the target works. Other AR requests can be accepted during this window." },
+        { "id": "a-retire", "name": "RLAST accepted", "startCycle": 5, "endCycle": 6, "description": "The final R beat for RID 0 handshakes. The master can now retire Read A's issue-order entry." }
+      ]
+    },
+    {
+      "id": "read-b",
+      "label": "Read B · ID 1",
+      "phases": [
+        { "id": "b-allocate", "name": "AR accepted", "startCycle": 2, "endCycle": 3, "description": "A second address is accepted before Read A completes, so two reads are now outstanding." },
+        { "id": "b-outstanding", "name": "Outstanding", "startCycle": 3, "endCycle": 6, "description": "Read B uses a different ID and may complete before or after A if the target and interconnect support reordering." },
+        { "id": "b-retire", "name": "RLAST accepted", "startCycle": 6, "endCycle": 7, "description": "The accepted final beat for RID 1 releases Read B's tracking entry." }
+      ]
+    },
+    {
+      "id": "read-c",
+      "label": "Read C · ID 0",
+      "phases": [
+        { "id": "c-allocate", "name": "AR accepted", "startCycle": 3, "endCycle": 4, "description": "Read C reuses ID 0 while Read A is outstanding. Reusing an ID is legal, but its read response must remain behind A's response in that ID's issue order." },
+        { "id": "c-outstanding", "name": "Outstanding", "startCycle": 4, "endCycle": 8, "description": "The scoreboard keeps a queue for ID 0, preserving A before C while independently tracking ID 1." },
+        { "id": "c-retire", "name": "RLAST accepted", "startCycle": 8, "endCycle": 9, "description": "Read C retires only when its own final R transfer is accepted; seeing RID 0 earlier for Read A did not retire both transactions." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "b-allocate", "message": "Outstanding depth is a configured interface capability, not the number of distinct ID values." },
+    { "phase": "c-allocate", "message": "Same-ID reuse consumes another entry and adds an ordering obligation; it does not create a unique-ID violation." },
+    { "phase": "c-retire", "message": "For writes, the analogous retirement event is an accepted B response." }
+  ]
+}

@@ -1,31 +1,51 @@
 {
   "id": "wf-axi-read-channels",
-  "title": "AXI Read: Concurrent Channels",
+  "title": "AXI4 Read: Address, Data, Response, and Backpressure",
   "type": "waveform",
-  "cycleCount": 6,
+  "description": "Trace an AR request into three R beats, including a stalled middle beat whose RID, RDATA, RRESP, and RLAST remain stable until the master accepts it.",
+  "cycleCount": 9,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "0", "0", "0", "0"] },
-    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["1", "1", "0", "0", "0", "0"] },
-    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x200", "-", "-", "-", "-"] },
-    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "1", "0"] },
-    { "name": "RREADY", "type": "control", "color": "red", "values": ["0", "0", "1", "1", "1", "0"] },
-    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "D0", "D1", "D2", "-"] },
-    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "0"] },
-    { "name": "RRESP", "type": "data", "color": "red", "values": ["-", "-", "OKAY", "OKAY", "OKAY", "-"] }
+    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["0", "0", "1", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARID", "type": "data", "color": "orange", "values": ["-", "5", "5", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x200", "0x200", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARLEN", "type": "sideband", "color": "orange", "values": ["-", "2 (3 beats)", "2 (3 beats)", "-", "-", "-", "-", "-", "-"] },
+    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "0", "1", "1", "1", "1", "1", "0"] },
+    { "name": "RREADY", "type": "control", "color": "red", "values": ["0", "0", "0", "1", "0", "0", "1", "1", "0"] },
+    { "name": "RID", "type": "data", "color": "red", "values": ["-", "-", "-", "5", "5", "5", "5", "5", "-"] },
+    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "-", "D0", "D1", "D1", "D1", "D2", "-"] },
+    { "name": "RRESP", "type": "sideband", "color": "red", "values": ["-", "-", "-", "OKAY", "OKAY", "OKAY", "OKAY", "SLVERR", "-"] },
+    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "0", "0", "1", "0"] }
   ],
   "annotations": [
     {
-      "cycle": 1,
-      "message": "Read Address (AR) handshake provides the initial address."
+      "cycle": 2,
+      "message": "ARVALID offers ID 5, address 0x200, and a three-beat burst. ARREADY is LOW, so all AR payload signals must remain stable."
     },
     {
-      "cycle": 2,
-      "message": "Slave begins providing Read Data (R). Read Data always follows Read Address."
+      "cycle": 3,
+      "message": "The AR handshake accepts the read request. Only after this accepting edge may the slave provide R data for this transaction."
     },
     {
       "cycle": 4,
-      "message": "RLAST=1 indicates the final beat of the read data burst."
+      "message": "The first R beat transfers with RID=5 and RRESP=OKAY. A read response accompanies every accepted data beat."
+    },
+    {
+      "cycle": 5,
+      "message": "The slave offers D1, but the master deasserts RREADY. No beat transfers; the slave must hold RID, RDATA, RRESP, RLAST, and RVALID stable."
+    },
+    {
+      "cycle": 6,
+      "message": "Backpressure continues and D1 remains unchanged. The AR channel is already free to accept unrelated read addresses."
+    },
+    {
+      "cycle": 7,
+      "message": "RREADY returns HIGH and accepts D1 as the second beat."
+    },
+    {
+      "cycle": 8,
+      "message": "The final beat transfers with RLAST=1 and RRESP=SLVERR. The error describes this beat; the burst still completes all ARLEN+1 beats."
     }
   ]
 }

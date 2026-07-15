@@ -9,13 +9,13 @@ order: 21
 tags: ["axi", "flow-control", "architecture"]
 relatedLessons: ["22_throughput_reasoning_bottlenecks"]
 prerequisites: ["11_ready_valid_in_depth"]
-visualIds: ["wf-axi-deadlock"]
+visualIds: ["wf-axi-ready-valid-scenarios", "wf-axi-deadlock"]
 exerciseIds: ["ex-axi-deadlock"]
 glossaryTerms: []
 checklistIds: []
 ---
 
-In AHB, if a slave is busy, it pulls the global `HREADY` signal LOW. This freezes the entire bus. No master can issue new addresses, and no data can move. It is a brute-force approach to flow control.
+On a shared AHB path, a selected slave's wait response is reflected through `HREADY` and extends both the active data phase and the overlapping address phase. Other independent layers in a multi-layer matrix can still progress, but this shared pipeline cannot accept its next address while the wait persists.
 
 AXI does not have a global `HREADY`. Instead, flow control is distributed via the `READY` signal on each of the five independent channels. This is called **backpressure**.
 
@@ -28,6 +28,10 @@ However, the master is completely free to continue sending write *addresses* on 
 
 This localized backpressure prevents a bottleneck in one part of the system from dragging down the entire SoC.
 
+Inspect the legal stalled transfer below. The source holds `VALID` and its payload stable until the destination finally raises `READY`; a stall changes latency, not ownership of the offered payload.
+
+![AXI VALID and payload held stable through destination backpressure until an accepting edge](visual:wf-axi-ready-valid-scenarios)
+
 ## The Danger of Circular Backpressure (Deadlock)
 
 While independent channels are powerful, they introduce a massive risk if designed poorly: Circular Deadlock.
@@ -38,6 +42,6 @@ Consider a poorly designed master and slave interacting:
 
 Look at the waveform below. Both sides are waiting for the other side to do something first.
 
-![wf-axi-deadlock](visual:wf-axi-deadlock)
+![AXI W and B sources holding VALID while circular READY policies prevent every transfer](visual:wf-axi-deadlock)
 
-This is a permanent, fatal deadlock. The AXI specification is explicitly designed to prevent this by enforcing strict dependency rules (as discussed in Lesson 11: `VALID` cannot depend on `READY`). The scenario above is a violation of the spec, but it is one of the most common bugs you will hunt for as a DV engineer.
+This dependency loop creates a permanent system-level liveness failure. In the shown waveform, both sources assert and hold `VALID` correctly; the deadlock comes from individually permitted but mutually incompatible cross-channel `READY` policies. It is therefore not automatically a single-interface safety violation. If those policies are implemented as direct combinational input-to-output paths, that separately violates AXI's no-combinational-path rule; the steady waveform alone does not prove how they were implemented. Verification needs an integration-level progress contract or bounded timeout in addition to the AXI stability assertions discussed in Lesson 11.

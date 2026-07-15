@@ -138,4 +138,52 @@ describe('Accessibility Audit (axe-core)', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('AXI Batch 1 five-channel topology should have no a11y violations', async () => {
+    const topology = getVisualById('topo-axi-five-channels');
+    if (!topology || topology.type !== 'topology') throw new Error('Missing AXI five-channel topology');
+
+    const { container } = render(<TopologyViewer data={topology} />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('AXI Batch 1 handshake lesson should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '11_ready_valid_in_depth');
+    if (!lessonContent) throw new Error('Missing AXI ready/valid lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('AXI Batch 2 burst timeline lesson should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '15_burst_structure_beat_progression');
+    if (!lessonContent) throw new Error('Missing AXI burst progression lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('AXI Batch 2 backpressure lesson should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '21_backpressure_behavior');
+    if (!lessonContent) throw new Error('Missing AXI backpressure lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
 });

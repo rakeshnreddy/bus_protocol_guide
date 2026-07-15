@@ -9,7 +9,7 @@ order: 11
 tags: ["axi", "handshake", "flow-control"]
 relatedLessons: ["12_independent_channel_behavior"]
 prerequisites: ["04_five_channel_model"]
-visualIds: []
+visualIds: ["wf-axi-ready-valid-scenarios"]
 exerciseIds: []
 glossaryTerms: ["Handshake"]
 checklistIds: []
@@ -31,6 +31,10 @@ Because `VALID` and `READY` are driven by two completely independent entities (t
 1.  **VALID before READY:** The source puts data on the bus and asserts `VALID`. The destination is not ready (`READY` is LOW). The source *must* hold the data and keep `VALID` asserted until the destination asserts `READY`.
 2.  **READY before VALID:** The destination asserts `READY`, signaling "I am waiting for data." The source has nothing to send yet (`VALID` is LOW). When the source finally asserts `VALID`, the transfer happens immediately on that clock edge.
 3.  **Simultaneous:** Both `VALID` and `READY` go HIGH on the exact same clock edge. The transfer completes immediately.
+
+Inspect all three legal scenarios below, then compare them with the final failure. The `TRANSFER` row names only the rising edges where both handshake signals are HIGH.
+
+![AXI VALID and READY waveform comparing legal timing scenarios, stable backpressure, and an early VALID drop](visual:wf-axi-ready-valid-scenarios)
 
 ## The Most Important Rule in AXI
 

@@ -73,7 +73,20 @@ describe('Visual Loaders', () => {
   });
 
   it('should normalize WaveDrom-style debug waveform data', () => {
-    const data = getVisualById('wf-axi-debug-wlast');
+    const { registry } = buildVisualRegistry({
+      '../../content/visuals/wf-legacy-wavedrom.json': {
+        id: 'wf-legacy-wavedrom',
+        type: 'waveform',
+        title: 'Legacy WaveDrom waveform',
+        signals: [
+          { name: 'clk', wave: 'p........' },
+          { name: 'WDATA', wave: 'x..====x.', data: ['D0', 'D1', 'D2', 'D3'] },
+          { name: 'WLAST', wave: '0....10..' },
+        ],
+        annotations: [{ time: 5, text: 'WLAST asserted early.' }],
+      },
+    });
+    const data = registry.get('wf-legacy-wavedrom');
     expect(data?.type).toBe('waveform');
     if (data?.type !== 'waveform') throw new Error('Expected waveform');
     expect(data.cycleCount).toBe(9);

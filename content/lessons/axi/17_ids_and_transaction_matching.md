@@ -9,7 +9,7 @@ order: 17
 tags: ["axi", "ordering", "ids"]
 relatedLessons: ["18_outstanding_transactions", "19_ordering_guarantees"]
 prerequisites: ["04_five_channel_model"]
-visualIds: ["wf-axi-ids-correlation"]
+visualIds: ["wf-axi-ids-correlation", "tp-axi-crossbar"]
 exerciseIds: []
 glossaryTerms: ["AWID", "BID", "ARID", "RID"]
 checklistIds: []
@@ -31,7 +31,7 @@ The slave is required to mirror that exact ID when it provides the corresponding
 
 When the master receives `BID` or `RID`, it uses that tag to close out the transaction in its internal tracking logic.
 
-![wf-axi-ids-correlation](visual:wf-axi-ids-correlation)
+![AXI4 writes whose data follows address order while different-ID responses complete in another order](visual:wf-axi-ids-correlation)
 
 ## ID Widths and Interconnects
 
@@ -39,8 +39,12 @@ The AXI specification does not mandate a specific bit-width for the ID signals (
 
 Crucially, **the ID width can change as a transaction travels through a system interconnect**. 
 
-If Master 0 issues a transaction with `ARID=0x1`, and Master 1 issues a transaction with `ARID=0x1` at the same time, the Interconnect must prevent them from colliding when they reach the shared slave. The Interconnect will physically append extra bits to the ID (e.g., changing Master 0's ID to `0x01` and Master 1's ID to `0x11`). 
+If Master 0 issues a transaction with `ARID=0x1`, and Master 1 issues a transaction with `ARID=0x1` at the same time, the interconnect must preserve enough source context to keep them distinct at a shared slave and to route their responses correctly. Physically appending source bits is one common implementation, but an interconnect can instead remap IDs or retain source metadata internally.
 
-When the slave returns the data, it returns it with the extended ID. The Interconnect looks at the top bit, realizes it belongs to Master 0, strips the top bit off, and passes the original `ARID=0x1` back to Master 0.
+When the slave returns data, the interconnect reverses its configured mapping and presents the original master-local ID at the originating interface. The exact internal encoding is an implementation choice, not an AXI-mandated bit layout.
+
+Inspect the two routes below: both masters legally use local ID 0x1, while the fabric retains source ownership across request and response paths.
+
+![AXI crossbar preserving two masters' local ID ownership across concurrent target routes](visual:tp-axi-crossbar)
 
 This means you must never rely on IDs having a fixed, global meaning across an entire SoC. Their meaning is strictly local to the specific point-to-point interface.

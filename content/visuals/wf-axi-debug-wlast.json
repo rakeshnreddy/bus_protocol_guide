@@ -1,22 +1,30 @@
 {
   "id": "wf-axi-debug-wlast",
-  "title": "Early WLAST Violation",
   "type": "waveform",
+  "title": "AXI4 WLAST Count Mismatch",
+  "description": "AWLEN=3 declares four write-data transfers; inspect the accepted beats to catch WLAST asserted on beat 3 and missing on the required final beat.",
+  "cycleCount": 6,
   "signals": [
-    { "name": "clk", "wave": "p........" },
-    { "name": "AWVALID", "wave": "01.0....." },
-    { "name": "AWREADY", "wave": "01.0....." },
-    { "name": "AWLEN", "wave": "x=.x.....", "data": ["3 (4 beats)"] },
-    { "name": "WVALID", "wave": "0..1...0." },
-    { "name": "WREADY", "wave": "0..1...0." },
-    { "name": "WDATA", "wave": "x..====x.", "data": ["D0", "D1", "D2", "D3"] },
-    { "name": "WLAST", "wave": "0....10.." },
-    { "name": "BVALID", "wave": "0........" }
+    { "name": "ACLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
+    { "name": "AWVALID", "type": "control", "values": ["1", "0", "0", "0", "0", "0"] },
+    { "name": "AWREADY", "type": "control", "values": ["1", "0", "0", "0", "0", "0"] },
+    { "name": "AWLEN", "type": "sideband", "values": ["3 (4 beats)", "-", "-", "-", "-", "-"] },
+    { "name": "WVALID", "type": "control", "values": ["0", "1", "1", "1", "1", "0"] },
+    { "name": "WREADY", "type": "control", "values": ["0", "1", "1", "1", "1", "0"] },
+    { "name": "BEAT", "type": "sideband", "values": ["-", "1 of 4", "2 of 4", "3 of 4", "4 of 4", "-"] },
+    { "name": "WDATA", "type": "data", "values": ["-", "D0", "D1", "D2", "D3", "-"] },
+    { "name": "WLAST", "type": "control", "values": ["0", "0", "0", "1", "0", "0"] },
+    { "name": "EXPECTED_LAST", "type": "sideband", "values": ["-", "NO", "NO", "NO", "YES", "-"] }
   ],
   "annotations": [
-    {
-      "time": 5,
-      "text": "FATAL: WLAST asserted on beat 3 of 4! The interconnect will prematurely close this burst, dropping D3."
-    }
+    { "cycle": 1, "message": "The AW handshake declares AWLEN=3, so exactly four W transfers belong to this burst." },
+    { "cycle": 2, "message": "D0 is accepted as beat 1 of 4. WLAST correctly remains LOW." },
+    { "cycle": 3, "message": "D1 is accepted as beat 2 of 4. The receiver's accepted-beat count advances only on WVALID && WREADY." },
+    { "cycle": 4, "message": "Protocol error: WLAST is HIGH on beat 3 even though AWLEN requires a fourth transfer. AXI does not support early burst termination." },
+    { "cycle": 5, "message": "Protocol error: the required fourth transfer is accepted with WLAST LOW. Receiver behavior after these violations is implementation-dependent; the monitor must flag the first mismatching edge." }
+  ],
+  "violations": [
+    { "cycle": 4, "message": "WLAST asserted before accepted beat count reached AWLEN+1." },
+    { "cycle": 5, "message": "WLAST missing on the accepted final beat declared by AWLEN." }
   ]
 }

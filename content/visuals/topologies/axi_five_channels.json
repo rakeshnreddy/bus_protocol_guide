@@ -1,0 +1,38 @@
+{
+  "id": "topo-axi-five-channels",
+  "type": "topology",
+  "title": "AXI4 Five-Channel Interface",
+  "description": "Follow each independent channel between the master and slave interface; the arrow direction identifies the information source and destination, while READY always returns within that channel.",
+  "regions": [
+    { "id": "master-interface", "label": "AXI master interface", "x": 25, "y": 35, "width": 250, "height": 550, "tone": "source" },
+    { "id": "channel-lanes", "label": "Independent channel lanes", "x": 305, "y": 35, "width": 390, "height": 550, "tone": "fabric" },
+    { "id": "slave-interface", "label": "AXI slave interface", "x": 725, "y": 35, "width": 250, "height": 550, "tone": "target" }
+  ],
+  "nodes": [
+    { "id": "master-aw", "label": "Master AW source\naddress + control", "type": "master", "x": 150, "y": 125, "width": 190, "height": 64 },
+    { "id": "slave-aw", "label": "Slave AW destination\nreturns AWREADY", "type": "slave", "x": 850, "y": 125, "width": 190, "height": 64 },
+    { "id": "master-w", "label": "Master W source\nwrite data + strobes", "type": "master", "x": 150, "y": 225, "width": 190, "height": 64 },
+    { "id": "slave-w", "label": "Slave W destination\nreturns WREADY", "type": "slave", "x": 850, "y": 225, "width": 190, "height": 64 },
+    { "id": "master-b", "label": "Master B destination\nreturns BREADY", "type": "master", "x": 150, "y": 325, "width": 190, "height": 64 },
+    { "id": "slave-b", "label": "Slave B source\nwrite response", "type": "slave", "x": 850, "y": 325, "width": 190, "height": 64 },
+    { "id": "master-ar", "label": "Master AR source\naddress + control", "type": "master", "x": 150, "y": 425, "width": 190, "height": 64 },
+    { "id": "slave-ar", "label": "Slave AR destination\nreturns ARREADY", "type": "slave", "x": 850, "y": 425, "width": 190, "height": 64 },
+    { "id": "master-r", "label": "Master R destination\nreturns RREADY", "type": "master", "x": 150, "y": 525, "width": 190, "height": 64 },
+    { "id": "slave-r", "label": "Slave R source\nread data + response", "type": "slave", "x": 850, "y": 525, "width": 190, "height": 64 }
+  ],
+  "edges": [
+    { "id": "channel-aw", "source": "master-aw", "target": "slave-aw", "label": "AW → write address\nAWREADY ←", "bidirectional": true, "kind": "channel", "tone": "primary", "labelPosition": { "x": 500, "y": 125 } },
+    { "id": "channel-w", "source": "master-w", "target": "slave-w", "label": "W → write data\nWREADY ←", "bidirectional": true, "kind": "data", "tone": "primary", "labelPosition": { "x": 500, "y": 225 } },
+    { "id": "channel-b", "source": "slave-b", "target": "master-b", "label": "B ← write response\nBREADY →", "bidirectional": true, "kind": "response", "tone": "secondary", "labelPosition": { "x": 500, "y": 325 } },
+    { "id": "channel-ar", "source": "master-ar", "target": "slave-ar", "label": "AR → read address\nARREADY ←", "bidirectional": true, "kind": "channel", "tone": "primary", "labelPosition": { "x": 500, "y": 425 } },
+    { "id": "channel-r", "source": "slave-r", "target": "master-r", "label": "R ← data + response\nRREADY →", "bidirectional": true, "kind": "response", "tone": "secondary", "labelPosition": { "x": 500, "y": 525 } }
+  ],
+  "highlightedPath": ["master-aw", "channel-aw", "slave-aw", "master-w", "channel-w", "slave-w", "slave-b", "channel-b", "master-b"],
+  "annotations": [
+    { "edgeId": "channel-aw", "message": "The master sources AWVALID plus the write address and attributes. The slave returns AWREADY; transfer occurs only on a rising ACLK edge with both HIGH." },
+    { "edgeId": "channel-w", "message": "Write data has its own handshake and can reach an interface before, with, or after the matching write address. AXI4 still requires write data to follow write-address order." },
+    { "edgeId": "channel-b", "message": "The slave sources one write response after accepting the write address and the final write-data beat. The master controls response backpressure with BREADY." },
+    { "edgeId": "channel-ar", "message": "The master sources the read address and attributes. Read-address flow control is independent of every write channel." },
+    { "edgeId": "channel-r", "message": "The slave returns each read-data beat with RRESP and RID. The master can stall this channel with RREADY without directly stalling the address channels." }
+  ]
+}

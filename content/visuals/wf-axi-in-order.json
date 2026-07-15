@@ -1,36 +1,29 @@
 {
   "id": "wf-axi-in-order",
-  "title": "AXI In-Order Guarantee (Same IDs)",
+  "title": "AXI Same-ID Read Response Order",
   "type": "waveform",
+  "description": "Two two-beat reads use ID 0; inspect the accepted AR requests and RLAST completions to see why response A must remain ahead of response B.",
   "cycleCount": 10,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
-    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["1", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
-    { "name": "ARID", "type": "data", "color": "orange", "values": ["-", "ID:0", "ID:0", "-", "-", "-", "-", "-", "-", "-"] },
-    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x1000", "0x2000", "-", "-", "-", "-", "-", "-", "-"] },
-    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "1", "0", "1", "1", "0"] },
-    { "name": "RREADY", "type": "control", "color": "red", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "RID", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "ID:0", "ID:0", "-", "ID:0", "ID:0", "-"] },
-    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "D_0A", "D_0B", "-", "D_1A", "D_1B", "-"] },
-    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "1", "0"] }
+    { "name": "ARVALID", "type": "control", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARREADY", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "AR_TXN", "type": "sideband", "values": ["-", "A", "B", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARID", "type": "data", "values": ["-", "0", "0", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARADDR", "type": "data", "values": ["-", "0x1000", "0x2000", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "RVALID", "type": "control", "values": ["0", "0", "0", "0", "1", "1", "0", "1", "1", "0"] },
+    { "name": "RREADY", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "R_TXN", "type": "sideband", "values": ["-", "-", "-", "-", "A", "A", "-", "B", "B", "-"] },
+    { "name": "RID", "type": "data", "values": ["-", "-", "-", "-", "0", "0", "-", "0", "0", "-"] },
+    { "name": "RDATA", "type": "data", "values": ["-", "-", "-", "-", "A0", "A1", "-", "B0", "B1", "-"] },
+    { "name": "RLAST", "type": "control", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "1", "0"] }
   ],
   "annotations": [
-    {
-      "cycle": 1,
-      "message": "Master issues Read Request A (ID:0)."
-    },
-    {
-      "cycle": 2,
-      "message": "Master issues Read Request B (also ID:0)."
-    },
-    {
-      "cycle": 4,
-      "message": "Slave returns data for Request A. Because the IDs are identical, the slave MUST return data in the exact order the requests were received."
-    },
-    {
-      "cycle": 7,
-      "message": "Slave returns data for Request B only after Request A has fully completed."
-    }
+    { "cycle": 2, "message": "Read A is accepted first with ARID 0." },
+    { "cycle": 3, "message": "Read B is accepted next with the same ARID 0. The interface now has a per-ID issue queue A → B." },
+    { "cycle": 5, "message": "The first R beat belongs to A. Returning B first would violate same-ID read response ordering." },
+    { "cycle": 6, "message": "A completes when its second beat transfers with RLAST=1. Only now can B's response begin." },
+    { "cycle": 8, "message": "B begins after A has fully completed, even if B's target data happened to become available earlier." },
+    { "cycle": 9, "message": "B completes with its own RLAST. The repeated RID is disambiguated by issue order within the ID 0 queue." }
   ]
 }

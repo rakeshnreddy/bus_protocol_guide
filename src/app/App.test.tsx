@@ -26,6 +26,8 @@ describe('App Routing and Lazy Loading', { timeout: 15000 }, () => {
     });
     // Home content is eager
     expect(screen.getByText(/A comprehensive, visual/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Explore 69 visuals' })).toBeInTheDocument();
+    expect(screen.getByText('interactive visuals').previousElementSibling).toHaveTextContent('69');
   });
 
   it('sidebar remains visible while lazy content loads', async () => {

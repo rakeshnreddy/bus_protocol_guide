@@ -1,10 +1,10 @@
 # AHB/AXI Visual Completion Tracker
 
-Last updated: 2026-07-13
+Last updated: 2026-07-16
 
 ## Current directive
 
-Finish AHB and AXI visual and interactive learning to a high educational standard. All four AHB visual batches are complete. The next implementation batch is **AXI Visual Batch 1 — Lessons 01 through 11**.
+Finish AHB and AXI visual and interactive learning to a high educational standard. All four AHB visual batches and AXI Visual Batches 1–2 are complete. The next implementation batch is **AXI Visual Batch 3 — Lessons 23 through 33**.
 
 ## Phase V0 — Visual recovery
 
@@ -12,7 +12,7 @@ Status: complete.
 
 - The production registry discovers both `content/visuals/*.json` and recursively nested visual JSON files through one non-duplicating glob.
 - All 43 pre-existing assets are recoverable: 35 legacy root-level files and 8 typed-folder files.
-- Seven Batch 1 assets, two Batch 2 assets, five Batch 3 assets, and four Batch 4 assets were added after recovery, bringing the live registry to 61 visuals.
+- AHB completion and the first two AXI batches have expanded the recovered library to 69 production visuals without duplicating a legacy ID.
 - Root files prefer an explicit supported `type`; missing types use only the conservative `wf-`, `tl-`, `topo-`, and `sig-` prefix mapping.
 - Malformed files, missing IDs, unsupported types, and duplicate IDs are isolated with source-path diagnostics. The first valid duplicate is preserved rather than overwritten.
 - Current production diagnostics: 0 duplicate IDs, 0 malformed/missing-ID files, and 0 unsupported files.
@@ -22,14 +22,14 @@ Status: complete.
 
 | Visual type | Count |
 | --- | ---: |
-| Waveform | 29 |
-| Timeline | 6 |
-| Topology | 9 |
-| Signal explorer | 11 |
+| Waveform | 30 |
+| Timeline | 8 |
+| Topology | 11 |
+| Signal explorer | 14 |
 | Coverage map | 2 |
 | Formal property | 2 |
 | Spec rule explorer | 2 |
-| **Total** | **61** |
+| **Total** | **69** |
 
 ## Phase V1 — AHB Visual Batch 1 (Lessons 01–09)
 
@@ -302,8 +302,145 @@ All seven production topology assets were reviewed individually for protocol mea
 
 No AHB lesson is without an inline, registry-resolved visual. All 38 AHB lessons have completed their batch-level educational-strength review. Future AHB changes are maintenance and presentation polish, not missing-coverage work.
 
+## Phase V2 — AXI Visual Batch 1 (Lessons 01–11)
+
+Status: complete.
+
+The batch uses AXI4 as its default protocol scope and labels AXI3, AXI4-Lite, and AXI4-Stream differences where they matter. Protocol claims were checked against Arm AMBA AXI and ACE Protocol Specification IHI 0022H, especially the channel architecture, VALID/READY rules, AXI4 write-response dependencies, burst limits, ID ordering, response behavior, and AXI4 attribute definitions.
+
+| Lesson | Visual IDs | Status | Learner question, purpose, and interaction |
+| --- | --- | --- | --- |
+| 01 — What is AXI? | `tp-axi-crossbar`, `tl-abstract-transaction` | Reused and upgraded | “Where does AXI sit in an SoC, and when is work outstanding?” The existing crossbar exposes concurrent routes and source-ID tracking; the rebuilt timeline compares overlapping read/write channel lifetimes without implying shared-bus arbitration. |
+| 02 — AXI variants | `sig-axi-variants` | Added | “Which AXI interface fits this design?” Expandable entries compare AXI3, AXI4, AXI4-Lite, and AXI4-Stream burst, ID, channel, ordering, and usage differences, including Lite's legal multiple-outstanding behavior. |
+| 03 — AXI terminology | `topo-axi-terminology-map` | Added | “How do transaction, burst, beat, handshake, outstanding state, ID, and response relate?” Keyboard/pointer inspection connects the structural hierarchy to lifetime and correlation. |
+| 04 — Five-channel model | `topo-axi-five-channels`, `wf-axi-write-channels`, `wf-axi-read-channels` | Added, recovered, and upgraded | “Who sources each channel and where does READY return?” Five distinct lanes show ownership; the write/read waveforms then trace independent address, data, and response progress under stalls. |
+| 05 — Write address channel | `sig-axi-address-channels` | Added | “Which AW edge creates a write, and what must remain stable?” Fourteen AW/AR entries expose direction, accepting edge, encoding, and DV watchpoint. |
+| 06 — Write data channel | `wf-axi-write-channels` | Recovered and upgraded | “Can W arrive before AW, and what freezes during W backpressure?” Cycle inspection shows legal pre-AW data, stable W payload, exact WLAST, and the later B dependency. |
+| 07 — Write response channel | `wf-axi-ids-correlation` | Recovered and upgraded | “How can responses reorder without interleaving AXI4 write data?” Two writes send W data in AW order and return B responses in different-ID order, with same-ID ordering called out. |
+| 08 — Read address channel | `sig-axi-address-channels` | Reused | “How does AR parallel AW and what state does ARLEN create?” Expandable AR entries connect request definition to RID correlation and exact RLAST counting. |
+| 09 — Read data channel | `wf-axi-read-channels` | Recovered and upgraded | “What must a slave hold when RREADY is LOW?” RID, RDATA, RRESP, and RLAST remain stable through a two-cycle stall; the final error demonstrates per-beat RRESP without canceling the burst. |
+| 10 — Sideband attributes | `sig-axi-sideband-attributes` | Added | “What is protocol encoding versus system policy?” AxPROT, AxCACHE, AxQOS, and AxREGION separate specified bit meaning from permission, scheduling, and mapping policy. |
+| 11 — Ready/Valid in depth | `wf-axi-ready-valid-scenarios` | Added | “Which rising edges transfer, and why is early VALID withdrawal illegal?” Cycle inspection compares VALID-first, READY-first, simultaneous, stalled, and violating sequences. |
+
+### AXI Batch 1 accuracy and interaction guards
+
+- Five-channel topology checks encode source/destination ownership and coherent READY return paths.
+- Waveform guards prove accepting edges, stable payload under backpressure, AXI4 AW/final-W response prerequisites, exact beat counts, per-beat RRESP, AXI4 W ordering, and different-ID B reordering.
+- Explorer guards preserve AXI4 burst limits, WID removal, AXI4-Lite ordering nuance, AxCACHE Modifiable semantics, AxPROT security polarity, and implementation-defined AxQOS policy.
+- All eleven lessons render every declared visual inline with meaningful captions through the production loaders and renderers.
+- Both new topologies pass unique-ID, endpoint, containment, separation, orthogonal-routing, route-through-block, and caption-collision checks.
+- Production interaction tests cover Enter/Space selection, persistent pressed state, 44 px topology route hit areas, 52 px explorer controls, waveform cycle inspection, internal horizontal scrolling, and axe scans.
+
+### AXI Batch 1 browser verification
+
+Verified in the live application at 1440 × 1000 in light theme and 375 × 812 in dark theme:
+
+- `/lesson/01_what_is_axi`
+- `/lesson/02_axi_variants`
+- `/lesson/03_axi_terminology`
+- `/lesson/04_five_channel_model`
+- `/lesson/05_write_address_channel`
+- `/lesson/06_write_data_channel`
+- `/lesson/07_write_response_channel`
+- `/lesson/08_read_address_channel`
+- `/lesson/09_read_data_channel`
+- `/lesson/10_sideband_signals`
+- `/lesson/11_ready_valid_in_depth`
+- `/visuals`
+- `/dev/visuals`
+
+Results: all declared visuals rendered with no blank areas, `Visual not found`, unknown types, page-level horizontal overflow, or console warnings/errors. The Visuals Explorer reported 67 registered assets. The five-channel B route was selected with Enter and exposed the AXI4 AW/final-W dependency. At 375 px, every topology, waveform, and transaction timeline scrolled inside its visual surface; the five-channel topology used a 315 px viewport over its 784 px diagram and accepted horizontal scrolling to the final lane. Explorer and gallery controls remained at least 45 px high.
+
+### Verification baseline after AXI Batch 1
+
+- Visual registry: 67 assets
+- Visuals by type: 30 waveforms, 6 timelines, 11 topologies, 14 signal explorers, 2 coverage maps, 2 formal properties, 2 specification-rule explorers
+- Legacy root-level visuals retained: 35
+- Test files: 39
+- Tests: 363
+- Test failures: 0
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB minified
+- Loader chunk: 278.27 kB minified
+- Lesson page chunk: 162.28 kB minified
+- Visual renderer chunk: 168.97 kB minified
+- Search chunk: 27.63 kB minified
+- Largest chunk: 278.27 kB, below the existing 500 kB warning threshold
+
+## Phase V2 — AXI Visual Batch 2 (Lessons 12–22)
+
+Status: complete.
+
+AXI4 remains the default scope. AXI3 differences are called out where the write-response dependency differs, and implementation policy is separated from protocol requirements for ID remapping, outstanding depth, response reordering, progress, and throughput. Protocol claims were checked against Arm AMBA AXI and ACE Protocol Specification IHI 0022H sections A3–A6.
+
+| Lesson | Visual IDs | Status | Learner question, purpose, and interaction |
+| --- | --- | --- | --- |
+| 12 — Independent channel behavior | `wf-axi-write-channels` | Reused | “Can W transfer before AW, and which dependencies still cross channels?” Cycle inspection shows the first W beat accepted before AW, independent AW/W stalls, and the AXI4 B-response prerequisites. |
+| 13 — Write transaction walkthrough | `wf-axi-write-channels` | Reused and synchronized | “Which edge accepts each AW, W, and B transfer?” The written walkthrough now matches the production waveform cycle for cycle through pre-address data, stable W payload, exact WLAST, and stalled B response. |
+| 14 — Read transaction walkthrough | `wf-axi-read-channels` | Reused and synchronized | “What remains stable while the master backpressures R?” The walkthrough follows the accepted AR request, stalled D1 payload, final RLAST, and per-beat SLVERR without inventing a recovery policy. |
+| 15 — Burst structure | `tl-axi-burst-address-progression` | Added | “How do AxLEN, AxSIZE, and AxBURST generate addresses?” Focusable FIXED4, INCR4, and WRAP4 lanes derive four-byte beat addresses and expose the 16-byte wrap decision. |
+| 16 — WLAST and RLAST | `wf-axi-debug-wlast` | Recovered and rebuilt | “Which accepted beat must carry LAST?” Keyboard/touch cycle inspection flags early WLAST on beat 3 of 4 and missing WLAST on the declared final beat, while keeping recovery implementation-dependent. |
+| 17 — IDs and matching | `wf-axi-ids-correlation`, `tp-axi-crossbar` | Reused and corrected | “How are local IDs preserved through a multi-master fabric?” The waveform separates AXI4 W order from B reordering; the topology shows source context without mandating append, remap, or side-metadata encoding. |
+| 18 — Outstanding transactions | `tl-axi-outstanding-window` | Added | “When does a scoreboard allocate and retire an entry?” Three overlapping read lanes allocate on AR acceptance, retire on accepted RLAST, and legally reuse ID 0 with an issue-order queue. |
+| 19 — Ordering guarantees | `wf-axi-in-order` | Recovered and rebuilt | “What exactly remains ordered for one ID?” Attributable A/B rows show two same-ID read responses completing in request order and distinguish this from cross-channel ordering. |
+| 20 — Out-of-order completion | `wf-axi-out-of-order` | Recovered and rebuilt | “How can B finish before A without losing ownership?” Different RIDs let response B complete first while every beat remains attributable and ordered within its burst. |
+| 21 — Backpressure behavior | `wf-axi-ready-valid-scenarios`, `wf-axi-deadlock` | Reused and corrected | “When is a stall legal, and when has the system stopped making progress?” One visual teaches stable VALID/payload; the other separates a circular READY-policy liveness failure from safety and no-combinational-path rules. |
+| 22 — Throughput reasoning | `wf-axi-throughput` | Recovered and rebuilt | “Why can AW continue while W stalls, and what does that not prove?” The waveform holds AHB's overlapping address during HREADY LOW while AXI AW handshakes independently, without claiming a mandated latency advantage. |
+
+### AXI Batch 2 accuracy and interaction guards
+
+- Walkthrough guards encode the accepting AW, W, B, AR, and R edges and stable payload through backpressure.
+- Burst guards encode `AxLEN+1`, `2^AxSIZE`, FIXED/INCR/WRAP progression, wrap-region math, AXI4 length limits, and the 4 KB boundary rule.
+- LAST guards reject both early and missing WLAST and explicitly preserve all declared transfers because AXI does not support early burst termination.
+- Ordering guards prove same-ID response order, different-ID completion freedom, per-ID issue queues, legal same-ID reuse, and the absence of ID-based read/write ordering.
+- Liveness guards distinguish source-side VALID safety, destination READY freedom, prohibited direct combinational input/output paths, and integration-level progress policy.
+- All eleven lessons render every declared visual inline with meaningful captions. New timelines and changed waveforms render through the production registry, support pointer/keyboard selection, and pass axe coverage.
+
+### AXI Batch 2 browser verification
+
+Verified the live application at the normal desktop viewport and at 375 × 812, using system, light, and dark theme states:
+
+- `/lesson/12_independent_channel_behavior`
+- `/lesson/13_write_transaction_walkthrough`
+- `/lesson/14_read_transaction_walkthrough`
+- `/lesson/15_burst_structure_beat_progression`
+- `/lesson/16_wlast_and_rlast_meaning`
+- `/lesson/17_ids_and_transaction_matching`
+- `/lesson/18_outstanding_transactions`
+- `/lesson/19_ordering_guarantees`
+- `/lesson/20_out_of_order_completion`
+- `/lesson/21_backpressure_behavior`
+- `/lesson/22_throughput_reasoning_bottlenecks`
+- `/visuals`
+- `/dev/visuals`
+
+Results: every lesson rendered its declared visual count and title with no blank visual, `Visual not found`, unknown type, page-level overflow, or console warning/error. All dense visuals scrolled internally at 375 px; observed canvases ranged from 428–920 px inside 315–317 px visual viewports. The WRAP boundary phase accepted Enter and exposed its 16-byte calculation. The mobile navigation opened through a 44 × 44 px control. The Visuals Explorer reported 69 assets, and the development viewer rendered 69 visual wrappers/headings with zero visual errors. The home-page visual count was corrected from the stale 52 to 69.
+
+### Verification baseline after AXI Batch 2
+
+- Visual registry: 69 assets
+- Visuals by type: 30 waveforms, 8 timelines, 11 topologies, 14 signal explorers, 2 coverage maps, 2 formal properties, 2 specification-rule explorers
+- Legacy root-level visuals retained: 35
+- Duplicate, malformed, unsupported, or unresolved visual references: 0
+- Test files: 40
+- Tests: 403
+- Test failures: 0
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB minified
+- Loader chunk: 282.73 kB minified
+- Lesson page chunk: 162.28 kB minified
+- Visual renderer chunk: 178.18 kB minified
+- Search chunk: 27.63 kB minified
+- Largest chunk: 282.73 kB, below the existing 500 kB warning threshold
+
+## Remaining AXI visual coverage
+
+All AXI lessons 01–22 now have reviewed, registry-resolved inline visual support. Eleven later AXI lessons still declare no visuals: 23, 24, 26, 27, 28, 32, 34, 35, 40, 42, and 44. Existing visuals in the other later lessons still require batch-level accuracy and educational-strength review before AXI is complete.
+
 ## Next implementation batch
 
-**AXI Visual Batch 1 — Lessons 01 through 11**
+**AXI Visual Batch 3 — Lessons 23 through 33**
 
-Recover and strengthen existing AXI assets first, then add only the visual support needed to make the five-channel model, channel independence, VALID/READY timing, basic read/write ownership, bursts, IDs, and backpressure visually inspectable and retention-oriented. Do not begin APB.
+Recover and strengthen existing AXI assets first, then add only the visual support needed for burst legality, alignment, 4 KB boundary reasoning, AXI3/AXI4 and AXI4-Lite distinctions, AXI-Stream packet semantics, crossbar routing, multi-master ownership, QoS policy, and mixed-protocol bridge context. Do not begin APB.

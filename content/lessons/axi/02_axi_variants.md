@@ -9,7 +9,7 @@ order: 2
 tags: ["axi", "intro", "variants"]
 relatedLessons: ["01_what_is_axi"]
 prerequisites: ["01_what_is_axi"]
-visualIds: []
+visualIds: ["sig-axi-variants"]
 exerciseIds: ["ex-axi-variant-selection"]
 glossaryTerms: ["AXI3", "AXI4", "AXI4-Lite", "AXI-Stream"]
 checklistIds: []
@@ -24,8 +24,8 @@ Introduced in 2003, AXI3 was the original high-performance multi-channel protoco
 
 ### AXI4 (AMBA 4.0)
 Introduced in 2010, AXI4 is the modern standard for memory-mapped, high-performance interfaces. It is an evolution of AXI3, designed to support even higher throughput and simpler integration.
-*   **Key Upgrade:** AXI4 expands the maximum burst length from 16 beats to 256 beats, massively improving efficiency for sequential memory accesses.
-*   **Key Simplification:** AXI4 removes the `WID` (Write Data ID) signal. In AXI3, write data could be interleaved beat-by-beat from different transactions. This proved too complex and expensive to route in silicon. AXI4 mandates that write data must be sent in order for a given transaction, simplifying interconnect logic.
+*   **Key Upgrade:** AXI4 expands `INCR` bursts from a maximum of 16 beats to 256 beats, improving efficiency for long sequential memory accesses. `FIXED` and `WRAP` bursts remain limited to 16 beats.
+*   **Key Simplification:** AXI4 removes the `WID` (Write Data ID) signal. In AXI3, write data could be interleaved beat-by-beat from different transactions. This proved too complex and expensive to route in silicon. AXI4 requires write data to follow write-address order and does not support write-data interleaving.
 
 ### AXI4-Lite (AMBA 4.0)
 AXI4-Lite is a stripped-down version of AXI4 designed for simple, low-throughput control registers. 
@@ -39,6 +39,10 @@ AXI-Stream (often abbreviated as AXI4-Stream) is entirely different from the oth
 
 In this curriculum, when we say "AXI," we generally mean AXI4 unless specifically noted. We will dive deeper into AXI4-Lite and AXI-Stream in Section E.
 
+Open each family member below and compare the handshake model, burst limits, IDs, ordering, and typical use without treating the four interfaces as interchangeable.
+
+![Expandable comparison of AXI3, AXI4, AXI4-Lite, and AXI4-Stream capabilities](visual:sig-axi-variants)
+
 ## The AXI Family Reference
 
 Choosing the right AXI variant for a specific IP block is critical for balancing performance against area and complexity. Here is a high-value reference table summarizing the key differences.
@@ -47,9 +51,9 @@ Choosing the right AXI variant for a specific IP block is critical for balancing
 | :--- | :--- | :--- | :--- | :--- |
 | **Addressing** | Memory Mapped | Memory Mapped | Memory Mapped | None (Point-to-point) |
 | **Channels** | 5 (AW, W, B, AR, R) | 5 (AW, W, B, AR, R) | 5 (AW, W, B, AR, R) | 1 (T) |
-| **Max Burst Length** | 16 beats | 256 beats | 1 beat (No bursts) | Infinite |
+| **Max Burst Length** | 16 beats | 256 beats for INCR; 16 for FIXED/WRAP | 1 beat (No bursts) | N/A (continuous stream) |
 | **Write Interleaving** | Yes (`WID` exists) | No (`WID` removed) | No | N/A |
-| **Out-of-Order Completion**| Yes (via IDs) | Yes (via IDs) | No (Usually ID-less) | N/A (Strictly FIFO) |
+| **Out-of-Order Completion**| Yes (via IDs) | Yes (via IDs) | No (IDs omitted; responses remain in order) | N/A (ordered stream transfers) |
 | **Exclusive Access** | Yes | Yes | No | N/A |
 | **QoS / Region Support** | No | Yes | No | N/A |
 | **Typical Use Case** | Legacy ARM CPUs | High-performance memory (DDR), DMA | Simple control/status registers (UART, GPIO) | Video processing, DSP, Networking (Ethernet) |

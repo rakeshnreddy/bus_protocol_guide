@@ -19,9 +19,9 @@ We know that AXI allows multiple outstanding transactions. The next logical ques
 
 This is governed by the single most misunderstood rule in the AXI specification. Memorize it:
 
-> **Transactions with the SAME ID must complete in the exact order they were issued.**
+> **Read responses with the SAME ID, and write responses with the SAME ID, are returned in request order.**
 > 
-> **Transactions with DIFFERENT IDs have no ordering guarantees whatsoever; they may complete in any order.**
+> **Transactions with DIFFERENT IDs have no relative response-order guarantee; they may complete in either order.**
 
 ## Same ID: Strict In-Order
 
@@ -29,15 +29,15 @@ If a master issues Read A (ID: 0x0) and then issues Read B (also ID: 0x0), the s
 
 Why? Because the ID is the only mechanism the master has to correlate the returning data to its internal scoreboard. If the slave returned B before A, they both have `RID: 0x0`. The master would assume the first piece of data belonged to Request A, and would corrupt its internal state.
 
-![wf-axi-in-order](visual:wf-axi-in-order)
+![Two same-ID AXI reads completing in request order](visual:wf-axi-in-order)
 
 ## Different IDs: Total Chaos
 
-If a master issues Read A (ID: 0x0) and then issues Read B (ID: 0x1), the slave can return B before A, A before B, or it can even interleave the beats (Beat B1, Beat A1, Beat B2, Beat A2).
+If a master issues Read A (ID: 0x0) and then issues Read B (ID: 0x1), the slave can return B before A, A before B, or—where the connected interfaces support read interleaving—interleave beats from the different IDs. The target is permitted to reorder; it is not required to do so.
 
 If a master *needs* A to complete before B (for example, reading a status register before reading a data payload), the master has two choices:
-1.  Give them the same ID.
-2.  Wait for A to fully complete (receive `RLAST`) before issuing the address for B.
+1.  Use the same ID when the applicable same-channel ordering rules cover both transactions and their destination.
+2.  Use the universal sequencing method: wait for A's final response handshake before issuing B.
 
 ## Read/Write Interactions
 
@@ -48,4 +48,4 @@ What about a Read vs. a Write?
 
 If a master writes to Address X with ID 0, and then immediately reads from Address X with ID 0, the read might execute inside the slave *before* the write actually commits to memory. The master will read stale data! 
 
-If a master needs to read data it just wrote, it **must** wait to receive the `BVALID` response for the write before it is allowed to assert `ARVALID` for the read.
+If a master needs protocol ordering between a write and a following read, it must wait until the write response is accepted (`BVALID && BREADY`) before issuing the read address. Matching numeric read and write IDs alone does not create a cross-channel ordering guarantee.

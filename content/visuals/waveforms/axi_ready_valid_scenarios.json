@@ -1,0 +1,29 @@
+{
+  "id": "wf-axi-ready-valid-scenarios",
+  "type": "waveform",
+  "title": "AXI VALID/READY: Three Legal Timings and One Failure",
+  "description": "Inspect each rising edge to distinguish an offered transfer, backpressure, an accepting handshake, and the illegal case where a source withdraws VALID before acceptance.",
+  "cycleCount": 9,
+  "signals": [
+    { "name": "ACLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "SCENARIO", "type": "sideband", "values": ["VALID first", "VALID first", "HANDSHAKE", "READY first", "HANDSHAKE", "IDLE", "SIMULTANEOUS", "BAD WAIT", "VIOLATION"] },
+    { "name": "VALID", "type": "control", "values": ["1", "1", "1", "0", "1", "0", "1", "1", "0"] },
+    { "name": "READY", "type": "control", "values": ["0", "0", "1", "1", "1", "0", "1", "0", "0"] },
+    { "name": "PAYLOAD", "type": "data", "values": ["A", "A", "A", "-", "B", "-", "C", "D", "-"] },
+    { "name": "TRANSFER", "type": "sideband", "values": ["NO", "NO", "A", "NO", "B", "NO", "C", "NO", "NO"] }
+  ],
+  "annotations": [
+    { "cycle": 1, "message": "VALID-before-READY: the source offers payload A without waiting for READY. No transfer occurs because READY is LOW." },
+    { "cycle": 2, "message": "Backpressure continues. VALID and every payload/control bit must remain stable until an accepting edge." },
+    { "cycle": 3, "message": "READY becomes HIGH. Payload A transfers on this rising edge because VALID and READY are both HIGH." },
+    { "cycle": 4, "message": "READY-before-VALID: the destination advertises capacity, but no transfer occurs while VALID is LOW." },
+    { "cycle": 5, "message": "The source presents payload B. Because READY is already HIGH, B transfers immediately on this rising edge." },
+    { "cycle": 6, "message": "Neither side offers a transfer. VALID and READY may both be LOW." },
+    { "cycle": 7, "message": "Simultaneous assertion is legal. Payload C transfers on the first edge where both signals are HIGH." },
+    { "cycle": 8, "message": "The source offers payload D while READY is LOW. It has created an obligation to hold VALID and D stable." },
+    { "cycle": 9, "message": "Protocol error: the source withdrew VALID and payload D before a VALID-and-READY handshake accepted it." }
+  ],
+  "violations": [
+    { "cycle": 9, "message": "VALID dropped before handshake; the offered payload was never accepted." }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "id": "sig-axi-variants",
+  "type": "signal-explorer",
+  "title": "AXI Family Comparison",
+  "description": "Open each interface family to compare channel structure, burst limits, IDs, ordering, and the design situations each variant fits.",
+  "signals": [
+    {
+      "name": "AXI3",
+      "expansion": "AMBA 3 memory-mapped AXI",
+      "role": "sideband",
+      "group": "AXI interface families",
+      "description": "AXI3 defines the five memory-mapped channels, supports 1–16 beat bursts for every burst type, and permits write-data interleaving by carrying WID on the W channel.",
+      "direction": "Five bidirectionally handshaken unidirectional channels between master and slave interfaces",
+      "sampled": "Each channel transfers on a rising ACLK edge with VALID and READY HIGH",
+      "values": ["1–16 beats", "AWID/WID/BID", "Locked and exclusive accesses"],
+      "typicalUse": "Legacy high-performance processors and third-party IP",
+      "verificationNote": "Model WID and legal interleaving only for AXI3; do not apply AXI4 write-data ordering rules blindly."
+    },
+    {
+      "name": "AXI4",
+      "expansion": "AMBA 4 memory-mapped AXI",
+      "role": "sideband",
+      "group": "AXI interface families",
+      "description": "AXI4 retains the five channels, removes WID and locked transactions, and extends INCR bursts to 256 beats. FIXED and WRAP bursts remain limited to 16 beats.",
+      "direction": "Five bidirectionally handshaken unidirectional channels between master and slave interfaces",
+      "sampled": "Each channel transfers on a rising ACLK edge with VALID and READY HIGH",
+      "values": ["INCR 1–256 beats", "FIXED/WRAP 1–16 beats", "IDs and exclusives"],
+      "typicalUse": "DDR controllers, DMA engines, accelerators, and high-bandwidth fabrics",
+      "verificationNote": "Check that W data follows write-address order and that a B response waits for both the AW handshake and final W handshake."
+    },
+    {
+      "name": "AXI4-Lite",
+      "expansion": "Single-beat memory-mapped subset",
+      "role": "sideband",
+      "group": "AXI interface families",
+      "description": "AXI4-Lite keeps the five-channel VALID/READY structure but every transaction is one full-bus-width beat. It normally omits IDs, bursts, and exclusive accesses.",
+      "direction": "The same AW, W, B, AR, and R channel directions as AXI4",
+      "sampled": "Each channel transfers on a rising ACLK edge with VALID and READY HIGH",
+      "values": ["One beat", "32- or 64-bit data", "No protocol ID ordering domains"],
+      "typicalUse": "Control and status registers",
+      "verificationNote": "Multiple transactions may still be outstanding. Without IDs, responses must remain in order; do not equate Lite with one-outstanding-only."
+    },
+    {
+      "name": "AXI4-Stream",
+      "expansion": "Address-free streaming interface",
+      "role": "data",
+      "group": "AXI interface families",
+      "description": "AXI4-Stream is not memory mapped. A source moves an ordered stream of transfer beats to a destination using TVALID and TREADY, with optional packet and byte-qualification sidebands.",
+      "direction": "One logical source-to-destination stream; TREADY returns from destination",
+      "sampled": "A stream beat transfers on a rising ACLK edge with TVALID and TREADY HIGH",
+      "values": ["No address channels", "TVALID/TREADY", "Optional TLAST/TKEEP/TID/TDEST"],
+      "typicalUse": "Video, DSP, networking, and accelerator pipelines",
+      "verificationNote": "Do not apply memory-mapped burst, response, or address-ordering rules to an AXI4-Stream interface."
+    }
+  ]
+}

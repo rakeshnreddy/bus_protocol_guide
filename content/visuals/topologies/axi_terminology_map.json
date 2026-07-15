@@ -1,0 +1,40 @@
+{
+  "id": "topo-axi-terminology-map",
+  "type": "topology",
+  "title": "AXI4 Transaction Vocabulary Map",
+  "description": "Trace one transaction from an accepted address through its burst beats and channel handshakes, then see how outstanding state, IDs, and the final response fit together.",
+  "regions": [
+    { "id": "structure", "label": "Transaction structure", "x": 25, "y": 35, "width": 950, "height": 175, "tone": "concept" },
+    { "id": "lifecycle", "label": "Outstanding lifetime", "x": 25, "y": 240, "width": 950, "height": 185, "tone": "fabric" },
+    { "id": "correlation", "label": "Completion and correlation", "x": 25, "y": 455, "width": 950, "height": 180, "tone": "target" }
+  ],
+  "nodes": [
+    { "id": "transaction", "label": "Transaction\none read or write", "type": "concept", "x": 130, "y": 125, "width": 175, "height": 64 },
+    { "id": "burst", "label": "Burst\ndata payload", "type": "concept", "x": 385, "y": 125, "width": 165, "height": 64 },
+    { "id": "beat", "label": "Beat\none data transfer", "type": "concept", "x": 625, "y": 125, "width": 175, "height": 64 },
+    { "id": "handshake", "label": "Channel handshake\nVALID + READY", "type": "phase", "x": 865, "y": 125, "width": 180, "height": 64 },
+    { "id": "address-accepted", "label": "Address accepted\nAW or AR handshake", "type": "phase", "x": 165, "y": 335, "width": 190, "height": 64 },
+    { "id": "outstanding", "label": "Outstanding\nnot yet complete", "type": "state", "x": 500, "y": 335, "width": 180, "height": 64 },
+    { "id": "complete", "label": "Transaction complete\nfinal R beat or B response", "type": "state", "x": 835, "y": 335, "width": 210, "height": 64 },
+    { "id": "id", "label": "Transaction ID\nARID or AWID", "type": "concept", "x": 270, "y": 545, "width": 180, "height": 64 },
+    { "id": "response", "label": "Returning ID + response\nRID/RRESP or BID/BRESP", "type": "state", "x": 730, "y": 545, "width": 220, "height": 64 }
+  ],
+  "edges": [
+    { "id": "e-transaction-burst", "source": "transaction", "target": "burst", "label": "has one data burst", "kind": "relationship", "tone": "primary", "labelPosition": { "x": 258, "y": 75 } },
+    { "id": "e-burst-beat", "source": "burst", "target": "beat", "label": "contains 1..N beats", "kind": "relationship", "tone": "primary", "labelPosition": { "x": 505, "y": 75 } },
+    { "id": "e-beat-handshake", "source": "beat", "target": "handshake", "label": "moves on one accepting edge", "kind": "relationship", "tone": "secondary", "labelPosition": { "x": 745, "y": 75 } },
+    { "id": "e-address-outstanding", "source": "address-accepted", "target": "outstanding", "label": "creates tracked work", "kind": "request", "tone": "primary", "labelPosition": { "x": 333, "y": 285 } },
+    { "id": "e-outstanding-complete", "source": "outstanding", "target": "complete", "label": "ends only at response completion", "kind": "response", "tone": "secondary", "labelPosition": { "x": 668, "y": 270 } },
+    { "id": "e-id-outstanding", "source": "id", "target": "outstanding", "label": "indexes tracked state", "kind": "relationship", "tone": "neutral", "waypoints": [{ "x": 270, "y": 445 }, { "x": 500, "y": 445 }], "labelPosition": { "x": 380, "y": 445 } },
+    { "id": "e-response-id", "source": "response", "target": "id", "label": "matches the original request", "kind": "response", "tone": "secondary", "labelPosition": { "x": 500, "y": 590 } },
+    { "id": "e-response-complete", "source": "response", "target": "complete", "label": "retires state", "kind": "response", "tone": "secondary", "waypoints": [{ "x": 905, "y": 545 }, { "x": 905, "y": 420 }], "labelPosition": { "x": 925, "y": 475 } }
+  ],
+  "highlightedPath": ["transaction", "e-transaction-burst", "burst", "e-burst-beat", "beat", "e-beat-handshake", "handshake", "address-accepted", "e-address-outstanding", "outstanding", "e-outstanding-complete", "complete"],
+  "annotations": [
+    { "nodeId": "transaction", "message": "A read transaction uses AR then one or more R beats. A write transaction uses AW, one or more W beats, then one B response." },
+    { "nodeId": "beat", "message": "A beat is one accepted transfer on a data channel. Address and response handshakes are channel transfers, but they are not data beats." },
+    { "nodeId": "outstanding", "message": "After its address is accepted, a read remains outstanding until the final R handshake; a write remains outstanding until its B handshake." },
+    { "nodeId": "id", "message": "IDs identify transaction streams and let different-ID responses complete out of order. Responses for the same ID retain their required order." },
+    { "edgeId": "e-response-id", "message": "RID or BID lets the master correlate returning information with ARID or AWID. AXI4-Lite normally omits IDs and therefore keeps responses in order." }
+  ]
+}

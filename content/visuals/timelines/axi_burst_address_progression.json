@@ -1,0 +1,48 @@
+{
+  "id": "tl-axi-burst-address-progression",
+  "type": "timeline",
+  "title": "AXI4 Burst Address Progression",
+  "description": "Compare four-beat FIXED, INCR, and WRAP bursts with AxLEN=3 and AxSIZE=2 (four bytes per beat); inspect a beat to see why its byte address repeats, increments, or wraps.",
+  "labels": [
+    "AxLEN=3 → 4 beats",
+    "AxSIZE=2 → 4 bytes per beat",
+    "AxBURST selects the address rule"
+  ],
+  "transactions": [
+    {
+      "id": "fixed4",
+      "label": "FIXED4 · start 0x2000",
+      "phases": [
+        { "id": "fixed-b0", "name": "B0 · 0x2000", "startCycle": 1, "endCycle": 2, "description": "Beat 0 uses the start address. FIXED keeps this byte address for every transfer, which is useful for FIFO-style locations." },
+        { "id": "fixed-b1", "name": "B1 · 0x2000", "startCycle": 2, "endCycle": 3, "description": "Beat 1 repeats 0x2000; AxSIZE still describes up to four bytes on the data bus for this beat." },
+        { "id": "fixed-b2", "name": "B2 · 0x2000", "startCycle": 3, "endCycle": 4, "description": "Beat 2 repeats the same transfer address. The protocol does not turn FIXED into an incrementing sequence." },
+        { "id": "fixed-b3", "name": "B3 · 0x2000", "startCycle": 4, "endCycle": 5, "description": "Beat 3 is the fourth and final transfer because AxLEN+1 equals four." }
+      ]
+    },
+    {
+      "id": "incr4",
+      "label": "INCR4 · start 0x1000",
+      "phases": [
+        { "id": "incr-b0", "name": "B0 · 0x1000", "startCycle": 1, "endCycle": 2, "description": "Beat 0 starts at 0x1000." },
+        { "id": "incr-b1", "name": "B1 · 0x1004", "startCycle": 2, "endCycle": 3, "description": "AxSIZE=2 means four bytes per beat, so the next transfer address is 0x1000 + 4." },
+        { "id": "incr-b2", "name": "B2 · 0x1008", "startCycle": 3, "endCycle": 4, "description": "The address advances by another four bytes to 0x1008." },
+        { "id": "incr-b3", "name": "B3 · 0x100C", "startCycle": 4, "endCycle": 5, "description": "The fourth beat reaches 0x100C. It must remain within the same 4 KB boundary as the start address." }
+      ]
+    },
+    {
+      "id": "wrap4",
+      "label": "WRAP4 · start 0x100C",
+      "phases": [
+        { "id": "wrap-b0", "name": "B0 · 0x100C", "startCycle": 1, "endCycle": 2, "description": "A four-beat, four-byte WRAP burst spans a 16-byte region from 0x1000 through 0x100F. The legal aligned start 0x100C is inside that region." },
+        { "id": "wrap-b1", "name": "B1 · 0x1000", "startCycle": 2, "endCycle": 3, "description": "Adding four reaches the upper wrap boundary 0x1010, so the transfer address wraps to the lower boundary 0x1000." },
+        { "id": "wrap-b2", "name": "B2 · 0x1004", "startCycle": 3, "endCycle": 4, "description": "After wrapping, the sequence increments normally by four bytes." },
+        { "id": "wrap-b3", "name": "B3 · 0x1008", "startCycle": 4, "endCycle": 5, "description": "The fourth transfer completes the WRAP4 sequence without leaving its 16-byte wrap region." }
+      ]
+    }
+  ],
+  "annotations": [
+    { "phase": "fixed-b1", "message": "FIXED changes the data beat, not the transfer address." },
+    { "phase": "incr-b1", "message": "The increment is 2^AxSIZE bytes, not the numeric AxSIZE encoding itself." },
+    { "phase": "wrap-b1", "message": "Wrap boundary size = number of beats × bytes per beat = 4 × 4 = 16 bytes." }
+  ]
+}

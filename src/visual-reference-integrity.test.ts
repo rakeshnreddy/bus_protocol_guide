@@ -157,4 +157,42 @@ describe('all-lesson visual reference integrity', () => {
       }
     }
   });
+
+  it('integrates every AXI Batch 1 visual with a meaningful caption next to lesson prose', () => {
+    const batchOne = getLessons().filter(({ lesson }) =>
+      lesson.protocol === 'axi' && lesson.order >= 1 && lesson.order <= 11,
+    );
+
+    expect(batchOne).toHaveLength(11);
+    for (const { lesson, body } of batchOne) {
+      const inlineVisuals = getInlineVisuals(body);
+      expect(inlineVisuals.length, `${lesson.id} must contain at least one inline visual`).toBeGreaterThan(0);
+
+      for (const visualId of lesson.visualIds) {
+        const inline = inlineVisuals.find(({ id }) => id === visualId);
+        expect(inline, `${lesson.id} must render declared visual '${visualId}' inline`).toBeDefined();
+        expect(inline!.alt.length, `${lesson.id}:${visualId} needs meaningful alt text`).toBeGreaterThan(12);
+        expect(inline!.alt).not.toBe(visualId);
+      }
+    }
+  });
+
+  it('integrates every AXI Batch 2 visual with a meaningful caption next to lesson prose', () => {
+    const batchTwo = getLessons().filter(({ lesson }) =>
+      lesson.protocol === 'axi' && lesson.order >= 12 && lesson.order <= 22,
+    );
+
+    expect(batchTwo).toHaveLength(11);
+    for (const { lesson, body } of batchTwo) {
+      const inlineVisuals = getInlineVisuals(body);
+      expect(inlineVisuals.length, `${lesson.id} must contain at least one inline visual`).toBeGreaterThan(0);
+
+      for (const visualId of lesson.visualIds) {
+        const inline = inlineVisuals.find(({ id }) => id === visualId);
+        expect(inline, `${lesson.id} must render declared visual '${visualId}' inline`).toBeDefined();
+        expect(inline!.alt.length, `${lesson.id}:${visualId} needs meaningful alt text`).toBeGreaterThan(12);
+        expect(inline!.alt).not.toBe(visualId);
+      }
+    }
+  });
 });

@@ -9,13 +9,13 @@ order: 6
 tags: ["axi", "signals", "write"]
 relatedLessons: ["05_write_address_channel", "09_read_data_channel"]
 prerequisites: ["05_write_address_channel"]
-visualIds: []
+visualIds: ["wf-axi-write-channels"]
 exerciseIds: ["ex-axi-channels-2"]
 glossaryTerms: ["WDATA", "WSTRB", "WLAST", "WVALID", "WREADY", "WID"]
 checklistIds: []
 ---
 
-Once a master has initiated a write via the AW channel, it must provide the payload data on the Write Data (W) channel. 
+A write transaction also carries its payload on the Write Data (W) channel. Because AW and W are independently handshaken, W data can reach an interface before, with, or after the matching AW request.
 
 All signals on this channel begin with the prefix `W`.
 
@@ -25,6 +25,10 @@ All signals on this channel begin with the prefix `W`.
 *   **`WREADY`** (Slave -> Master): The slave drives this HIGH when it can accept the write data.
 
 *Note: The W channel handshake operates completely independently of the AW channel. A master can assert `WVALID` before, during, or after it asserts `AWVALID`!*
+
+Inspect the stalled cycles below. The first W beat is accepted before AW, while the second beat must hold `WDATA`, `WSTRB`, and `WLAST` stable until `WREADY` returns.
+
+![AXI4 write waveform showing W data before AW acceptance and stable payload during backpressure](visual:wf-axi-write-channels)
 
 ## Data Payload Signals
 
@@ -38,4 +42,4 @@ If you are working with AXI3, you will see a **`WID`** (Write ID) signal on this
 
 In practice, data interleaving made slave and interconnect designs excessively complex and created timing bottlenecks. 
 
-**In AXI4, `WID` was completely removed.** AXI4 mandates that write data must be sent sequentially for a given transaction. You cannot interleave write data bursts. Because data must arrive in order, the slave no longer needs a `WID` tag on every beat.
+**In AXI4, `WID` was completely removed.** AXI4 requires write data for successive transactions to follow write-address order. You cannot interleave write-data bursts. Because the W stream follows that order, the slave no longer needs a `WID` tag on every beat.

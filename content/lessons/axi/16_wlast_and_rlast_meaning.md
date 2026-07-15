@@ -9,7 +9,7 @@ order: 16
 tags: ["axi", "burst", "signals"]
 relatedLessons: ["15_burst_structure_beat_progression"]
 prerequisites: ["15_burst_structure_beat_progression"]
-visualIds: []
+visualIds: ["wf-axi-debug-wlast"]
 exerciseIds: []
 glossaryTerms: []
 checklistIds: []
@@ -19,18 +19,20 @@ As we saw in the walkthroughs, the master must assert `WLAST` on the final beat 
 
 If `AWLEN` and `ARLEN` already defined exactly how many beats were in the burst, why do we need a separate `LAST` signal? Can't the receiver just count the beats?
 
-## The Reason for LAST Signals
+## The Role of LAST Signals
 
-Yes, the receiver *does* count the beats. The `LAST` signals are technically redundant pieces of information. They exist as a safety check and a hardware simplification.
+The length fields and `LAST` signals carry related information, but both are protocol obligations. The sender of each data channel places the end marker beside the payload: the write-data source drives `WLAST`, and the read-data source drives `RLAST`.
 
-1.  **Simpler State Machines:** Some interconnect components (like simple FIFOs or clock domain crossing bridges) might only look at the data channel and completely ignore the address channel. By having `WLAST` travel directly alongside the data, these simple components know exactly when a data packet ends without having to decode `AWLEN` and maintain a counter.
-2.  **Early Termination (AXI3 only):** In early versions of the spec, there were complex rules about interleaving and aborting. `LAST` provided a hard demarcation.
-3.  **Error Detection:** In AXI4, a slave uses the beat counter to track the burst, but it *verifies* its count against `WLAST`. 
+1.  **Data-channel boundary:** `LAST` travels on the same channel as the final payload, so buffering and routing logic can carry the transaction boundary with the data.
+2.  **Cross-checkable contract:** A protocol monitor can compare accepted beat count against `AxLEN + 1` and detect an early or missing end marker.
+3.  **No early termination:** AXI3 and AXI4 do not support terminating a burst early. Every transfer declared by the length field must still be completed.
 
 ## What Happens if it Breaks?
 
 If a master sends an `AWLEN` of 3 (expecting 4 beats) but asserts `WLAST` on the 3rd beat, this is a **fatal protocol violation**. 
 
-The AXI specification explicitly states that a slave must not accept early termination of a burst. If a slave sees `WLAST` early, or if it counts 4 beats and never sees `WLAST`, the behavior of the bus is completely undefined. Usually, the slave's state machine will hang, waiting for a `WLAST` that never comes, which eventually backpressures the entire interconnect and causes a system freeze.
+The AXI specification states that early termination is not supported: no component can use the early `WLAST` to reduce the declared number of transfers. The same mismatch occurs if four beats transfer but the final one lacks `WLAST`. These are protocol violations; how a particular receiver reports or recovers from malformed input is implementation-dependent.
 
-**Senior DV Tip:** Always write a protocol assertion that verifies: `WLAST is asserted if and only if the current beat count matches AWLEN + 1`. Do the same for `RLAST` and `ARLEN`.
+![Four-beat AXI4 write with WLAST asserted one beat early and missing on the declared final beat](visual:wf-axi-debug-wlast)
+
+**Senior DV Tip:** Count only accepted data transfers. Assert that `WLAST` is HIGH if and only if `WVALID && WREADY` accepts beat `AWLEN + 1`; apply the equivalent check to `RLAST`, `RVALID && RREADY`, and `ARLEN`.

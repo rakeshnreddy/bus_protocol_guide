@@ -17,22 +17,24 @@ checklistIds: []
 
 A read transaction only utilizes two channels (AR and R). Let's walk through a 3-beat read burst.
 
-![wf-axi-read-channels](visual:wf-axi-read-channels)
+![Three-beat AXI4 read with an address stall, read-data backpressure, and a final error response](visual:wf-axi-read-channels)
 
 ### Cycle-by-Cycle Analysis
 
-*   **Cycle 1:**
-    *   **AR Channel:** The master drives `ARADDR = 0x200` and asserts `ARVALID`. The slave is ready (`ARREADY = 1`). The address phase completes.
 *   **Cycle 2:**
-    *   **R Channel:** The slave requires a cycle to fetch the data from memory. It keeps `RVALID` LOW. The master is already waiting (`RREADY = 1`), but no data transfers.
+    *   **AR Channel:** The master offers `ARADDR = 0x200`, `ARID = 5`, and `ARLEN = 2`, but `ARREADY` is LOW. The entire AR payload must remain stable.
 *   **Cycle 3:**
-    *   **R Channel:** The slave retrieves the first piece of data (`D0`), drives it onto `RDATA`, drives `RRESP = OKAY`, and asserts `RVALID`. The master accepts it.
+    *   **AR Channel:** `ARREADY` becomes HIGH and accepts the read request. The slave can begin returning data only after this handshake.
 *   **Cycle 4:**
-    *   **R Channel:** The slave retrieves the second piece of data (`D1`) and transfers it.
-*   **Cycle 5:**
-    *   **R Channel:** The slave retrieves the third and final piece of data (`D2`). Because this is the end of the burst requested by the master, the slave **must assert `RLAST = 1`**. The master accepts it. The transaction is complete.
+    *   **R Channel:** The first beat (`D0`) transfers with `RID = 5` and `RRESP = OKAY`.
+*   **Cycles 5–6:**
+    *   **R Channel:** The slave offers the second beat (`D1`), but the master deasserts `RREADY`. `RVALID`, `RID`, `RDATA`, `RRESP`, and `RLAST` all remain stable through the stall.
+*   **Cycle 7:**
+    *   **R Channel:** `RREADY` returns HIGH and the second beat transfers.
+*   **Cycle 8:**
+    *   **R Channel:** The third and final beat (`D2`) transfers with `RLAST = 1` and `RRESP = SLVERR`. A response qualifies every R beat, and an error does not shorten the burst declared by `ARLEN`.
 
 ### Why is RLAST important?
 In AHB, the master drives `HTRANS` on every single cycle to tell the slave whether a burst is continuing or ending. In AXI, the master sends the address *once* (specifying `ARLEN=2` to request 3 beats) and then just waits. 
 
-The master relies on the slave to assert `RLAST` on the 3rd beat so the master's internal state machine knows to stop expecting data and close out the transaction tracking for that `ARID`. If a slave has a bug and forgets to assert `RLAST`, the master will hang forever waiting for the end of the burst!
+The master relies on the slave to assert `RLAST` on the 3rd beat so its tracking logic can close the transaction for that `RID`. If `RLAST` does not agree with `ARLEN + 1`, the slave has violated the protocol. A monitor must flag the mismatching accepted beat; the receiving implementation's recovery behavior is not defined by AXI and must not be assumed to be a particular hang or reset sequence.

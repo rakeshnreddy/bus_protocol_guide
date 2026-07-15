@@ -1,35 +1,45 @@
 {
   "id": "wf-axi-ids-correlation",
-  "title": "AXI IDs: Correlating Responses",
+  "title": "AXI4 Write Responses: Different-ID Reordering",
   "type": "waveform",
+  "description": "Two single-beat writes send W data in write-address order, then complete B responses in the opposite order because their IDs differ.",
   "cycleCount": 7,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["0", "1", "0", "1", "0", "0", "0"] },
-    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["1", "1", "0", "1", "0", "0", "0"] },
-    { "name": "AWID", "type": "data", "color": "blue", "values": ["-", "0xA", "-", "0xB", "-", "-", "-"] },
-    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["-", "0x100", "-", "0x200", "-", "-", "-"] },
-    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "1"] },
+    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["1", "1", "0", "0", "0", "0", "0"] },
+    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["1", "1", "0", "0", "0", "0", "0"] },
+    { "name": "AWID", "type": "data", "color": "blue", "values": ["0xA", "0xB", "-", "-", "-", "-", "-"] },
+    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["0x100", "0x200", "-", "-", "-", "-", "-"] },
+    { "name": "WVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "0", "0", "0", "0"] },
+    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "1", "1", "0", "0", "0", "0"] },
+    { "name": "WDATA", "type": "data", "color": "green", "values": ["-", "DATA_A", "DATA_B", "-", "-", "-", "-"] },
+    { "name": "WLAST", "type": "control", "color": "green", "values": ["0", "1", "1", "0", "0", "0", "0"] },
+    { "name": "W_OWNER", "type": "sideband", "color": "green", "values": ["-", "ID 0xA", "ID 0xB", "-", "-", "-", "-"] },
+    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "1", "0", "1", "0"] },
     { "name": "BREADY", "type": "control", "color": "purple", "values": ["1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "BID", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "0xB", "-", "0xA"] },
-    { "name": "BRESP", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "OKAY", "-", "OKAY"] }
+    { "name": "BID", "type": "data", "color": "purple", "values": ["-", "-", "-", "0xB", "-", "0xA", "-"] },
+    { "name": "BRESP", "type": "sideband", "color": "purple", "values": ["-", "-", "-", "OKAY", "-", "OKAY", "-"] }
   ],
   "annotations": [
     {
       "cycle": 1,
-      "message": "Master issues a write address with ID 0xA."
+      "message": "Write address A (ID 0xA) is accepted first. It is now outstanding."
+    },
+    {
+      "cycle": 2,
+      "message": "Write address B (ID 0xB) is accepted while DATA_A completes. AXI4 write data follows the accepted AW order, so A's data comes first."
     },
     {
       "cycle": 3,
-      "message": "Master issues another write address with ID 0xB."
+      "message": "DATA_B completes second. Both single-beat writes have now satisfied their AW and final-W response prerequisites."
     },
     {
       "cycle": 4,
-      "message": "Slave returns a response with ID 0xB. The master matches this to the second transaction."
+      "message": "The slave returns BID=0xB first. Different IDs permit response reordering, so the master retires write B."
     },
     {
       "cycle": 6,
-      "message": "Slave returns a response with ID 0xA. The transactions completed out of order!"
+      "message": "The later BID=0xA response retires write A. Responses for two writes with the same ID would have to preserve their issue order."
     }
   ]
 }

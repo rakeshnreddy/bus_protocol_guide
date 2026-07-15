@@ -1,36 +1,29 @@
 {
   "id": "wf-axi-out-of-order",
-  "title": "AXI Out-of-Order Completion (Different IDs)",
+  "title": "AXI Different-ID Read Completion",
   "type": "waveform",
+  "description": "Read A (ID 0) is accepted before Read B (ID 1), but B's two-beat response completes first; RID keeps both completions attributable.",
   "cycleCount": 10,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "ARVALID", "type": "control", "color": "orange", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
-    { "name": "ARREADY", "type": "control", "color": "orange", "values": ["1", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
-    { "name": "ARID", "type": "data", "color": "orange", "values": ["-", "ID:0", "ID:1", "-", "-", "-", "-", "-", "-", "-"] },
-    { "name": "ARADDR", "type": "data", "color": "orange", "values": ["-", "0x1000", "0x2000", "-", "-", "-", "-", "-", "-", "-"] },
-    { "name": "RVALID", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "1", "1", "0", "1", "1", "0"] },
-    { "name": "RREADY", "type": "control", "color": "red", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "RID", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "ID:1", "ID:1", "-", "ID:0", "ID:0", "-"] },
-    { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "-", "-", "D_1A", "D_1B", "-", "D_0A", "D_0B", "-"] },
-    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "1", "0"] }
+    { "name": "ARVALID", "type": "control", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "ARREADY", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "AR_TXN", "type": "sideband", "values": ["-", "A", "B", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARID", "type": "data", "values": ["-", "0", "1", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "ARADDR", "type": "data", "values": ["-", "0x1000", "0x2000", "-", "-", "-", "-", "-", "-", "-"] },
+    { "name": "RVALID", "type": "control", "values": ["0", "0", "0", "0", "1", "1", "0", "1", "1", "0"] },
+    { "name": "RREADY", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "R_TXN", "type": "sideband", "values": ["-", "-", "-", "-", "B", "B", "-", "A", "A", "-"] },
+    { "name": "RID", "type": "data", "values": ["-", "-", "-", "-", "1", "1", "-", "0", "0", "-"] },
+    { "name": "RDATA", "type": "data", "values": ["-", "-", "-", "-", "B0", "B1", "-", "A0", "A1", "-"] },
+    { "name": "RLAST", "type": "control", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "1", "0"] }
   ],
   "annotations": [
-    {
-      "cycle": 1,
-      "message": "Master issues Read Request A (ID:0)."
-    },
-    {
-      "cycle": 2,
-      "message": "Master issues Read Request B (ID:1)."
-    },
-    {
-      "cycle": 4,
-      "message": "Slave returns data for ID:1 FIRST. This is perfectly legal because the IDs are different!"
-    },
-    {
-      "cycle": 7,
-      "message": "Slave finally returns data for ID:0. The master uses the RID to route the data correctly."
-    }
+    { "cycle": 2, "message": "Read A is accepted first with ID 0." },
+    { "cycle": 3, "message": "Read B is accepted next with ID 1. Different IDs create independent response-order streams." },
+    { "cycle": 5, "message": "The target returns B first with RID 1. This is permitted; different IDs have no relative response-order guarantee." },
+    { "cycle": 6, "message": "B completes with RLAST=1 while A remains outstanding." },
+    { "cycle": 8, "message": "A begins later with RID 0, allowing the master to select A's scoreboard entry." },
+    { "cycle": 9, "message": "A completes. Out-of-order completion improved service opportunity without changing beat order within either burst." }
   ]
 }

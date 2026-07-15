@@ -70,6 +70,33 @@ const batchFourChangedVisualIds = [
   'sig-ahb-senior-recap',
 ] as const;
 
+const axiBatchOneChangedVisualIds = [
+  'topo-axi-five-channels',
+  'sig-axi-variants',
+  'topo-axi-terminology-map',
+  'sig-axi-address-channels',
+  'wf-axi-write-channels',
+  'wf-axi-ids-correlation',
+  'wf-axi-read-channels',
+  'sig-axi-sideband-attributes',
+  'wf-axi-ready-valid-scenarios',
+] as const;
+
+const axiBatchTwoChangedVisualIds = [
+  'wf-axi-write-channels',
+  'wf-axi-read-channels',
+  'tl-axi-burst-address-progression',
+  'wf-axi-debug-wlast',
+  'wf-axi-ids-correlation',
+  'tp-axi-crossbar',
+  'tl-axi-outstanding-window',
+  'wf-axi-in-order',
+  'wf-axi-out-of-order',
+  'wf-axi-ready-valid-scenarios',
+  'wf-axi-deadlock',
+  'wf-axi-throughput',
+] as const;
+
 function renderProductionVisual(id: string) {
   const visual = getVisualById(id);
   if (!visual) throw new Error(`Missing production visual '${id}'`);
@@ -103,6 +130,14 @@ describe('production visual rendering', () => {
   });
 
   it.each(batchFourChangedVisualIds)('renders AHB Batch 4 changed visual %s', id => {
+    renderProductionVisual(id);
+  });
+
+  it.each(axiBatchOneChangedVisualIds)('renders AXI Batch 1 changed visual %s', id => {
+    renderProductionVisual(id);
+  });
+
+  it.each(axiBatchTwoChangedVisualIds)('renders AXI Batch 2 changed visual %s', id => {
     renderProductionVisual(id);
   });
 
@@ -188,6 +223,60 @@ describe('production visual rendering', () => {
     renderProductionVisual('sig-ahb-signoff-evidence');
     fireEvent.click(screen.getByRole('button', { name: /Wait-state behavior/i }));
     expect(screen.getByText(/green property report/i)).toBeInTheDocument();
+  });
+
+  it('supports keyboard inspection of the AXI write-response dependency path', async () => {
+    const user = userEvent.setup();
+    renderProductionVisual('topo-axi-five-channels');
+    const responseLane = screen.getByRole('button', { name: /Inspect route B ← write response/i });
+    act(() => responseLane.focus());
+    await user.keyboard('{Enter}');
+    expect(responseLane).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/after accepting the write address and the final write-data beat/i))
+      .toBeInTheDocument();
+  });
+
+  it('reveals the AXI4-Lite outstanding-transaction nuance', () => {
+    renderProductionVisual('sig-axi-variants');
+    fireEvent.click(screen.getByRole('button', { name: /AXI4-Lite/i }));
+    expect(screen.getByText(/Multiple transactions may still be outstanding/i)).toBeInTheDocument();
+  });
+
+  it('marks the early VALID withdrawal through keyboard cycle inspection', () => {
+    renderProductionVisual('wf-axi-ready-valid-scenarios');
+    const cycle = screen.getByRole('button', { name: 'Inspect cycle 9' });
+    cycle.focus();
+    fireEvent.keyDown(cycle, { key: ' ' });
+    expect(cycle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/VALID dropped before handshake/i)).toBeInTheDocument();
+  });
+
+  it('explains the AXI WRAP boundary from a keyboard-focused burst phase', () => {
+    renderProductionVisual('tl-axi-burst-address-progression');
+    const wrap = screen.getByRole('button', {
+      name: 'WRAP4 · start 0x100C: B1 · 0x1000, cycles 2 to 3',
+    });
+    fireEvent.focus(wrap);
+    expect(wrap).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/wraps to the lower boundary 0x1000/i)).toBeInTheDocument();
+  });
+
+  it('reveals same-ID reuse in the outstanding scoreboard timeline', () => {
+    renderProductionVisual('tl-axi-outstanding-window');
+    const allocation = screen.getByRole('button', {
+      name: 'Read C · ID 0: AR accepted, cycles 3 to 4',
+    });
+    fireEvent.focus(allocation);
+    expect(screen.getByText(/Reusing an ID is legal/i)).toBeInTheDocument();
+  });
+
+  it('exposes early WLAST from keyboard cycle inspection', () => {
+    renderProductionVisual('wf-axi-debug-wlast');
+    const cycle = screen.getByRole('button', { name: 'Inspect cycle 4' });
+    cycle.focus();
+    fireEvent.keyDown(cycle, { key: 'Enter' });
+    expect(cycle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/WLAST asserted before accepted beat count/i)).toBeInTheDocument();
   });
 });
 
@@ -277,6 +366,58 @@ describe('AHB Batch 4 lesson rendering', () => {
         lesson.protocol === 'ahb' && lesson.order === order,
       );
       if (!lessonContent) throw new Error(`Missing AHB lesson ${order}`);
+
+      render(
+        <MemoryRouter>
+          <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole('heading', { level: 1, name: lessonContent.lesson.title }))
+        .toBeInTheDocument();
+      expect(screen.queryByText(/Visual not found/i)).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.inline-visual-wrapper'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+      expect(document.querySelectorAll('.inline-visual-caption'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+    },
+  );
+});
+
+describe('AXI Batch 1 lesson rendering', () => {
+  it.each(Array.from({ length: 11 }, (_, index) => index + 1))(
+    'renders lesson %i with all declared visuals and captions',
+    order => {
+      const lessonContent = getLessons().find(({ lesson }) =>
+        lesson.protocol === 'axi' && lesson.order === order,
+      );
+      if (!lessonContent) throw new Error(`Missing AXI lesson ${order}`);
+
+      render(
+        <MemoryRouter>
+          <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole('heading', { level: 1, name: lessonContent.lesson.title }))
+        .toBeInTheDocument();
+      expect(screen.queryByText(/Visual not found/i)).not.toBeInTheDocument();
+      expect(document.querySelectorAll('.inline-visual-wrapper'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+      expect(document.querySelectorAll('.inline-visual-caption'))
+        .toHaveLength(lessonContent.lesson.visualIds.length);
+    },
+  );
+});
+
+describe('AXI Batch 2 lesson rendering', () => {
+  it.each(Array.from({ length: 11 }, (_, index) => index + 12))(
+    'renders lesson %i with all declared visuals and captions',
+    order => {
+      const lessonContent = getLessons().find(({ lesson }) =>
+        lesson.protocol === 'axi' && lesson.order === order,
+      );
+      if (!lessonContent) throw new Error(`Missing AXI lesson ${order}`);
 
       render(
         <MemoryRouter>

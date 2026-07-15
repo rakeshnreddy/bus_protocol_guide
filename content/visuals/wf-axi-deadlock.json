@@ -1,31 +1,23 @@
 {
   "id": "wf-axi-deadlock",
-  "title": "AXI Anti-Pattern: Circular Backpressure Deadlock",
+  "title": "AXI Liveness Failure: Circular READY Policies",
   "type": "waveform",
+  "description": "WVALID and BVALID remain asserted correctly, but cross-channel destination policies hold WREADY and BREADY LOW forever, producing no accepting edge.",
   "cycleCount": 8,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "WVALID", "type": "control", "color": "green", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] },
-    { "name": "BVALID", "type": "control", "color": "purple", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] }
-  ],
-  "violations": [
-    { "cycle": 2, "signal": "WREADY", "rule": "Deadlock: Slave stalling WREADY waiting for BREADY" },
-    { "cycle": 2, "signal": "BREADY", "rule": "Deadlock: Master stalling BREADY waiting for WREADY" }
+    { "name": "WVALID", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "WREADY", "type": "control", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "WDATA", "type": "data", "values": ["D", "D", "D", "D", "D", "D", "D", "D"] },
+    { "name": "BVALID", "type": "control", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "BREADY", "type": "control", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] },
+    { "name": "PROGRESS", "type": "sideband", "values": ["NONE", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE"] }
   ],
   "annotations": [
-    {
-      "cycle": 1,
-      "message": "The Master has data to send (WVALID=1) but is refusing to accept responses (BREADY=0)."
-    },
-    {
-      "cycle": 2,
-      "message": "The Slave has responses to send (BVALID=1) but is refusing to accept data (WREADY=0)."
-    },
-    {
-      "cycle": 5,
-      "message": "Both sides are permanently stuck waiting for the other to move first. This is a fatal protocol violation. You cannot make VALID depend on READY."
-    }
+    { "cycle": 1, "message": "Both channel sources assert VALID without waiting for READY and hold their payloads stable, satisfying the channel safety rule." },
+    { "cycle": 2, "message": "The slave's W destination withholds WREADY until the old B response is accepted; the master's B destination withholds BREADY until W data is accepted." },
+    { "cycle": 4, "message": "No W or B transfer occurs because neither channel ever has VALID and READY HIGH together." },
+    { "cycle": 6, "message": "This is a system-level liveness design failure. The shown READY policies are individually permitted by the handshake rules, so a progress contract or timeout is needed to detect the deadlock." },
+    { "cycle": 8, "message": "Debug the dependency graph, not only signal stability: WREADY waits for BREADY while BREADY waits for WREADY." }
   ]
 }

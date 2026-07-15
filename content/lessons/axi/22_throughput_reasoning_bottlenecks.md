@@ -19,16 +19,16 @@ We have seen how AXI achieves high throughput via independent channels, outstand
 
 ## AHB vs AXI: The Pipeline Advantage
 
-In the visual below, both protocols attempt to initiate three write transactions.
-Notice that when AHB stalls on the data phase of transaction 2 (D2), it physically blocks the address for transaction 3 (A3) from ever reaching the bus.
-In AXI, the address channel is independent. Even though the W channel stalls on W2, the AW channel is free to deliver AW3 immediately. 
+In the visual below, both examples attempt to initiate several transfers.
+Notice that when AHB stalls on the data phase of transaction 2 (D2), the overlapping address phase for transaction 3 (A3) can be visible but is not accepted; its address and control remain held until `HREADY` returns HIGH.
+In AXI, the address channel is independent. Even though the W channel stalls on W2, the AW channel is free to handshake AW3. This illustrates channel isolation, not a protocol-mandated latency or universal AXI speedup.
 
-![wf-axi-throughput](visual:wf-axi-throughput)
+![AHB data-phase wait holding an overlapping address compared with an AXI write-data stall that leaves AW independent](visual:wf-axi-throughput)
 
 ## Where do Bottlenecks Still Occur?
 
 Even with AXI, systems still stall. The most common bottlenecks are:
-1.  **ID Pool Exhaustion:** If a master only supports 4 unique IDs, it can only have 4 outstanding transactions. Once it hits that limit, it must artificially backpressure itself (stop asserting `AxVALID`) until a response frees up an ID.
+1.  **Outstanding Tracker Exhaustion:** If a master has only 4 scoreboard entries, it cannot accept responsibility for a fifth outstanding transaction until one retires. The number of distinct ID values controls how many independent ordering streams are available; it does **not** by itself cap outstanding depth, because the same ID can legally be reused for multiple queued transactions.
 2.  **B-Channel Latency:** A write isn't "done" until the B response arrives. If an interconnect is very slow at routing B responses, the master's outstanding transaction buffer will fill up, causing it to stall new requests even if the slave itself is very fast.
 
 ---
@@ -39,12 +39,12 @@ As a Verification Engineer, you will spend most of your time hunting for orderin
 
 ### Bug 1: The Address-Based Scoreboard
 *   **The Flaw:** A junior engineer writes a DV scoreboard that tracks transactions by looking at the `AWADDR` and waiting for a `BRESP` associated with that address.
-*   **Why it Breaks:** Responses on the B channel do not contain addresses; they only contain a `BID`. If the master has multiple outstanding writes to different addresses, and they complete out-of-order, the scoreboard has no idea which `BRESP` matches which `AWADDR`. Scoreboards **must** be keyed by transaction ID, not address.
+*   **Why it Breaks:** Responses on the B channel do not contain addresses; they contain `BID`. A scoreboard therefore needs a per-ID issue-order queue that stores each accepted request's address and attributes. Keying only by address loses response correlation, while keying only by ID loses repeated same-ID transactions.
 
 ### Bug 2: Assuming Global Ordering
 *   **The Flaw:** A master writes a configuration flag to Address X (ID 0), and then immediately sends a "START" command to Address Y (ID 1). 
-*   **Why it Breaks:** Because they have different IDs, the interconnect or the slave might reorder them. The "START" command might execute before the configuration flag is written, causing the peripheral to crash. If ordering is required, the master must either use the same ID, or wait for the `BRESP` from X before issuing Y.
+*   **Why it Breaks:** Because they have different IDs, the interconnect or the slave might reorder them. The "START" command might execute before the configuration flag is written. If ordering across these locations is required, the robust protocol sequence is to wait for the accepted `BRESP` from X before issuing Y; reusing one numeric ID is not a universal ordering barrier across arbitrary destinations or locations.
 
 ### Bug 3: Read/Write Race Condition
 *   **The Flaw:** A master writes a packet of data to memory, and then immediately issues a read to that exact same memory location to verify it.
-*   **Why it Breaks:** AXI provides **zero** ordering guarantees between Reads and Writes, even if they share an ID. The Read might execute in the slave before the Write data arrives. The master must wait for the Write Response before issuing the Read Address.
+*   **Why it Breaks:** AXI provides no ID-based ordering guarantee between read and write channels, even when the numeric IDs match. The read might execute before the write completes. For the required write-before-read sequence, the master waits for the write-response handshake before issuing the read address.

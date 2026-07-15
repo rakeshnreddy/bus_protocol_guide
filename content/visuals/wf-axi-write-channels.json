@@ -1,33 +1,54 @@
 {
   "id": "wf-axi-write-channels",
-  "title": "AXI Write: Concurrent Channels",
+  "title": "AXI4 Write: Independent AW, W, and B Channels",
   "type": "waveform",
-  "cycleCount": 7,
+  "description": "Trace a three-beat write where W data reaches the interface before the AW address is accepted, both channels absorb backpressure independently, and the B response waits for the accepted address and final data beat.",
+  "cycleCount": 9,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
-    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["0", "1", "0", "0", "0", "0", "0"] },
-    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["1", "1", "0", "0", "0", "0", "0"] },
-    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["-", "0x100", "-", "-", "-", "-", "-"] },
-    { "name": "WVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "0", "0", "0"] },
-    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "0", "0", "0"] },
-    { "name": "WDATA", "type": "data", "color": "green", "values": ["-", "D0", "D1", "D2", "-", "-", "-"] },
-    { "name": "WLAST", "type": "control", "color": "green", "values": ["0", "0", "0", "1", "0", "0", "0"] },
-    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "0"] },
-    { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "1", "0", "0"] },
-    { "name": "BRESP", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "OKAY", "-", "-"] }
+    { "name": "AWVALID", "type": "control", "color": "blue", "values": ["0", "1", "1", "0", "0", "0", "0", "0", "0"] },
+    { "name": "AWREADY", "type": "control", "color": "blue", "values": ["0", "0", "1", "0", "0", "0", "0", "0", "0"] },
+    { "name": "AWID", "type": "data", "color": "blue", "values": ["-", "3", "3", "-", "-", "-", "-", "-", "-"] },
+    { "name": "AWADDR", "type": "data", "color": "blue", "values": ["-", "0x100", "0x100", "-", "-", "-", "-", "-", "-"] },
+    { "name": "AWLEN", "type": "sideband", "color": "blue", "values": ["-", "2 (3 beats)", "2 (3 beats)", "-", "-", "-", "-", "-", "-"] },
+    { "name": "WVALID", "type": "control", "color": "green", "values": ["0", "1", "1", "1", "1", "1", "0", "0", "0"] },
+    { "name": "WREADY", "type": "control", "color": "green", "values": ["0", "1", "0", "0", "1", "1", "0", "0", "0"] },
+    { "name": "WDATA", "type": "data", "color": "green", "values": ["-", "D0", "D1", "D1", "D1", "D2", "-", "-", "-"] },
+    { "name": "WSTRB", "type": "sideband", "color": "green", "values": ["-", "0xF", "0xF", "0xF", "0xF", "0xF", "-", "-", "-"] },
+    { "name": "WLAST", "type": "control", "color": "green", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "0"] },
+    { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "1", "1", "0"] },
+    { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "0", "1", "0"] },
+    { "name": "BID", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "3", "3", "-"] },
+    { "name": "BRESP", "type": "sideband", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "OKAY", "OKAY", "-"] }
   ],
   "annotations": [
     {
-      "cycle": 1,
-      "message": "Write Address (AW) handshake happens concurrently with the first beat of Write Data (W)."
+      "cycle": 2,
+      "message": "The first W beat transfers while AWREADY is LOW. AXI allows write data to appear at an interface before its write address is accepted."
     },
     {
       "cycle": 3,
-      "message": "WLAST=1 indicates the end of the data burst."
+      "message": "The AW handshake accepts ID 3, address 0x100, and AWLEN=2. WREADY is LOW, so D1 begins a separate W-channel stall."
     },
     {
       "cycle": 4,
-      "message": "Write Response (B) handshake completes the transaction after the final data beat."
+      "message": "AW is already complete, but the W channel remains stalled. WVALID, WDATA=D1, WSTRB, and WLAST must stay stable."
+    },
+    {
+      "cycle": 5,
+      "message": "WREADY returns HIGH and accepts D1. The AW channel did not need to wait for this W-channel progress."
+    },
+    {
+      "cycle": 6,
+      "message": "D2 transfers with WLAST=1, completing the three-beat W burst. Both AXI4 response prerequisites—accepted AW and final W—are now satisfied."
+    },
+    {
+      "cycle": 7,
+      "message": "The slave offers BID=3 and BRESP=OKAY, but BREADY is LOW. The response remains valid and stable under backpressure."
+    },
+    {
+      "cycle": 8,
+      "message": "The B handshake accepts the write response. Only this edge completes the write transaction from the master's point of view."
     }
   ]
 }

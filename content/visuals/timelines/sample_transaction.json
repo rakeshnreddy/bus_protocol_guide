@@ -1,38 +1,49 @@
 {
   "id": "tl-abstract-transaction",
   "type": "timeline",
-  "title": "Abstract Bus Transaction",
-  "phases": [
+  "title": "AXI4 Read and Write Transaction Lifetimes",
+  "description": "Compare the independent channel windows that make a write or read outstanding; each colored phase can stall or overlap unrelated channel activity.",
+  "transactions": [
     {
-      "id": "ph-arb",
-      "name": "Arbitration",
-      "durationCycles": 1,
-      "description": "Master requests bus access"
+      "id": "write-aw-lane",
+      "label": "Write · AW",
+      "phases": [
+        { "id": "write-aw", "name": "Address accepted", "startCycle": 1, "endCycle": 2, "description": "The AW handshake accepts the write address and attributes. W data can appear before, with, or after this edge." }
+      ]
     },
     {
-      "id": "ph-addr",
-      "name": "Address",
-      "durationCycles": 1,
-      "description": "Master drives address and control signals"
+      "id": "write-w-lane",
+      "label": "Write · W",
+      "phases": [
+        { "id": "write-w", "name": "W beats", "startCycle": 1, "endCycle": 5, "description": "One or more W handshakes transfer write data in write-address order; WLAST marks the final beat." }
+      ]
     },
     {
-      "id": "ph-data",
-      "name": "Data",
-      "durationCycles": 2,
-      "description": "Data transfer occurs between master and slave"
+      "id": "write-b-lane",
+      "label": "Write · B",
+      "phases": [
+        { "id": "write-b", "name": "B response", "startCycle": 5, "endCycle": 6, "description": "After the accepted AW and final W beat, the B handshake completes the write at the master interface." }
+      ]
     },
     {
-      "id": "ph-resp",
-      "name": "Response",
-      "durationCycles": 1,
-      "description": "Slave indicates success or failure"
+      "id": "read-ar-lane",
+      "label": "Read · AR",
+      "phases": [
+        { "id": "read-ar", "name": "Address accepted", "startCycle": 2, "endCycle": 3, "description": "The AR handshake accepts the read address and attributes and creates an outstanding read." }
+      ]
+    },
+    {
+      "id": "read-r-lane",
+      "label": "Read · R",
+      "phases": [
+        { "id": "read-r", "name": "R beats + response", "startCycle": 4, "endCycle": 7, "description": "Each R handshake transfers data with RID and RRESP. The beat with RLAST completes the read." }
+      ]
     }
   ],
-  "labels": ["Master Action", "Slave Action"],
+  "labels": ["Address channels create outstanding work", "Data and response channels retire it"],
   "annotations": [
-    {
-      "phase": "ph-data",
-      "message": "Wait states may extend this phase."
-    }
+    { "phase": "write-w", "message": "AW and W are independent: a W beat can reach an interface before the corresponding AW request." },
+    { "phase": "write-b", "message": "AXI4 BVALID depends on acceptance of both the AW request and the final W beat." },
+    { "phase": "read-r", "message": "The read response travels with every R beat; there is no separate read-response channel." }
   ]
 }

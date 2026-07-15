@@ -15,13 +15,13 @@ glossaryTerms: ["BRESP", "BID", "BVALID", "BREADY"]
 checklistIds: []
 ---
 
-A write transaction is not complete until the slave confirms it has safely received the data. This confirmation happens on the Write Response (B) channel. (The 'B' stands for Buffer, referring to the write buffer response).
+A write transaction is not complete at the master interface until the slave returns its completion status on the Write Response (B) channel. The channel is conventionally named `B`; the protocol does not define the letter as an abbreviation for “Buffer.”
 
 This channel flows in the opposite direction: Slave -> Master. All signals begin with the prefix `B`.
 
 ## Handshake Signals
 
-*   **`BVALID`** (Slave -> Master): The slave drives this HIGH when it has a valid response to send. *Crucially, the slave must not assert `BVALID` until the master has sent the final data beat with `WLAST=1`.*
+*   **`BVALID`** (Slave -> Master): The slave drives this HIGH when it has a valid response to send. *In AXI4, the slave must not assert `BVALID` until it has accepted both the AW request and the final W beat with `WLAST=1`.*
 *   **`BREADY`** (Master -> Slave): The master drives this HIGH when it is ready to accept the response.
 
 ## Response Signals
@@ -35,10 +35,10 @@ This channel flows in the opposite direction: Slave -> Master. All signals begin
 
 ### Why is BID necessary?
 
-Because AXI allows multiple outstanding transactions, a master might issue Write Address 0xA, and then Write Address 0xB. The slave is allowed to complete Write 0xB *before* Write 0xA! 
+Because AXI allows multiple outstanding transactions, a master might issue Write Address 0xA, and then Write Address 0xB. If the requests use different IDs, the slave is allowed to complete Write 0xB *before* Write 0xA while preserving the required ordering within each ID stream.
 
 When the master receives a response on the B channel, it uses the `BID` tag to correlate the success/failure back to the original request.
 
-![wf-axi-ids-correlation](visual:wf-axi-ids-correlation)
+![Two AXI4 writes sending data in address order but returning different-ID responses out of order](visual:wf-axi-ids-correlation)
 
 **Senior DV Tip:** A very common RTL bug is a master failing to assert `BREADY`. If the master fires off writes and forgets to accept the responses, the B channel will backpressure the slave, eventually bringing the entire system to a halt. Always verify that your masters can consume `BRESP`s!
