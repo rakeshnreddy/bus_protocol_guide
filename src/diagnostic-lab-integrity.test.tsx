@@ -160,8 +160,9 @@ describe('Phase V4 diagnostic lab integrity', () => {
     }
   });
 
-  it('renders every linked lesson with an Applied DV practice section and no missing exercise state', () => {
-    for (const lessonId of expectedLabLessons.values()) {
+  it.each([...expectedLabLessons.values()])(
+    'renders linked lesson %s with an Applied DV practice section and no missing exercise state',
+    lessonId => {
       const lessonContent = getLessonById(lessonId);
       if (!lessonContent) throw new Error(`Missing lesson ${lessonId}`);
 
@@ -173,6 +174,6 @@ describe('Phase V4 diagnostic lab integrity', () => {
       expect(screen.getByRole('heading', { name: 'Applied DV practice' })).toBeInTheDocument();
       expect(screen.queryByText(/Exercise missing:/)).not.toBeInTheDocument();
       view.unmount();
-    }
-  });
+    },
+  );
 });
