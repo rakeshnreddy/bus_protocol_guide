@@ -10,7 +10,7 @@ tags: ["ahb", "verification", "formal"]
 relatedLessons: []
 prerequisites: ["30_ahb_assertions"]
 visualIds: ["fp-ahb-hready-liveness"]
-exerciseIds: ["ex-ahb-bounded-liveness"]
+exerciseIds: ["lab-ahb-configured-liveness", "ex-ahb-bounded-liveness"]
 glossaryTerms: ["Bounded Liveness"]
 checklistIds: []
 ---

@@ -10,7 +10,7 @@ tags: ["ahb", "advanced", "exclusive", "ahb5"]
 relatedLessons: []
 prerequisites: ["25_locked_sequences"]
 visualIds: ["tl-ahb-exclusive"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-exclusive-monitor"]
 glossaryTerms: ["Exclusive Access", "Semaphore"]
 checklistIds: []
 ---

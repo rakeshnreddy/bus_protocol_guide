@@ -50,19 +50,70 @@ export interface GlossaryEntry {
   relatedTerms?: string[];
 }
 
-/**
- * Represents a self-check exercise tied to lessons.
- */
-export interface Exercise {
+export type ExerciseDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+interface ExerciseBase {
   id: string;
-  type: 'reflection' | 'multiple-choice' | 'short-answer';
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  title?: string;
+  difficulty: ExerciseDifficulty;
   prompt: string;
   expectedTakeaway: string;
   relatedLessons: string[];
-  options?: string[]; // For multiple-choice
-  correctOptionIndex?: number; // For multiple-choice
 }
+
+export interface MultipleChoiceExercise extends ExerciseBase {
+  type: 'multiple-choice';
+  options: string[];
+  correctOptionIndex: number;
+}
+
+export interface ReflectionExercise extends ExerciseBase {
+  type: 'reflection' | 'short-answer';
+}
+
+export interface DiagnosticEvidenceColumn {
+  key: string;
+  label: string;
+}
+
+export interface DiagnosticEvidenceRow {
+  id: string;
+  label: string;
+  values: Record<string, string>;
+}
+
+export interface DiagnosticOption {
+  id: string;
+  label: string;
+}
+
+export interface DiagnosticStep {
+  id: string;
+  label: string;
+  prompt: string;
+  options: DiagnosticOption[];
+  correctOptionId: string;
+  explanation: string;
+}
+
+export interface DiagnosticLabExercise extends ExerciseBase {
+  type: 'diagnostic-lab';
+  title: string;
+  protocolScope: string;
+  learnerQuestion: string;
+  scenario: string;
+  evidence: {
+    caption: string;
+    columns: DiagnosticEvidenceColumn[];
+    rows: DiagnosticEvidenceRow[];
+  };
+  diagnosisSteps: DiagnosticStep[];
+}
+
+/**
+ * Represents a self-check or applied diagnostic exercise tied to lessons.
+ */
+export type Exercise = MultipleChoiceExercise | ReflectionExercise | DiagnosticLabExercise;
 
 /**
  * Represents a single actionable item inside a checklist.

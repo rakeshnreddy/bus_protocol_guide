@@ -10,7 +10,7 @@ tags: ["ahb", "verification", "debug"]
 relatedLessons: []
 prerequisites: ["33_common_rtl_bugs"]
 visualIds: ["wf-ahb-bug-wait-state", "wf-ahb-bug-decoder-glitch"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-sampled-select"]
 glossaryTerms: []
 checklistIds: []
 ---

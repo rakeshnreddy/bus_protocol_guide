@@ -10,7 +10,7 @@ tags: ["ahb", "advanced", "error", "hresp"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
 visualIds: ["wf-ahb-review-error"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-error-completion"]
 glossaryTerms: []
 checklistIds: []
 ---

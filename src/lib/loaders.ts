@@ -1,5 +1,14 @@
 import { parseMarkdown } from './markdown';
-import type { Lesson, GlossaryEntry, Checklist, Exercise } from '../types/content';
+import type {
+  Lesson,
+  GlossaryEntry,
+  Checklist,
+  Exercise,
+  ExerciseDifficulty,
+  DiagnosticEvidenceColumn,
+  DiagnosticEvidenceRow,
+  DiagnosticStep,
+} from '../types/content';
 
 export function getLessons(): { lesson: Lesson, body: string }[] {
   // Use eager loading to load all markdown files at build time
@@ -199,16 +208,175 @@ export function getChecklists(): Checklist[] {
   return checklists;
 }
 
+const exerciseDifficulties = new Set<ExerciseDifficulty>(['beginner', 'intermediate', 'advanced']);
+
+const nonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const stringArray = (value: unknown, fallback: string[] = []): string[] | null => {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) return null;
+  return value;
+};
+
+export function normalizeExercise(raw: unknown): Exercise | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Record<string, unknown>;
+  if (!nonEmptyString(candidate.id) || !nonEmptyString(candidate.prompt)) return null;
+
+  const expectedTakeaway = candidate.expectedTakeaway ?? candidate.explanation;
+  if (!nonEmptyString(expectedTakeaway)) return null;
+
+  const relatedLessons = stringArray(candidate.relatedLessons);
+  if (!relatedLessons) return null;
+
+  const difficulty = exerciseDifficulties.has(candidate.difficulty as ExerciseDifficulty)
+    ? candidate.difficulty as ExerciseDifficulty
+    : 'intermediate';
+  const title = nonEmptyString(candidate.title) ? candidate.title : undefined;
+
+  const base = {
+    id: candidate.id,
+    ...(title ? { title } : {}),
+    difficulty,
+    prompt: candidate.prompt,
+    expectedTakeaway,
+    relatedLessons,
+  };
+
+  if (candidate.type === 'multiple-choice') {
+    const options = stringArray(candidate.options);
+    if (!options || options.length < 2) return null;
+    if (
+      typeof candidate.correctOptionIndex !== 'number'
+      || !Number.isInteger(candidate.correctOptionIndex)
+      || candidate.correctOptionIndex < 0
+      || candidate.correctOptionIndex >= options.length
+    ) return null;
+
+    return {
+      ...base,
+      type: 'multiple-choice',
+      options,
+      correctOptionIndex: candidate.correctOptionIndex,
+    };
+  }
+
+  if (candidate.type === 'reflection' || candidate.type === 'short-answer') {
+    return { ...base, type: candidate.type };
+  }
+
+  if (candidate.type !== 'diagnostic-lab') return null;
+  if (
+    !nonEmptyString(candidate.title)
+    || !nonEmptyString(candidate.protocolScope)
+    || !nonEmptyString(candidate.learnerQuestion)
+    || !nonEmptyString(candidate.scenario)
+    || !candidate.evidence
+    || typeof candidate.evidence !== 'object'
+    || !Array.isArray(candidate.diagnosisSteps)
+  ) return null;
+
+  const evidence = candidate.evidence as Record<string, unknown>;
+  if (!nonEmptyString(evidence.caption) || !Array.isArray(evidence.columns) || !Array.isArray(evidence.rows)) {
+    return null;
+  }
+
+  const columns: DiagnosticEvidenceColumn[] = [];
+  const columnKeys = new Set<string>();
+  for (const item of evidence.columns) {
+    if (!item || typeof item !== 'object') return null;
+    const column = item as Record<string, unknown>;
+    if (!nonEmptyString(column.key) || !nonEmptyString(column.label) || columnKeys.has(column.key)) return null;
+    columnKeys.add(column.key);
+    columns.push({ key: column.key, label: column.label });
+  }
+  if (columns.length < 2) return null;
+
+  const rows: DiagnosticEvidenceRow[] = [];
+  const rowIds = new Set<string>();
+  for (const item of evidence.rows) {
+    if (!item || typeof item !== 'object') return null;
+    const row = item as Record<string, unknown>;
+    if (
+      !nonEmptyString(row.id)
+      || !nonEmptyString(row.label)
+      || rowIds.has(row.id)
+      || !row.values
+      || typeof row.values !== 'object'
+    ) return null;
+    const values = row.values as Record<string, unknown>;
+    if ([...columnKeys].some(key => !nonEmptyString(values[key]))) return null;
+    rowIds.add(row.id);
+    rows.push({
+      id: row.id,
+      label: row.label,
+      values: Object.fromEntries([...columnKeys].map(key => [key, values[key] as string])),
+    });
+  }
+  if (rows.length < 2) return null;
+
+  const diagnosisSteps: DiagnosticStep[] = [];
+  const stepIds = new Set<string>();
+  for (const item of candidate.diagnosisSteps) {
+    if (!item || typeof item !== 'object') return null;
+    const step = item as Record<string, unknown>;
+    if (
+      !nonEmptyString(step.id)
+      || !nonEmptyString(step.label)
+      || !nonEmptyString(step.prompt)
+      || !nonEmptyString(step.correctOptionId)
+      || !nonEmptyString(step.explanation)
+      || stepIds.has(step.id)
+      || !Array.isArray(step.options)
+    ) return null;
+
+    const optionIds = new Set<string>();
+    const options = step.options.flatMap(option => {
+      if (!option || typeof option !== 'object') return [];
+      const record = option as Record<string, unknown>;
+      if (!nonEmptyString(record.id) || !nonEmptyString(record.label) || optionIds.has(record.id)) return [];
+      optionIds.add(record.id);
+      return [{ id: record.id, label: record.label }];
+    });
+    if (options.length !== step.options.length || options.length < 2 || !optionIds.has(step.correctOptionId)) {
+      return null;
+    }
+
+    stepIds.add(step.id);
+    diagnosisSteps.push({
+      id: step.id,
+      label: step.label,
+      prompt: step.prompt,
+      options,
+      correctOptionId: step.correctOptionId,
+      explanation: step.explanation,
+    });
+  }
+  if (diagnosisSteps.length < 2) return null;
+
+  return {
+    ...base,
+    type: 'diagnostic-lab',
+    title: candidate.title,
+    protocolScope: candidate.protocolScope,
+    learnerQuestion: candidate.learnerQuestion,
+    scenario: candidate.scenario,
+    evidence: { caption: evidence.caption, columns, rows },
+    diagnosisSteps,
+  };
+}
+
 export function getExercises(): Exercise[] {
   const jsonFiles = import.meta.glob('../../content/exercises/**/*.json', { eager: true, import: 'default' });
-  let exercises: Exercise[] = [];
+  const exercises: Exercise[] = [];
   
   for (const path in jsonFiles) {
     const data = jsonFiles[path] as any;
-    if (Array.isArray(data)) {
-      exercises = exercises.concat(data);
-    } else {
-      exercises.push(data);
+    const rawExercises = Array.isArray(data) ? data : [data];
+    for (const rawExercise of rawExercises) {
+      const exercise = normalizeExercise(rawExercise);
+      if (exercise) exercises.push(exercise);
     }
   }
   

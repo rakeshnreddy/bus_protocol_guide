@@ -1,6 +1,6 @@
 # Bus Protocol DV Academy — Coding Agent Handoff
 
-Last updated: 2026-07-13
+Last updated: 2026-07-16
 
 ## Product directive
 
@@ -18,37 +18,31 @@ Last updated: 2026-07-13
 - The light/dark/system theme, responsive app shell, curriculum navigation, Visuals Explorer, and lesson progress/navigation are complete.
 - The production `TopologyViewer` and structured geometry checks implement the reusable block-diagram standard documented in `AGENTS.md` and `docs/03_VISUAL_SYSTEM.md`.
 
-## AHB status
+## AHB/AXI visual and retention status
 
-All four AHB visual batches are complete. Every one of the 38 AHB lessons has at least one inline, production-registry-resolved visual and has received a batch-level educational and protocol-accuracy review.
-
-The registry currently contains 61 visuals:
+All four AHB visual batches, all four AXI visual batches, and Phase V3 presentation/retention polish are complete. Every AHB and AXI lesson has reviewed, registry-resolved inline visual support. The production registry contains 79 visuals:
 
 | Type | Count |
 | --- | ---: |
-| Waveform | 29 |
-| Timeline | 6 |
-| Topology | 9 |
-| Signal explorer | 11 |
+| Waveform | 31 |
+| Timeline | 11 |
+| Topology | 12 |
+| Signal explorer | 19 |
 | Coverage map | 2 |
 | Formal property | 2 |
 | Spec rule explorer | 2 |
 
 Current registry diagnostics: 0 duplicates, 0 malformed/missing-ID files, 0 unsupported files, and 35 recovered root-level legacy assets.
 
-Batch 4 (lessons 29–38) added or comprehensively upgraded:
+Phase V3 provides a consistent visual-inspection workflow and retrieval panel across all 88 lessons. The Visuals Explorer groups the complete registry by protocol and supports search, type/protocol filters, production previews, empty-state recovery, and light/dark/system themes.
 
-- `topo-ahb-dv-environment`
-- `sig-ahb-assertion-library`
-- `cm-ahb-burst-resp`
-- `fp-ahb-hready-liveness`
-- `wf-ahb-bug-wait-state`
-- `wf-ahb-bug-decoder-glitch`
-- `sig-ahb-signoff-evidence`
-- `sig-ahb-full`
-- `sig-ahb-senior-recap`
+## Phase V4 status
 
-Protocol claims are guarded by tests for HTRANS progression, two-cycle ERROR handling and optional cancellation, configured liveness/fairness, accepted-edge HSEL sampling, address/data phase ownership, version-specific signals, locks versus exclusives/security, and the 1 KB boundary.
+Both AHB/AXI Applied DV Practice batches are complete. A reusable `diagnostic-lab` exercise schema, strict production normalization, responsive evidence table, three-step diagnostic workflow, per-step reasoning feedback, scoring, and reset behavior are implemented.
+
+Sixteen primary-source-reviewed labs are integrated: eight AHB and eight AXI. Batch 1 covers pipeline ownership, stall stability, optional post-ERROR recovery, configured liveness, AXI4 write-response prerequisites, stalled R-payload stability, safety-versus-progress classification, and per-ID ordering. Batch 2 covers AHB arbitration handover, retimed response selection, exclusive-monitor verdicts, sampled HSEL, AXI 4 KB request checking, response routing, source-scoped local IDs, and safe ID narrowing.
+
+The loader also normalizes historical exercise metadata and rejects malformed lab records. All declared lesson exercise references resolve. Legacy exercises were corrected where they confused protocol rules with recommendations or configured policy.
 
 ## Verification evidence
 
@@ -61,23 +55,21 @@ npm run build
 
 Results:
 
-- Test files: 38
-- Tests: 324 passed, 0 failed
+- Test files: 44
+- Tests: 513 passed, 0 failed
 - TypeScript errors: 0
 - Vite build warnings: 0
 - Main application chunk: 253.60 kB
-- Loader chunk: 273.54 kB
-- Lesson page chunk: 162.28 kB
-- Visual renderer chunk: 140.56 kB
+- Loader chunk: 349.98 kB
+- Lesson page chunk: 171.84 kB
+- Visual renderer chunk: 221.20 kB
 - Search chunk: 27.63 kB
-- Largest chunk: 273.54 kB
+- Largest chunk: 349.98 kB
 
-Live browser verification covered AHB lessons 29–38, `/visuals`, and `/dev/visuals` at desktop and 375 px mobile width, including light/dark/system themes, mobile navigation, keyboard diagram inspection, internal horizontal scrolling, and console cleanliness. The explorer listed 61 cards and the dev gallery rendered all 61 visual headings without missing or unknown visuals.
+Live browser verification covered all sixteen Phase V4 lessons at desktop width and exactly 375 × 812. Every diagnostic lab rendered without missing content or page overflow. Evidence tables remained in internal scroll regions, Arrow/Home/End keyboard scrolling worked, choices/actions exceeded 44 px, representative AHB and AXI diagnoses completed, light/dark themes applied correctly, and the console stayed clean.
 
 ## Exact continuation point
 
-Next task: **AXI Visual Batch 1 — Lessons 01 through 11**.
-
-Recover and improve existing AXI assets before creating new ones. Prioritize the five-channel model, channel independence, VALID/READY timing, basic read/write ownership, bursts, IDs, and backpressure. Apply the same production-registry, rendering, accessibility, geometry, protocol-accuracy, browser, test, and build gates used for AHB.
+The planned AHB/AXI visual-first, presentation, retention, and applied-DV work is complete. Continue only with targeted maintenance driven by learner feedback or a specific protocol-accuracy finding. Do not create an audit-only phase and do not begin APB without an explicit product-directive change.
 
 The detailed implementation history and per-lesson status are in `docs/AHB_AXI_VISUAL_COMPLETION_TRACKER.md`.

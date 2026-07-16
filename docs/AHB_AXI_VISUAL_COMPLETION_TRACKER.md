@@ -620,6 +620,80 @@ At an exact 375 × 812 viewport, the workflow and retention prompts collapsed to
 - Search chunk: 27.63 kB minified
 - Largest chunk: 293.80 kB, below the existing 500 kB warning threshold
 
+## Phase V4 — AHB/AXI applied DV practice
+
+Status: complete.
+
+Phase V4 adds a reusable `diagnostic-lab` exercise to the production content model and lesson renderer. Each lab presents bounded waveform/scoreboard evidence, then requires three decisions: locate the first decisive edge, assign protocol ownership, and select the checker or retained state that proves the diagnosis. The production loader normalizes legacy exercise metadata, rejects incomplete lab structures, and keeps malformed records isolated from valid exercises.
+
+| Protocol | Lesson | Lab ID | Applied learner question |
+| --- | --- | --- | --- |
+| AHB | 15 — Address/data phase | `lab-ahb-pipeline-owner` | Which accepted address phase owns the write data while the overlapping address phase is stalled? |
+| AHB | 16 — Wait states | `lab-ahb-stall-stability` | Which rising edge first proves that pending address/control changed illegally? |
+| AHB | 24 — Error responses | `lab-ahb-error-completion` | When does the failed transfer complete, and may the master cancel or continue? |
+| AHB | 32 — Formal properties | `lab-ahb-configured-liveness` | Did AHB safety fail, or did a separately configured progress bound expire? |
+| AXI | 13 — Write walkthrough | `lab-axi-write-response-prerequisites` | Which accepted AW/final-W evidence must exist before AXI4 BVALID? |
+| AXI | 14 — Read walkthrough | `lab-axi-stalled-read-payload` | Which stalled R-channel field first proves that an unaccepted beat changed? |
+| AXI | 39 — Debug case studies | `lab-axi-progress-classification` | Does a long stable stall prove an AXI safety failure or a configured progress failure? |
+| AXI | 42 — Ordering review | `lab-axi-per-id-ordering` | Which response first violates the head of one ID's issue queue? |
+| AHB | 19 — Arbiter behavior | `lab-ahb-arbitration-handover` | Which HREADY/grant edge turns permission into address ownership while data ownership remains pipelined? |
+| AHB | 20 — Decoder and selection | `lab-ahb-decoder-response-owner` | Which retimed HSEL owns a response after the next address selects another target? |
+| AHB | 26 — Exclusive accesses | `lab-ahb-exclusive-monitor` | How does an intervening write produce HEXOKAY failure without an HRESP error? |
+| AHB | 34 — Debug case studies | `lab-ahb-sampled-select` | Which sampled edge distinguishes a harmless raw HSEL pulse from an unsafe slave side effect? |
+| AXI | 25 — 4 KB boundary | `lab-axi-4kb-request-check` | Which address handshake first proves a burst's implied byte range crosses 4 KB? |
+| AXI | 30 — Interconnects | `lab-axi-response-route-owner` | Which accepted request context routes a response when independent targets complete concurrently? |
+| AXI | 31 — Multi-master reasoning | `lab-axi-local-id-context` | How can two master ports reuse local ID 5 while their source-scoped responses complete independently? |
+| AXI | 38 — Common RTL bugs | `lab-axi-id-narrowing-collision` | Which acceptance edge first destroys response ownership in an unsafe ID-narrowing bridge? |
+
+### Phase V4 accuracy and content corrections
+
+- AHB scenarios preserve accepted address/data-phase ownership, the waited-transfer stability obligation and first-ERROR-cycle exception, the exact two-cycle ERROR response, and the master's permitted choice to cancel or continue remaining transfers.
+- AXI4 scenarios preserve independent AW/W handshakes while requiring accepted AW plus accepted final W before BVALID, hold the complete R payload under backpressure, retain per-ID issue order, and keep configured progress bounds separate from interface safety.
+- Multi-master AHB scenarios preserve the AMBA 2 grant/HREADY handover boundary and the one-phase delay between address and data ownership. Decoder scenarios retime accepted HSEL into the response phase, and AHB5 exclusive scenarios distinguish the complete monitor key and HEXOKAY verdict from HRESP.
+- AXI interconnect scenarios check the 4 KB rule when the address request is accepted, retain response ownership independently from the latest arbitration result, scope local IDs by master port, and require all ID manipulation to preserve original ordering and response restoration.
+- Corrected the legacy AHB error exercise that incorrectly required cancellation, the bounded-liveness exercise that mislabeled a product timeout as a universal protocol violation, and the WRAP coverage scenario that requested OKAY from an unmapped address.
+- Corrected the AXI FIXED-plus-EXOKAY coverage shortcut, WLAST early-termination wording, channel-independence wording, 4 KB end-address calculation, and the waveform exercise that claimed an exact deadlock root cause from a steady stall alone.
+- The new evidence table exposes visible keyboard instructions and supports Left/Right, Home, and End. Native radio groups support keyboard/pointer/touch selection, all choice and action targets exceed 44 px, feedback names the reasoning result, and Try again restores the initial state.
+
+### Phase V4 browser verification
+
+Verified all sixteen linked lesson routes at desktop width and exactly 375 × 812:
+
+- `/lesson/15_address_data_phase`
+- `/lesson/16_wait_states_hready`
+- `/lesson/24_error_responses`
+- `/lesson/32_ahb_formal_properties`
+- `/lesson/13_write_transaction_walkthrough`
+- `/lesson/14_read_transaction_walkthrough`
+- `/lesson/39_debug_case_studies`
+- `/lesson/42_axi_ordering_review_pack`
+- `/lesson/19_arbiter_behavior`
+- `/lesson/20_decoder_and_slave_selection`
+- `/lesson/26_exclusive_accesses`
+- `/lesson/34_debug_case_studies`
+- `/lesson/25_4kb_boundary_rule`
+- `/lesson/30_axi_interconnects_crossbars`
+- `/lesson/31_multi_master_reasoning`
+- `/lesson/38_common_rtl_bugs`
+
+Results: every route rendered one Applied DV section and one production lab with no missing exercise state, blank content, or page-level horizontal overflow. At 375 px, every 720 px evidence table scrolled inside a 309 px region, option targets measured at least 52 px, the submit action measured 48 px, and all option groups collapsed to one contained column. Keyboard evidence scrolling moved from 0 to 232 px with ArrowRight and to the 411 px maximum with End. Complete AHB and AXI diagnoses produced the expected result, light/dark theme states applied distinct palettes, and the browser console contained zero warnings or errors.
+
+### Verification baseline after Phase V4
+
+- Diagnostic labs: 16 (8 AHB, 8 AXI)
+- Declared lesson exercise references missing after normalization: 0
+- Test files: 44
+- Tests: 513
+- Test failures: 0
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB minified
+- Loader chunk: 349.98 kB minified
+- Lesson page chunk: 171.84 kB minified
+- Visual renderer chunk: 221.20 kB minified
+- Search chunk: 27.63 kB minified
+- Largest chunk: 349.98 kB, below the existing 500 kB warning threshold
+
 ## Next AHB/AXI work
 
-Use learner feedback and protocol-accuracy findings to make targeted AHB/AXI refinements without reopening completed batches as audit-only work. Do not begin APB.
+The planned AHB/AXI visual-first, presentation, retention, and applied-DV scope is complete. Future work should be targeted maintenance driven by learner feedback or a specific protocol-accuracy finding, not a new audit-only phase. Do not begin APB without an explicit product-directive change.

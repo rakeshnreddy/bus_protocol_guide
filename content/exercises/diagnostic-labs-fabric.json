@@ -1,0 +1,530 @@
+[
+  {
+    "id": "lab-ahb-arbitration-handover",
+    "title": "AHB Grant-to-Ownership Handover",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AMBA 2 AHB multi-master",
+    "learnerQuestion": "Which accepting edge turns a grant into address-bus ownership while an earlier data phase is stalled?",
+    "prompt": "Separate next-owner permission from current address and data ownership, then choose the state a monitor must retain across the handover.",
+    "scenario": "The arbiter grants the DMA while a CPU transfer remains stalled. HGRANT_DMA is HIGH for several windows, but address ownership cannot change until the current transfer reaches an edge with HREADY HIGH.",
+    "evidence": {
+      "caption": "Observed AHB handover; each row describes the cycle window ending at the named rising edge.",
+      "columns": [
+        { "key": "ready", "label": "HREADY" },
+        { "key": "grant", "label": "HGRANT_DMA" },
+        { "key": "addressOwner", "label": "Address owner before edge" },
+        { "key": "dataOwner", "label": "Data-phase owner" },
+        { "key": "result", "label": "Ownership after edge" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "ready": "0", "grant": "1", "addressOwner": "CPU", "dataOwner": "CPU · A1", "result": "CPU remains owner" } },
+        { "id": "c2", "label": "C2", "values": { "ready": "0", "grant": "1", "addressOwner": "CPU", "dataOwner": "CPU · A1", "result": "CPU remains owner" } },
+        { "id": "c3", "label": "C3", "values": { "ready": "1", "grant": "1", "addressOwner": "CPU", "dataOwner": "CPU · A1 completes", "result": "DMA becomes address owner" } },
+        { "id": "c4", "label": "C4", "values": { "ready": "1", "grant": "1", "addressOwner": "DMA", "dataOwner": "CPU · final pipelined phase", "result": "DMA address accepted" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the handover",
+        "prompt": "Which edge first permits DMA address ownership?",
+        "options": [
+          { "id": "c1", "label": "C1, when HGRANT_DMA first appears" },
+          { "id": "c2", "label": "C2, after one full granted cycle" },
+          { "id": "c3", "label": "C3, where HGRANT_DMA and HREADY are both HIGH" }
+        ],
+        "correctOptionId": "c3",
+        "explanation": "A grant identifies the next owner, but AMBA 2 AHB changes address/control ownership only at transfer completion when HREADY is HIGH."
+      },
+      {
+        "id": "own",
+        "label": "Separate the owners",
+        "prompt": "What must the monitor model around C3 and C4?",
+        "options": [
+          { "id": "one-owner", "label": "One owner value for address and data in every cycle" },
+          { "id": "split-owner", "label": "Address owner and delayed data-phase owner as separate state" },
+          { "id": "grant-only", "label": "Only the currently asserted grant" }
+        ],
+        "correctOptionId": "split-owner",
+        "explanation": "AHB pipelines ownership: the new master can own the address phase while the previous master's final accepted address still owns the overlapping data phase."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the checker",
+        "prompt": "Which assertion catches an early takeover without imposing one arbitration policy?",
+        "options": [
+          { "id": "priority", "label": "Require DMA to win every simultaneous request" },
+          { "id": "handover", "label": "Permit address-owner change only on an edge with HREADY HIGH and the matching grant" },
+          { "id": "grant-equals-owner", "label": "Require HGRANT_DMA to equal current ownership combinationally" }
+        ],
+        "correctOptionId": "handover",
+        "explanation": "The protocol constrains the handover boundary, while fixed-priority, round-robin, and other selection policies remain implementation choices."
+      }
+    ],
+    "expectedTakeaway": "HGRANT names the next permitted owner; it does not erase a stalled transfer. Track address and data owners independently and advance address ownership only at a valid HREADY handover edge.",
+    "relatedLessons": ["19_arbiter_behavior"]
+  },
+  {
+    "id": "lab-ahb-decoder-response-owner",
+    "title": "AHB Retimed Response Selection",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 / AHB-Lite",
+    "learnerQuestion": "Which accepted HSEL owns the response when the next address already selects a different slave?",
+    "prompt": "Reconstruct the accepted target history, identify the misrouted response, and choose the response-multiplexor state that preserves data-phase ownership.",
+    "scenario": "An SRAM request is accepted, then the overlapping next address selects the default slave. A buggy return mux uses the current combinational HSEL instead of the retimed selection for the active data phase.",
+    "evidence": {
+      "caption": "AHB address selection and return-path ownership across two pipelined transfers.",
+      "columns": [
+        { "key": "address", "label": "Address phase" },
+        { "key": "hsel", "label": "Current HSEL" },
+        { "key": "dataOwner", "label": "Data-phase target" },
+        { "key": "mux", "label": "Observed return mux" },
+        { "key": "response", "label": "Returned response" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "address": "A · SRAM accepted", "hsel": "SRAM", "dataOwner": "—", "mux": "—", "response": "—" } },
+        { "id": "c2", "label": "C2", "values": { "address": "B · Default accepted", "hsel": "Default", "dataOwner": "A · SRAM", "mux": "Default · BUG", "response": "ERROR instead of SRAM OKAY" } },
+        { "id": "c3", "label": "C3", "values": { "address": "IDLE", "hsel": "Default", "dataOwner": "B · Default", "mux": "Default", "response": "ERROR cycle 1" } },
+        { "id": "c4", "label": "C4", "values": { "address": "IDLE", "hsel": "Default", "dataOwner": "B · Default", "mux": "Default", "response": "ERROR cycle 2" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the mismatch",
+        "prompt": "Which cycle first proves that the return path used the wrong target selection?",
+        "options": [
+          { "id": "c1", "label": "C1, when SRAM is selected" },
+          { "id": "c2", "label": "C2, when SRAM owns data but Default drives the returned response" },
+          { "id": "c3", "label": "C3, when the default-slave ERROR begins" }
+        ],
+        "correctOptionId": "c2",
+        "explanation": "The SRAM address accepted in C1 owns the C2 data phase. The next address's HSEL must not redirect that earlier transfer's response."
+      },
+      {
+        "id": "own",
+        "label": "Assign ownership",
+        "prompt": "Which target owns HREADY, HRESP, and HRDATA in C2?",
+        "options": [
+          { "id": "current", "label": "The target selected by the current C2 address" },
+          { "id": "previous", "label": "The target accepted for transfer A in C1" },
+          { "id": "arbiter", "label": "The arbitration winner regardless of address" }
+        ],
+        "correctOptionId": "previous",
+        "explanation": "Return data and response belong to the active data phase, so the decoder-derived selection must be retimed from the accepted address phase."
+      },
+      {
+        "id": "verify",
+        "label": "Choose retained state",
+        "prompt": "What state should the interconnect monitor use to validate the return mux?",
+        "options": [
+          { "id": "raw-hsel", "label": "Only the current combinational HSEL vector" },
+          { "id": "retimed", "label": "Accepted target selection retained until that transfer's data phase completes" },
+          { "id": "address-only", "label": "Only the current HADDR value" }
+        ],
+        "correctOptionId": "retimed",
+        "explanation": "The accepted target is the response owner until completion, including through wait states; the next address decode is a different transfer."
+      }
+    ],
+    "expectedTakeaway": "AHB response routing follows the retimed target of the active data phase. Current HSEL describes the overlapping address phase and cannot, by itself, select the response mux.",
+    "relatedLessons": ["20_decoder_and_slave_selection"]
+  },
+  {
+    "id": "lab-ahb-exclusive-monitor",
+    "title": "AHB5 Exclusive Monitor Verdict",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 Exclusive Transfers",
+    "learnerQuestion": "How does an intervening write turn a matching exclusive write into a normal completion that does not update memory?",
+    "prompt": "Track the monitor key, locate invalidation, and distinguish HEXOKAY failure from an HRESP error.",
+    "scenario": "Master 3 completes an exclusive read to a supported word. Master 7 then writes the monitored location before Master 3 attempts the matching exclusive write.",
+    "evidence": {
+      "caption": "Accepted transfers and exclusive-monitor state for one AHB5 location.",
+      "columns": [
+        { "key": "transfer", "label": "Accepted transfer" },
+        { "key": "master", "label": "HMASTER" },
+        { "key": "hexcl", "label": "HEXCL" },
+        { "key": "monitor", "label": "Monitor state" },
+        { "key": "response", "label": "Completion" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "transfer": "Read 0x0080", "master": "3", "hexcl": "1", "monitor": "Record key for M3", "response": "OKAY + HEXOKAY=1" } },
+        { "id": "e2", "label": "E2", "values": { "transfer": "Write 0x0080", "master": "7", "hexcl": "0", "monitor": "M3 key invalidated", "response": "OKAY" } },
+        { "id": "e3", "label": "E3", "values": { "transfer": "Write 0x0080", "master": "3", "hexcl": "1", "monitor": "No valid matching key", "response": "OKAY + HEXOKAY=0" } },
+        { "id": "e4", "label": "E4", "values": { "transfer": "Memory observation", "master": "—", "hexcl": "—", "monitor": "Software may retry", "response": "M3 data not written" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate invalidation",
+        "prompt": "Which accepted event prevents Master 3's exclusive write from succeeding?",
+        "options": [
+          { "id": "e1", "label": "E1, Master 3's exclusive read" },
+          { "id": "e2", "label": "E2, Master 7's intervening write" },
+          { "id": "e3", "label": "E3, Master 3 presents the matching write" }
+        ],
+        "correctOptionId": "e2",
+        "explanation": "The monitor can approve the exclusive write only if the monitored location remains unchanged after the matching exclusive read."
+      },
+      {
+        "id": "own",
+        "label": "Identify the monitor key",
+        "prompt": "Which context must match the exclusive read and write?",
+        "options": [
+          { "id": "address", "label": "HADDR alone" },
+          { "id": "context", "label": "HADDR, HSIZE, HPROT, HBURST, HMASTER, and applicable HNONSEC" },
+          { "id": "lock", "label": "Only HMASTLOCK" }
+        ],
+        "correctOptionId": "context",
+        "explanation": "AHB5 defines the matching sequence with address, transfer attributes, master identity, and security context; locking is a different mechanism."
+      },
+      {
+        "id": "verify",
+        "label": "Classify completion",
+        "prompt": "What must the checker conclude from E3?",
+        "options": [
+          { "id": "protocol-error", "label": "HRESP ERROR means the bus transfer failed" },
+          { "id": "successful-write", "label": "HREADY HIGH means memory must contain M3's data" },
+          { "id": "exclusive-fail", "label": "The bus completes with HRESP OKAY, HEXOKAY LOW, and no M3 memory update" }
+        ],
+        "correctOptionId": "exclusive-fail",
+        "explanation": "HEXOKAY reports the exclusive verdict separately from HRESP. A failed exclusive write completes without updating the location."
+      }
+    ],
+    "expectedTakeaway": "An exclusive failure is not a lock failure or an HRESP error. Retain the complete monitor key, invalidate it on conflicting updates, and require no memory update when the exclusive write completes with HEXOKAY LOW.",
+    "relatedLessons": ["26_exclusive_accesses"]
+  },
+  {
+    "id": "lab-ahb-sampled-select",
+    "title": "AHB Sampled-HSEL Side-Effect Triage",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 / AHB-Lite",
+    "learnerQuestion": "Does a within-cycle HSEL pulse represent an accepted transfer, and which edge first proves an unsafe slave side effect?",
+    "prompt": "Separate combinational decode activity from sampled protocol state, then identify the correct checker boundary.",
+    "scenario": "HADDR moves from Slave 2's region to Slave 3's region. HSEL_S2_RAW pulses during combinational settling, but HSEL_S2 is LOW at the accepting edge. Slave 2 nevertheless increments a command counter.",
+    "evidence": {
+      "caption": "Decoder settling and sampled slave state around one accepting edge.",
+      "columns": [
+        { "key": "address", "label": "HADDR at edge" },
+        { "key": "ready", "label": "HREADY" },
+        { "key": "raw", "label": "HSEL_S2_RAW in window" },
+        { "key": "sampled", "label": "HSEL_S2 at edge" },
+        { "key": "sideEffect", "label": "Slave 2 command count" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "address": "0x0020 · Slave 2", "ready": "1", "raw": "1", "sampled": "1", "sideEffect": "10 → 11 · legal" } },
+        { "id": "w2", "label": "Window 2", "values": { "address": "Transitioning", "ready": "—", "raw": "brief pulse", "sampled": "not sampled", "sideEffect": "must not change" } },
+        { "id": "e2", "label": "E2", "values": { "address": "0x0030 · Slave 3", "ready": "1", "raw": "settled 0", "sampled": "0", "sideEffect": "11 → 12 · BUG" } },
+        { "id": "e3", "label": "E3", "values": { "address": "0x0034 · Slave 3", "ready": "1", "raw": "0", "sampled": "0", "sideEffect": "12" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate architectural failure",
+        "prompt": "Which observation first proves a real transfer-side failure?",
+        "options": [
+          { "id": "raw", "label": "The raw within-cycle HSEL pulse by itself" },
+          { "id": "e2", "label": "E2, when Slave 2 state changes although sampled HSEL_S2 is LOW" },
+          { "id": "e3", "label": "E3, one cycle after the counter changed" }
+        ],
+        "correctOptionId": "e2",
+        "explanation": "HSEL is a combinational decode and can transition within a cycle. The protocol-relevant failure is consuming it as a transfer when the accepting-edge selection is LOW."
+      },
+      {
+        "id": "own",
+        "label": "Assign the bug",
+        "prompt": "Which boundary is unsafe in the shown evidence?",
+        "options": [
+          { "id": "arbiter", "label": "The arbiter selected the wrong master" },
+          { "id": "slave", "label": "Slave 2 consumed asynchronous/raw select instead of accepted HSEL and control" },
+          { "id": "master", "label": "The master changed HADDR between clock edges" }
+        ],
+        "correctOptionId": "slave",
+        "explanation": "The address can change after an edge. Protocol-facing slave state must qualify its capture with the sampled HSEL, valid HTRANS, and HREADY acceptance."
+      },
+      {
+        "id": "verify",
+        "label": "Choose evidence",
+        "prompt": "Which monitor record prevents a false diagnosis?",
+        "options": [
+          { "id": "analog", "label": "Treat every within-cycle pulse as a transfer" },
+          { "id": "accepted", "label": "Record HSEL, HTRANS, HADDR, and control only at accepting HCLK edges" },
+          { "id": "counter", "label": "Observe only the final command count" }
+        ],
+        "correctOptionId": "accepted",
+        "explanation": "Accepted-edge evidence distinguishes harmless combinational settling from an architectural side effect caused by unsafe asynchronous consumption."
+      }
+    ],
+    "expectedTakeaway": "A raw HSEL transition is not an accepted transfer. Debug and assertions must compare slave side effects with the HSEL/address/control bundle sampled on an HREADY accepting edge.",
+    "relatedLessons": ["34_debug_case_studies"]
+  },
+  {
+    "id": "lab-axi-4kb-request-check",
+    "title": "AXI4 4 KB Request Triage",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped",
+    "learnerQuestion": "Which handshake first proves a 4 KB violation when later beat addresses are implied by one accepted request?",
+    "prompt": "Derive the complete byte range from AWADDR, AWLEN, AWSIZE, and AWBURST before assigning the violation to a data beat.",
+    "scenario": "A four-beat aligned INCR write starts at 0x0FF8 with four bytes per beat. The AW request is accepted before any W transfer occurs.",
+    "evidence": {
+      "caption": "Accepted request and derived byte range for one illegal AXI4 burst.",
+      "columns": [
+        { "key": "event", "label": "Observed event" },
+        { "key": "address", "label": "Address / range" },
+        { "key": "geometry", "label": "Burst geometry" },
+        { "key": "page", "label": "4 KB region" },
+        { "key": "meaning", "label": "Meaning" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "event": "AWVALID && AWREADY", "address": "AWADDR=0x0FF8", "geometry": "AWLEN=3, AWSIZE=2, INCR", "page": "start page 0x0000", "meaning": "Entire request accepted" } },
+        { "id": "d1", "label": "Derived", "values": { "event": "4 beats × 4 bytes", "address": "0x0FF8–0x1007", "geometry": "16-byte range", "page": "ends in page 0x1000", "meaning": "Crosses boundary" } },
+        { "id": "w1", "label": "W beat 1", "values": { "event": "W handshake", "address": "implied 0x0FF8", "geometry": "beat 1 of 4", "page": "0x0000", "meaning": "Request was already illegal" } },
+        { "id": "w3", "label": "W beat 3", "values": { "event": "W handshake", "address": "implied 0x1000", "geometry": "beat 3 of 4", "page": "0x1000", "meaning": "Visible crossing, not first proof" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate first proof",
+        "prompt": "Which accepted interface event first contains enough information to prove the violation?",
+        "options": [
+          { "id": "aw", "label": "E1, the AW handshake" },
+          { "id": "w1", "label": "The first W handshake" },
+          { "id": "w3", "label": "The third W handshake at implied address 0x1000" }
+        ],
+        "correctOptionId": "aw",
+        "explanation": "AXI carries the burst geometry on the address channel. Once AW is accepted, the requester has committed an illegal byte range even though data arrives later."
+      },
+      {
+        "id": "own",
+        "label": "Assign responsibility",
+        "prompt": "Which interface endpoint originates the illegal request?",
+        "options": [
+          { "id": "master", "label": "The AW-channel source that drives the burst request" },
+          { "id": "slave", "label": "The W-channel destination because it accepts beat 3" },
+          { "id": "response", "label": "The B-channel source after completion" }
+        ],
+        "correctOptionId": "master",
+        "explanation": "The address-channel source must generate a burst whose transferred byte range remains within one 4 KB region."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the assertion",
+        "prompt": "Which accepted-request check is sufficient for this aligned INCR example?",
+        "options": [
+          { "id": "start-only", "label": "Require AWADDR[11:0] to be zero" },
+          { "id": "page", "label": "Require the first and last transferred byte to have the same address bits above bit 11" },
+          { "id": "wlast", "label": "Require WLAST on every data beat" }
+        ],
+        "correctOptionId": "page",
+        "explanation": "Comparing the 4 KB page of the first and last transferred byte directly tests whether the complete burst crosses the boundary."
+      }
+    ],
+    "expectedTakeaway": "The 4 KB rule is an address-request invariant. Derive the last transferred byte when AW or AR is accepted; do not wait for a later data beat to reveal an illegal burst that was already fully specified.",
+    "relatedLessons": ["25_4kb_boundary_rule"]
+  },
+  {
+    "id": "lab-axi-response-route-owner",
+    "title": "AXI Crossbar Response-Owner Reconstruction",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped interconnect",
+    "learnerQuestion": "Which accepted request context must route a response when independent targets complete concurrently?",
+    "prompt": "Trace two legal concurrent read routes, identify the first misroute, and choose the response metadata that survives arbitration changes.",
+    "scenario": "Master 0 reads Slave 0 with local ID 2 while Master 1 reads Slave 1 with local ID 7. Both requests are accepted. A buggy crossbar routes Slave 0's response using a global last-grant value that now names Master 1.",
+    "evidence": {
+      "caption": "Concurrent request routes and observed response destinations.",
+      "columns": [
+        { "key": "event", "label": "Accepted event" },
+        { "key": "source", "label": "Request source" },
+        { "key": "target", "label": "Target" },
+        { "key": "id", "label": "Transaction ID" },
+        { "key": "route", "label": "Observed response route" }
+      ],
+      "rows": [
+        { "id": "e1a", "label": "E1a", "values": { "event": "AR handshake", "source": "Master 0", "target": "Slave 0", "id": "2", "route": "Record S0 → M0" } },
+        { "id": "e1b", "label": "E1b", "values": { "event": "AR handshake", "source": "Master 1", "target": "Slave 1", "id": "7", "route": "Record S1 → M1" } },
+        { "id": "e2", "label": "E2", "values": { "event": "R from Slave 0", "source": "Expected Master 0", "target": "Slave 0", "id": "2", "route": "Master 1 · BUG" } },
+        { "id": "e3", "label": "E3", "values": { "event": "R from Slave 1", "source": "Master 1", "target": "Slave 1", "id": "7", "route": "Master 1" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the misroute",
+        "prompt": "Which accepted response first violates the stored route?",
+        "options": [
+          { "id": "e1b", "label": "E1b, because a second master issues concurrently" },
+          { "id": "e2", "label": "E2, when Slave 0's ID-2 response is delivered to Master 1" },
+          { "id": "e3", "label": "E3, when Slave 1 responds to Master 1" }
+        ],
+        "correctOptionId": "e2",
+        "explanation": "Concurrent routes to different targets are legal. The first failure is delivering the accepted S0/M0 transaction's response to the wrong source port."
+      },
+      {
+        "id": "own",
+        "label": "Assign route ownership",
+        "prompt": "What determines the destination of the E2 response?",
+        "options": [
+          { "id": "last-grant", "label": "Whichever master most recently won any arbiter" },
+          { "id": "accepted-context", "label": "The source-port and ID context retained for the accepted Slave 0 request" },
+          { "id": "address", "label": "The current unrelated ARADDR value" }
+        ],
+        "correctOptionId": "accepted-context",
+        "explanation": "Arbitration chooses request progress; response routing must use the context of the transaction that produced that response."
+      },
+      {
+        "id": "verify",
+        "label": "Choose scoreboard state",
+        "prompt": "Which record supports concurrent targets without forcing global serialization?",
+        "options": [
+          { "id": "global", "label": "One global last-master register" },
+          { "id": "route-map", "label": "Outstanding route entries keyed by downstream target/channel/ID context" },
+          { "id": "ready", "label": "Only the current READY values" }
+        ],
+        "correctOptionId": "route-map",
+        "explanation": "A route map preserves each accepted transaction's source independently, allowing legal concurrency while checking every response destination."
+      }
+    ],
+    "expectedTakeaway": "AXI request arbitration and response routing are different decisions. Preserve source ownership per accepted transaction; a global last-grant value cannot safely route concurrent target responses.",
+    "relatedLessons": ["30_axi_interconnects_crossbars"]
+  },
+  {
+    "id": "lab-axi-local-id-context",
+    "title": "AXI Local-ID Collision Without a Collision",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped interconnect",
+    "learnerQuestion": "How can two master ports reuse local ID 5 while their responses complete in another order?",
+    "prompt": "Follow an illustrative source-prefix scheme, distinguish local from downstream IDs, and repair a scoreboard that imposes false cross-master ordering.",
+    "scenario": "Master 0 and Master 1 each issue ARID 5 to the same target. The crossbar appends a source bit, forwarding downstream IDs 0x05 and 0x15. The 0x15 transaction completes first.",
+    "evidence": {
+      "caption": "Local IDs, illustrative downstream IDs, and restored response ownership.",
+      "columns": [
+        { "key": "event", "label": "Accepted event" },
+        { "key": "port", "label": "Master port" },
+        { "key": "local", "label": "Local ID" },
+        { "key": "downstream", "label": "Downstream ID" },
+        { "key": "meaning", "label": "Routing meaning" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "event": "AR request A", "port": "M0", "local": "5", "downstream": "0x05", "meaning": "Record 0x05 → M0/5" } },
+        { "id": "e2", "label": "E2", "values": { "event": "AR request B", "port": "M1", "local": "5", "downstream": "0x15", "meaning": "Record 0x15 → M1/5" } },
+        { "id": "e3", "label": "E3", "values": { "event": "R response B", "port": "M1", "local": "restore 5", "downstream": "0x15", "meaning": "Legal different-master completion" } },
+        { "id": "e4", "label": "E4", "values": { "event": "R response A", "port": "M0", "local": "restore 5", "downstream": "0x05", "meaning": "Both local streams preserved" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate false failure",
+        "prompt": "Which event would a broken global local-ID scoreboard incorrectly reject?",
+        "options": [
+          { "id": "e1", "label": "E1, the first local ID 5 request" },
+          { "id": "e2", "label": "E2, because another master reuses local ID 5" },
+          { "id": "e3", "label": "E3, because M1/5 completes before M0/5" }
+        ],
+        "correctOptionId": "e3",
+        "explanation": "AXI gives no ordering guarantee between different masters. The appended source context makes these distinct downstream ID streams."
+      },
+      {
+        "id": "own",
+        "label": "Assign identity",
+        "prompt": "Which identity owns response B at E3?",
+        "options": [
+          { "id": "local-only", "label": "Whichever request first used local ID 5 globally" },
+          { "id": "source-id", "label": "Master 1 plus its local ID 5, represented downstream as 0x15" },
+          { "id": "target", "label": "The target address without any source context" }
+        ],
+        "correctOptionId": "source-id",
+        "explanation": "The interconnect-added source identity distinguishes equal local IDs and is removed only after selecting the correct master port."
+      },
+      {
+        "id": "verify",
+        "label": "Choose scoreboard key",
+        "prompt": "How should verification model the two requests?",
+        "options": [
+          { "id": "one-fifo", "label": "One FIFO keyed only by local ID 5 across every master" },
+          { "id": "scoped", "label": "Separate source-port/local-ID streams mapped to downstream response identity" },
+          { "id": "address-only", "label": "Match responses only by address" }
+        ],
+        "correctOptionId": "scoped",
+        "explanation": "Scoped identity preserves each master's ordering stream while permitting responses from different masters to complete independently."
+      }
+    ],
+    "expectedTakeaway": "AXI IDs are interface-scoped, not globally unique system labels. Verification must include source-port context and model how the interconnect makes downstream identities unique and restores the local ID.",
+    "relatedLessons": ["31_multi_master_reasoning"]
+  },
+  {
+    "id": "lab-axi-id-narrowing-collision",
+    "title": "AXI ID-Narrowing Collision Point",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped bridge/interconnect",
+    "learnerQuestion": "At which acceptance edge does simple ID truncation destroy response ownership before any response is misrouted?",
+    "prompt": "Detect the first downstream-key collision, distinguish legal narrowing from lost context, and choose a safe mitigation.",
+    "scenario": "A bridge receives downstream-unique read IDs 0x05 and 0x15. Its target interface exposes only four ID bits, so a buggy implementation truncates both to 0x5 and accepts both outstanding without remapping, serialization, or side metadata.",
+    "evidence": {
+      "caption": "Bridge ingress acceptance and downstream-ID occupancy.",
+      "columns": [
+        { "key": "event", "label": "Accepted event" },
+        { "key": "ingress", "label": "Ingress ID" },
+        { "key": "narrow", "label": "Narrowed ID" },
+        { "key": "owner", "label": "Required owner" },
+        { "key": "table", "label": "Downstream key state" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "event": "AR A accepted", "ingress": "0x05", "narrow": "0x5", "owner": "M0/5", "table": "0x5 → M0/5" } },
+        { "id": "e2", "label": "E2", "values": { "event": "AR B accepted", "ingress": "0x15", "narrow": "0x5", "owner": "M1/5", "table": "0x5 already occupied · collision" } },
+        { "id": "e3", "label": "E3", "values": { "event": "R ID 0x5", "ingress": "unknown", "narrow": "0x5", "owner": "ambiguous", "table": "Cannot restore owner" } },
+        { "id": "e4", "label": "E4", "values": { "event": "Second R ID 0x5", "ingress": "unknown", "narrow": "0x5", "owner": "ambiguous", "table": "Ordering/route at risk" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate first loss",
+        "prompt": "Which edge first makes correct response restoration impossible for this implementation?",
+        "options": [
+          { "id": "e1", "label": "E1, when the first narrowed ID is allocated" },
+          { "id": "e2", "label": "E2, when a second owner is accepted into occupied downstream key 0x5" },
+          { "id": "e3", "label": "E3, only when the first ambiguous response arrives" }
+        ],
+        "correctOptionId": "e2",
+        "explanation": "The ownership information is lost when the bridge accepts a colliding outstanding request, before the later response exposes the damage."
+      },
+      {
+        "id": "own",
+        "label": "Classify the bug",
+        "prompt": "What is wrong with the narrowing?",
+        "options": [
+          { "id": "width", "label": "Any reduction in ID width is forbidden by AXI" },
+          { "id": "context", "label": "The bridge accepts colliding transactions without preserving original identity and ordering" },
+          { "id": "response", "label": "The target returns responses with its supported ID width" }
+        ],
+        "correctOptionId": "context",
+        "explanation": "ID manipulation is permitted only if original ordering and response ownership remain intact. Narrowing itself is not the failure."
+      },
+      {
+        "id": "verify",
+        "label": "Choose safe handling",
+        "prompt": "Which implementation choices can preserve correctness?",
+        "options": [
+          { "id": "truncate", "label": "Continue truncating and infer the owner from response timing" },
+          { "id": "preserve", "label": "Remap to a free downstream ID, retain side metadata, or backpressure/serialize collisions" },
+          { "id": "reorder", "label": "Allow the target to reorder equal narrowed IDs freely" }
+        ],
+        "correctOptionId": "preserve",
+        "explanation": "A remap table, retained source metadata, or admission control can all be correct when they preserve the original streams and restore each response owner."
+      }
+    ],
+    "expectedTakeaway": "The first actionable failure in unsafe ID narrowing is accepting a second outstanding transaction into an already occupied downstream identity. Detect collisions at admission and preserve or serialize the original ordering streams.",
+    "relatedLessons": ["38_common_rtl_bugs"]
+  }
+]

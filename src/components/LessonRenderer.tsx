@@ -125,6 +125,11 @@ function LessonRetentionPanel({ lesson }: { lesson: Lesson }) {
 }
 
 export default function LessonRenderer({ lesson, body, navigation }: LessonRendererProps) {
+  const exerciseEntries = lesson.exerciseIds.map(id => ({ id, exercise: getExerciseById(id) }));
+  const diagnosticLabs = exerciseEntries.filter(entry => entry.exercise?.type === 'diagnostic-lab');
+  const reviewExercises = exerciseEntries.filter(entry => entry.exercise && entry.exercise.type !== 'diagnostic-lab');
+  const missingExercises = exerciseEntries.filter(entry => !entry.exercise);
+
   const components: Components = {
     p: ({ node, children }: any) => {
       // Check if any child is an image with visual: prefix
@@ -236,15 +241,35 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
           </div>
         )}
         
-        {lesson.exerciseIds && lesson.exerciseIds.length > 0 && (
-          <div className="resource-section">
-            <h2>Check your understanding</h2>
-            {lesson.exerciseIds.map(id => {
-              const ex = getExerciseById(id);
-              return ex ? <InteractiveExercise key={id} exercise={ex} /> : <div key={id}>Exercise missing: {id}</div>;
-            })}
-          </div>
+        {diagnosticLabs.length > 0 && (
+          <section className="resource-section applied-dv-section" aria-labelledby={`${lesson.id}-applied-dv-title`}>
+            <div className="applied-dv-heading">
+              <span>Phase V4</span>
+              <div>
+                <h2 id={`${lesson.id}-applied-dv-title`}>Applied DV practice</h2>
+                <p>Locate the first decisive edge, assign protocol ownership, then choose the evidence a checker must retain.</p>
+              </div>
+            </div>
+            {diagnosticLabs.map(({ id, exercise }) => (
+              exercise?.type === 'diagnostic-lab'
+                ? <InteractiveExercise key={id} exercise={exercise} />
+                : null
+            ))}
+          </section>
         )}
+
+        {reviewExercises.length > 0 && (
+          <section className="resource-section">
+            <h2>Check your understanding</h2>
+            {reviewExercises.map(({ id, exercise }) => (
+              exercise ? <InteractiveExercise key={id} exercise={exercise} /> : null
+            ))}
+          </section>
+        )}
+
+        {missingExercises.map(({ id }) => (
+          <div className="resource-section" key={id}>Exercise missing: {id}</div>
+        ))}
 
         {(lesson.prerequisites?.length > 0 || lesson.relatedLessons?.length > 0 || lesson.glossaryTerms?.length > 0) && (
           <div className="resource-section related-concepts-panel">

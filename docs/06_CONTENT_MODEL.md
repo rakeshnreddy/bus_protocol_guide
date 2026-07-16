@@ -45,6 +45,27 @@ Each exercise should have:
 - `expectedTakeaway`
 - `relatedLessons`
 
+Supported exercise types are:
+
+- `multiple-choice`, with `options` and `correctOptionIndex`
+- `reflection` or `short-answer`
+- `diagnostic-lab`, for evidence-based verification and debug practice
+
+A `diagnostic-lab` also requires:
+
+- `title`
+- `protocolScope`
+- `learnerQuestion`
+- `scenario`
+- `evidence.caption`
+- unique `evidence.columns[].key` values
+- unique `evidence.rows[].id` values, with one non-empty value for every column
+- two or more `diagnosisSteps`, each with a unique ID, prompt, options, one resolvable `correctOptionId`, and an explanation
+
+Production diagnostic labs use the three-step IDs `locate`, `own`, and `verify`. They should identify the first decisive protocol edge, assign transaction or component ownership, and state the evidence a checker or scoreboard must retain. Configured liveness and implementation policy must be labeled separately from mandatory protocol safety.
+
+The production loader normalizes missing legacy `difficulty` and `relatedLessons` fields and maps historical `explanation` text to `expectedTakeaway`. It rejects malformed exercises without preventing valid records in the same corpus from loading.
+
 ### 4. Glossary Entry
 Each glossary item should have:
 - `term`

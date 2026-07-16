@@ -6,7 +6,7 @@ protocol: "axi"
 title: "Common RTL and Interconnect Bugs"
 section: "G"
 order: 38
-exerciseIds: []
+exerciseIds: ["lab-axi-id-narrowing-collision"]
 summary: "Analysis of common RTL and interconnect bugs encountered in AXI designs."
 tags:
   - axi

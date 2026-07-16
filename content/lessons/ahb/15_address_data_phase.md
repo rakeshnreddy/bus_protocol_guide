@@ -10,7 +10,7 @@ tags: ["ahb", "timing", "pipelining"]
 relatedLessons: []
 prerequisites: ["05_address_and_control", "08_data_and_response"]
 visualIds: ["wf-ahb-pipelined-sequence"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-pipeline-owner"]
 glossaryTerms: ["Pipelining"]
 checklistIds: []
 ---

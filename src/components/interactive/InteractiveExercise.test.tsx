@@ -72,28 +72,28 @@ describe('InteractiveExercise', () => {
       expect(screen.getByText(/Identify a coverage hole in the AHB Coverage Map/i)).toBeInTheDocument();
       
       fireEvent.click(screen.getByText('Reveal Answer'));
-      expect(screen.getByText(/A valid test scenario for WRAP16/i)).toBeInTheDocument();
+      expect(screen.getByText(/A valid WRAP16 \+ OKAY scenario/i)).toBeInTheDocument();
     });
 
     it('renders ex-axi-coverage-holes as a multiple-choice exercise and handles incorrect answer', () => {
       render(<InteractiveExercise exercise={axiCoverageExercise as Exercise} />);
-      expect(screen.getByText(/why is the cross between FIXED burst and EXOKAY response/i)).toBeInTheDocument();
+      expect(screen.getByText(/why is FIXED burst plus EXOKAY response not enough evidence/i)).toBeInTheDocument();
       
       // Select incorrect answer (index 1)
-      fireEvent.click(screen.getByText(/Because FIXED bursts can only target FIFOs/i));
+      fireEvent.click(screen.getByText(/Because every FIXED burst is automatically/i));
       fireEvent.click(screen.getByText('Check Answer'));
       expect(screen.getByText('Incorrect.')).toBeInTheDocument();
-      expect(screen.getByText(/Understanding what is structurally impossible/i)).toBeInTheDocument();
+      expect(screen.getByText(/EXOKAY legality depends on the exclusive transaction context/i)).toBeInTheDocument();
     });
 
     it('renders ex-axi-coverage-holes as a multiple-choice exercise and handles correct answer', () => {
       render(<InteractiveExercise exercise={axiCoverageExercise as Exercise} />);
       
       // Select correct answer (index 0)
-      fireEvent.click(screen.getByText(/Because exclusive accesses require a specific address sequence/i));
+      fireEvent.click(screen.getByText(/Because EXOKAY depends on exclusive-request context/i));
       fireEvent.click(screen.getByText('Check Answer'));
       expect(screen.getByText('Correct!')).toBeInTheDocument();
-      expect(screen.getByText(/Understanding what is structurally impossible/i)).toBeInTheDocument();
+      expect(screen.getByText(/EXOKAY legality depends on the exclusive transaction context/i)).toBeInTheDocument();
     });
   });
 });

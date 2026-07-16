@@ -55,7 +55,8 @@ describe('Formal Property Lessons Integration', () => {
       fireEvent.click(revealBtn);
 
       // Verify the takeaway is revealed
-      expect(screen.getByText(/The formal property evaluates to a FAIL/)).toBeInTheDocument();
+      expect(screen.getByText(/configured bounded-progress property evaluates to FAIL/)).toBeInTheDocument();
+      expect(screen.getByText(/not by itself a universal AHB safety violation/)).toBeInTheDocument();
     });
 
     it('AXI WLAST exact match exercise interactions work correctly', () => {
@@ -72,7 +73,8 @@ describe('Formal Property Lessons Integration', () => {
       fireEvent.click(revealBtn);
 
       // Verify takeaway
-      expect(screen.getByText(/Toggling WLAST early causes a FAIL/)).toBeInTheDocument();
+      expect(screen.getByText(/accepted early WLAST is a protocol violation/)).toBeInTheDocument();
+      expect(screen.getByText(/does not provide early burst termination/)).toBeInTheDocument();
     });
   });
 });

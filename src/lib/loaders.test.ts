@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { getLessons, getLessonsByProtocol, getGlossaryEntries, getChecklists, getExercises, getChecklistById, getExerciseById } from './loaders';
+import {
+  getLessons,
+  getLessonsByProtocol,
+  getGlossaryEntries,
+  getChecklists,
+  getExercises,
+  getChecklistById,
+  getExerciseById,
+  normalizeExercise,
+} from './loaders';
 
 // We rely on the actual seeded data from the content folder for these integration-style tests.
 describe('Loaders', () => {
@@ -52,6 +61,67 @@ describe('Loaders', () => {
     const exercises = getExercises();
     expect(exercises.length).toBeGreaterThan(0);
     expect(exercises[0]).toHaveProperty('prompt');
+    expect(exercises.every(exercise => exercise.difficulty)).toBe(true);
+    expect(exercises.every(exercise => exercise.expectedTakeaway.trim().length > 0)).toBe(true);
+    expect(exercises.every(exercise => Array.isArray(exercise.relatedLessons))).toBe(true);
+  });
+
+  it('loads all sixteen normalized Phase V4 diagnostic labs', () => {
+    const labs = getExercises().filter(exercise => exercise.type === 'diagnostic-lab');
+
+    expect(labs).toHaveLength(16);
+    expect(labs.filter(lab => lab.id.startsWith('lab-ahb-'))).toHaveLength(8);
+    expect(labs.filter(lab => lab.id.startsWith('lab-axi-'))).toHaveLength(8);
+    expect(labs.every(lab => lab.diagnosisSteps.length === 3)).toBe(true);
+  });
+
+  it('normalizes legacy explanation metadata and collection defaults', () => {
+    expect(normalizeExercise({
+      id: 'legacy-reflection',
+      type: 'reflection',
+      prompt: 'Inspect the trace.',
+      explanation: 'Keep the accepted edge as evidence.',
+    })).toEqual({
+      id: 'legacy-reflection',
+      type: 'reflection',
+      difficulty: 'intermediate',
+      prompt: 'Inspect the trace.',
+      expectedTakeaway: 'Keep the accepted edge as evidence.',
+      relatedLessons: [],
+    });
+  });
+
+  it('isolates malformed diagnostic labs without weakening valid exercise loading', () => {
+    const malformedLab = {
+      id: 'bad-lab',
+      title: 'Bad lab',
+      type: 'diagnostic-lab',
+      protocolScope: 'AHB5',
+      learnerQuestion: 'What failed?',
+      prompt: 'Inspect.',
+      scenario: 'One trace.',
+      expectedTakeaway: 'Reject malformed evidence.',
+      evidence: {
+        caption: 'Duplicate evidence columns.',
+        columns: [
+          { key: 'cycle', label: 'Cycle' },
+          { key: 'cycle', label: 'Duplicate cycle' },
+        ],
+        rows: [
+          { id: 'a', label: 'A', values: { cycle: '1' } },
+          { id: 'b', label: 'B', values: { cycle: '2' } },
+        ],
+      },
+      diagnosisSteps: [],
+    };
+
+    expect(normalizeExercise(malformedLab)).toBeNull();
+    expect(getExercises().some(exercise => exercise.id === 'lab-ahb-pipeline-owner')).toBe(true);
+  });
+
+  it('does not return duplicate normalized exercise IDs', () => {
+    const exerciseIds = getExercises().map(exercise => exercise.id);
+    expect(new Set(exerciseIds).size).toBe(exerciseIds.length);
   });
 
   it('should get exercise by ID', () => {
@@ -134,4 +204,3 @@ describe('Loaders', () => {
     });
   });
 });
-

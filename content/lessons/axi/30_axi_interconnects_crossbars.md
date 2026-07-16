@@ -10,7 +10,7 @@ tags: ["axi", "architecture", "interconnect"]
 relatedLessons: ["31_multi_master_reasoning"]
 prerequisites: ["04_five_channel_model"]
 visualIds: ["tp-axi-crossbar"]
-exerciseIds: []
+exerciseIds: ["lab-axi-response-route-owner"]
 glossaryTerms: ["Crossbar"]
 checklistIds: []
 ---

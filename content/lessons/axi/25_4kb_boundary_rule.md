@@ -10,7 +10,7 @@ tags: ["axi", "rules", "memory"]
 relatedLessons: ["26_legal_illegal_patterns"]
 prerequisites: ["24_address_alignment"]
 visualIds: ["wf-axi-4kb-boundary"]
-exerciseIds: ["ex-axi-4kb-calc"]
+exerciseIds: ["lab-axi-4kb-request-check", "ex-axi-4kb-calc"]
 glossaryTerms: ["4KB Boundary Rule"]
 checklistIds: []
 ---

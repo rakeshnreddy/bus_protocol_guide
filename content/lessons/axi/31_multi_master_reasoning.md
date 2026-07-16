@@ -10,7 +10,7 @@ tags: ["axi", "architecture", "multi-master"]
 relatedLessons: ["30_axi_interconnects_crossbars"]
 prerequisites: ["30_axi_interconnects_crossbars", "17_ids_and_transaction_matching"]
 visualIds: ["tp-axi-crossbar"]
-exerciseIds: []
+exerciseIds: ["lab-axi-local-id-context"]
 glossaryTerms: []
 checklistIds: []
 ---

@@ -6,7 +6,7 @@ protocol: "axi"
 title: "Debug Case Studies"
 section: "G"
 order: 39
-exerciseIds: []
+exerciseIds: ["lab-axi-progress-classification"]
 summary: "Real-world debug case studies for troubleshooting AXI systems."
 tags:
   - axi

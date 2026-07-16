@@ -215,4 +215,56 @@ describe('Accessibility Audit (axe-core)', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('Phase V4 AHB diagnostic lab should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '16_wait_states_hready');
+    if (!lessonContent) throw new Error('Missing AHB wait-state diagnostic lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('Phase V4 AXI diagnostic lab should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '14_read_transaction_walkthrough');
+    if (!lessonContent) throw new Error('Missing AXI read diagnostic lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('Phase V4 Batch 2 AHB exclusive diagnostic lab should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '26_exclusive_accesses');
+    if (!lessonContent) throw new Error('Missing AHB exclusive diagnostic lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('Phase V4 Batch 2 AXI ID-narrowing diagnostic lab should have no a11y violations', async () => {
+    const lessonContent = getLessons().find(({ lesson }) => lesson.id === '38_common_rtl_bugs');
+    if (!lessonContent) throw new Error('Missing AXI ID-narrowing diagnostic lesson');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LessonRenderer lesson={lessonContent.lesson} body={lessonContent.body} />
+      </MemoryRouter>,
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
 });

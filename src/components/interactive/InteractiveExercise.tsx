@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import type { Exercise } from '../../types/content';
+import DiagnosticLab from './DiagnosticLab';
 import './interactive.css';
 
 export default function InteractiveExercise({ exercise }: { exercise: Exercise }) {
   const [revealed, setRevealed] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+
+  if (exercise.type === 'diagnostic-lab') {
+    return <DiagnosticLab exercise={exercise} />;
+  }
 
   if (exercise.type === 'multiple-choice') {
     return (

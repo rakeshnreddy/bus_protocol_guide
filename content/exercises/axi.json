@@ -20,10 +20,10 @@
     "type": "multiple-choice",
     "options": [
       "True. Data cannot be sent until the address is accepted.",
-      "False. The AW and W channels are completely independent. A master can assert `WVALID` before, during, or after asserting `AWVALID`."
+      "False. AW and W handshake independently. A master can assert `WVALID` before, during, or after asserting `AWVALID`, while transaction-level dependencies still apply."
     ],
     "correctOptionIndex": 1,
-    "expectedTakeaway": "Correct! This is one of the hardest concepts for engineers transitioning from AHB. The write address and write data channels are structurally independent. While it's common to send the address first, it is perfectly legal to send the data first!"
+    "expectedTakeaway": "Correct! AW and W use independent VALID/READY handshakes, so accepted write data can precede the accepted write address. The slave still has to correlate both histories before producing the write response."
   },
   {
     "id": "ex-axi-ordering",
@@ -51,7 +51,7 @@
       "Yes. This is a common and efficient way to manage buffers."
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! While the slave can't send BVALID until it receives WLAST, if the slave is designed to stall WREADY until it sees BREADY=1 (which is legal for a slave!), your master will permanently deadlock the bus."
+    "expectedTakeaway": "Correct! AXI4 permits the destination to wait for BREADY before asserting WREADY. If the master also withholds BREADY until the final W transfer, those legal local choices form an integration-level circular wait. Avoid the dependency or prove system progress separately from interface safety."
   },
   {
     "id": "ex-axi-4kb-calc",
@@ -61,11 +61,11 @@
     "options": [
       "No. It ends at 0x0FFC.",
       "No. It ends at 0x1000, which is perfectly on the boundary.",
-      "Yes. The total size is 64 bytes. 0x0FD0 + 64 = 0x1010, which crosses the 0x1000 boundary.",
+      "Yes. The 64-byte range is 0x0FD0–0x100F (end-exclusive 0x1010), so it crosses 0x1000.",
       "Yes. Any burst longer than 8 beats automatically crosses a boundary."
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! 16 beats * 4 bytes/beat = 64 bytes total. Start address 0x0FD0 + 0x40 (64 in hex) = 0x1010. Since 0x1010 > 0x1000, this burst crosses the 4KB boundary and is ILLEGAL. The master must split it."
+    "expectedTakeaway": "Correct! Sixteen 4-byte beats cover byte addresses 0x0FD0 through 0x100F; 0x1010 is the end-exclusive address. Because the transfer range crosses 0x1000, the INCR burst violates AXI's 4KB boundary rule and must be split."
   },
   {
     "id": "ex-axi-variant-selection",
@@ -98,15 +98,15 @@
   {
     "id": "ex-axi-waveform-debug",
     "title": "Waveform Debug Interpretation",
-    "prompt": "You are looking at a waveform. WVALID is high, WREADY is low. BVALID is high, BREADY is low. AWVALID is high, AWREADY is low. The system has been stalled in this exact state for 10,000 cycles. What is the most likely root cause?",
+    "prompt": "A waveform has remained unchanged for 10,000 cycles: AWVALID/WVALID/BVALID are HIGH while AWREADY/WREADY/BREADY are LOW, and every payload is stable. What can this evidence establish without inspecting the RTL dependency graph?",
     "type": "multiple-choice",
     "options": [
-      "The slave is slow to process data.",
-      "The master forgot to assert WLAST.",
-      "A circular combinatorial backpressure deadlock between the master and slave.",
-      "The interconnect dropped the AWID."
+      "It proves the slave is merely slow, so no further debug is needed.",
+      "It proves WLAST is missing, even though WLAST is not shown.",
+      "It shows a progress failure under the configured timeout, but the exact circular dependency or blocked resource still requires tracing.",
+      "It proves the interconnect dropped AWID."
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! When multiple channels are permanently stalled with VALID high and READY low on both sides of the interface, it almost always points to a circular dependency in the RTL (e.g., Master waiting for BVALID before asserting WVALID, while Slave waits for WVALID before asserting BREADY)."
+    "expectedTakeaway": "Correct! Stable VALID payloads avoid the visible hold-rule failure, but a 10,000-cycle stall can violate a configured system progress contract. The waveform is a symptom; trace READY dependencies, buffers, outstanding state, and response ownership before naming the root cause."
   }
 ]

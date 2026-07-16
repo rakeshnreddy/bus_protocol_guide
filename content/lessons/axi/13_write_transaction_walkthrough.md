@@ -10,7 +10,7 @@ tags: ["axi", "walkthrough", "write"]
 relatedLessons: ["14_read_transaction_walkthrough"]
 prerequisites: ["12_independent_channel_behavior"]
 visualIds: ["wf-axi-write-channels"]
-exerciseIds: []
+exerciseIds: ["lab-axi-write-response-prerequisites"]
 glossaryTerms: []
 checklistIds: []
 ---

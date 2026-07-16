@@ -10,7 +10,7 @@ tags: ["axi", "walkthrough", "read"]
 relatedLessons: ["13_write_transaction_walkthrough"]
 prerequisites: ["13_write_transaction_walkthrough"]
 visualIds: ["wf-axi-read-channels"]
-exerciseIds: []
+exerciseIds: ["lab-axi-stalled-read-payload"]
 glossaryTerms: []
 checklistIds: []
 ---

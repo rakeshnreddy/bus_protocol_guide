@@ -9,6 +9,44 @@ import type { Lesson } from '../types/content';
 vi.mock('../lib/loaders', () => ({
   getExerciseById: vi.fn((id: string) => {
     if (id === 'ex-1') return { id: 'ex-1', type: 'reflection', prompt: 'Mock Exercise', expectedTakeaway: 'Mock Takeaway' };
+    if (id === 'lab-1') return {
+      id: 'lab-1',
+      title: 'Mock Applied Lab',
+      type: 'diagnostic-lab',
+      difficulty: 'advanced',
+      protocolScope: 'AHB5',
+      learnerQuestion: 'Which edge proves the failure?',
+      prompt: 'Inspect the evidence.',
+      scenario: 'A pending transfer changes.',
+      expectedTakeaway: 'Retain accepted state.',
+      relatedLessons: ['test-lesson'],
+      evidence: {
+        caption: 'Mock evidence.',
+        columns: [{ key: 'ready', label: 'HREADY' }, { key: 'address', label: 'HADDR' }],
+        rows: [
+          { id: 'c1', label: 'C1', values: { ready: '0', address: '0x0' } },
+          { id: 'c2', label: 'C2', values: { ready: '0', address: '0x4' } },
+        ],
+      },
+      diagnosisSteps: [
+        {
+          id: 'locate',
+          label: 'Locate',
+          prompt: 'Where?',
+          options: [{ id: 'c1', label: 'C1' }, { id: 'c2', label: 'C2' }],
+          correctOptionId: 'c2',
+          explanation: 'C2 changes.',
+        },
+        {
+          id: 'verify',
+          label: 'Verify',
+          prompt: 'What evidence?',
+          options: [{ id: 'none', label: 'None' }, { id: 'history', label: 'Accepted history' }],
+          correctOptionId: 'history',
+          explanation: 'History proves it.',
+        },
+      ],
+    };
     return undefined;
   }),
   getChecklistById: vi.fn((id: string) => {
@@ -124,6 +162,18 @@ describe('LessonRenderer', () => {
     );
     expect(screen.getByText('Check your understanding')).toBeInTheDocument();
     expect(screen.getByText('Mock Exercise')).toBeInTheDocument();
+  });
+
+  it('separates diagnostic labs into the Applied DV practice workflow', () => {
+    render(
+      <MemoryRouter>
+        <LessonRenderer lesson={{ ...mockLesson, exerciseIds: ['lab-1', 'ex-1'] }} body="" />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: 'Applied DV practice' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mock Applied Lab' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Check your understanding' })).toBeInTheDocument();
   });
 
   it('renders interactive checklists from checklistIds', () => {

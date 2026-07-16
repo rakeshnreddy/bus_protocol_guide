@@ -10,7 +10,7 @@ tags: ["ahb", "architecture", "arbitration"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
 visualIds: ["wf-ahb-arbitration-handover", "topo-ahb-multi-master"]
-exerciseIds: ["ex-ahb-arbitration"]
+exerciseIds: ["lab-ahb-arbitration-handover", "ex-ahb-arbitration"]
 glossaryTerms: ["Arbitration"]
 checklistIds: []
 ---

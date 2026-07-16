@@ -10,7 +10,7 @@ tags: ["ahb", "timing", "wait-states", "hready"]
 relatedLessons: []
 prerequisites: ["15_address_data_phase"]
 visualIds: ["wf-ahb-wait-state-heavy"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-stall-stability"]
 glossaryTerms: ["HREADY"]
 checklistIds: []
 ---

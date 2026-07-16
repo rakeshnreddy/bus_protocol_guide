@@ -1,0 +1,527 @@
+[
+  {
+    "id": "lab-ahb-pipeline-owner",
+    "title": "AHB Pipeline Owner Reconstruction",
+    "type": "diagnostic-lab",
+    "difficulty": "intermediate",
+    "protocolScope": "AHB5 / AHB-Lite",
+    "learnerQuestion": "Which accepted address phase owns the write data while the bus is stalled?",
+    "prompt": "Reconstruct the accepted address history, then identify the data-phase owner and the checker state that preserves the relationship.",
+    "scenario": "Four cycle windows show an AHB write pipeline. Transfer A2 enters its data phase while A3 is presented in the overlapping address phase. HREADY then extends both phases for one cycle.",
+    "evidence": {
+      "caption": "Observed AHB cycle windows; acceptance occurs at the rising edge ending a window when HREADY is HIGH.",
+      "columns": [
+        { "key": "hready", "label": "HREADY" },
+        { "key": "addressPhase", "label": "Address phase" },
+        { "key": "dataPhase", "label": "Data phase" },
+        { "key": "haddr", "label": "HADDR" },
+        { "key": "hwdata", "label": "HWDATA" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "hready": "1", "addressPhase": "A1 · accepted", "dataPhase": "—", "haddr": "0x0040", "hwdata": "—" } },
+        { "id": "c2", "label": "C2", "values": { "hready": "1", "addressPhase": "A2 · accepted", "dataPhase": "A1 · completes", "haddr": "0x0044", "hwdata": "Data(A1)" } },
+        { "id": "c3", "label": "C3", "values": { "hready": "0", "addressPhase": "A3 · pending", "dataPhase": "A2 · stalled", "haddr": "0x0048", "hwdata": "Data(A2)" } },
+        { "id": "c4", "label": "C4", "values": { "hready": "1", "addressPhase": "A3 · accepted", "dataPhase": "A2 · completes", "haddr": "0x0048", "hwdata": "Data(A2)" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the extension",
+        "prompt": "Which windows belong to the same extended data phase?",
+        "options": [
+          { "id": "c1-c2", "label": "C1 and C2" },
+          { "id": "c2-c3", "label": "C2 and C3" },
+          { "id": "c3-c4", "label": "C3 and C4" }
+        ],
+        "correctOptionId": "c3-c4",
+        "explanation": "HREADY is LOW in C3, so A2 does not complete and remains the active data phase through C4."
+      },
+      {
+        "id": "own",
+        "label": "Assign ownership",
+        "prompt": "Which transfer owns HWDATA in both C3 and C4?",
+        "options": [
+          { "id": "a1", "label": "A1, the earlier completed transfer" },
+          { "id": "a2", "label": "A2, the accepted address from C2" },
+          { "id": "a3", "label": "A3, the currently visible address" }
+        ],
+        "correctOptionId": "a2",
+        "explanation": "Write data belongs to the transfer whose address phase was accepted one phase earlier, not the address currently visible on HADDR."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the evidence",
+        "prompt": "What state must a scoreboard retain to prove the ownership?",
+        "options": [
+          { "id": "current-address", "label": "Only the current HADDR value" },
+          { "id": "accepted-queue", "label": "Accepted address/control history plus active data-phase owner" },
+          { "id": "response-only", "label": "Only HRESP from the selected slave" }
+        ],
+        "correctOptionId": "accepted-queue",
+        "explanation": "The monitor must advance ownership only on accepting edges and retain the accepted transfer until its data phase completes."
+      }
+    ],
+    "expectedTakeaway": "AHB phase ownership follows accepted history. A low HREADY extends A2's data phase and A3's overlapping address phase together; visible HADDR never reassigns the active HWDATA owner.",
+    "relatedLessons": ["15_address_data_phase"]
+  },
+  {
+    "id": "lab-ahb-stall-stability",
+    "title": "AHB First-Failing Stall Edge",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 / AHB-Lite",
+    "learnerQuestion": "Which rising edge first proves that pending address/control changed illegally?",
+    "prompt": "Find the first failed hold obligation, identify the pending transfer, and select the assertion evidence that should fire.",
+    "scenario": "An INCR burst is stalled with an OKAY response. The next SEQ address is pending while HREADY remains LOW, but the master advances HADDR before an accepting edge.",
+    "evidence": {
+      "caption": "Observed address/control while HRESP remains OKAY; the ERROR-response exception does not apply.",
+      "columns": [
+        { "key": "hready", "label": "HREADY" },
+        { "key": "hresp", "label": "HRESP" },
+        { "key": "htrans", "label": "HTRANS" },
+        { "key": "haddr", "label": "HADDR" },
+        { "key": "phase", "label": "Address status" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "hready": "1", "hresp": "OKAY", "htrans": "NONSEQ", "haddr": "0x1000", "phase": "A1 accepted" } },
+        { "id": "c2", "label": "C2", "values": { "hready": "0", "hresp": "OKAY", "htrans": "SEQ", "haddr": "0x1004", "phase": "A2 pending; hold begins" } },
+        { "id": "c3", "label": "C3", "values": { "hready": "0", "hresp": "OKAY", "htrans": "SEQ", "haddr": "0x1008", "phase": "A2 still pending" } },
+        { "id": "c4", "label": "C4", "values": { "hready": "1", "hresp": "OKAY", "htrans": "SEQ", "haddr": "0x1008", "phase": "Corrupted address accepted" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the first failure",
+        "prompt": "Which window first demonstrates the broken stability obligation?",
+        "options": [
+          { "id": "c2", "label": "C2, when the stall begins" },
+          { "id": "c3", "label": "C3, when HADDR changes during the stall" },
+          { "id": "c4", "label": "C4, when HREADY returns HIGH" }
+        ],
+        "correctOptionId": "c3",
+        "explanation": "C2 establishes A2 as pending. At the rising edge ending C3, HREADY is still LOW but HADDR no longer matches the held A2 address."
+      },
+      {
+        "id": "own",
+        "label": "Assign ownership",
+        "prompt": "Which protocol state was corrupted?",
+        "options": [
+          { "id": "a1-data", "label": "Only A1's returning data" },
+          { "id": "a2-address", "label": "A2's pending address/control phase" },
+          { "id": "a3-response", "label": "A3's response phase" }
+        ],
+        "correctOptionId": "a2-address",
+        "explanation": "A2 has not reached an accepting edge, so its address and control must remain presented while the prior data phase is extended."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the checker",
+        "prompt": "Which assertion best detects this failure without over-constraining legal ERROR behavior?",
+        "options": [
+          { "id": "always-stable", "label": "Require HADDR stable on every cycle" },
+          { "id": "stall-bundle", "label": "When a valid address phase is pending under HREADY LOW and HRESP is OKAY, require address/control stable" },
+          { "id": "ready-only", "label": "Require HREADY to return HIGH on the next cycle" }
+        ],
+        "correctOptionId": "stall-bundle",
+        "explanation": "The checker is gated by a pending valid transfer and the normal waited-transfer rule, while preserving the specified first-ERROR-cycle exception."
+      }
+    ],
+    "expectedTakeaway": "The violation is visible before the corrupted address is finally accepted. A useful AHB monitor remembers the pending address/control bundle and compares it on every extended OKAY cycle.",
+    "relatedLessons": ["16_wait_states_hready"]
+  },
+  {
+    "id": "lab-ahb-error-completion",
+    "title": "AHB Two-Cycle ERROR Triage",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 / AHB-Lite",
+    "learnerQuestion": "When does the failed transfer complete, and what may the master legally do next?",
+    "prompt": "Identify the completing ERROR edge, the signal owner, and the legal post-error choices without turning a recommendation into a requirement.",
+    "scenario": "A slave inserts a normal wait, then returns the required two-cycle ERROR response. The example master chooses to cancel the following burst beat with IDLE.",
+    "evidence": {
+      "caption": "Slave response sequence for one failed AHB transfer.",
+      "columns": [
+        { "key": "hready", "label": "HREADY" },
+        { "key": "hresp", "label": "HRESP" },
+        { "key": "htrans", "label": "HTRANS" },
+        { "key": "meaning", "label": "Observed meaning" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "hready": "0", "hresp": "OKAY", "htrans": "SEQ", "meaning": "Additional wait; transfer pending" } },
+        { "id": "c2", "label": "C2", "values": { "hready": "0", "hresp": "ERROR", "htrans": "SEQ", "meaning": "ERROR cycle 1; transfer pending" } },
+        { "id": "c3", "label": "C3", "values": { "hready": "1", "hresp": "ERROR", "htrans": "IDLE", "meaning": "ERROR cycle 2; failed transfer completes" } },
+        { "id": "c4", "label": "C4", "values": { "hready": "1", "hresp": "OKAY", "htrans": "NONSEQ", "meaning": "Independent later transfer" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate completion",
+        "prompt": "At which edge does the failed transfer complete?",
+        "options": [
+          { "id": "c1", "label": "C1, the normal wait state" },
+          { "id": "c2", "label": "C2, the first ERROR cycle" },
+          { "id": "c3", "label": "C3, ERROR with HREADY HIGH" }
+        ],
+        "correctOptionId": "c3",
+        "explanation": "The first ERROR cycle keeps HREADY LOW. Completion occurs only in the second ERROR cycle when HREADY is HIGH."
+      },
+      {
+        "id": "own",
+        "label": "Assign responsibility",
+        "prompt": "Which interface owns the two response signals that classify completion?",
+        "options": [
+          { "id": "master", "label": "The master directly drives HREADY and HRESP" },
+          { "id": "slave-path", "label": "The selected slave drives HREADYOUT/HRESP; the interconnect returns HREADY/HRESP" },
+          { "id": "decoder-only", "label": "The address decoder generates the ERROR without a slave response" }
+        ],
+        "correctOptionId": "slave-path",
+        "explanation": "The selected slave supplies HREADYOUT and HRESP, and the response multiplexing path returns the corresponding HREADY and HRESP to the master."
+      },
+      {
+        "id": "verify",
+        "label": "Classify recovery",
+        "prompt": "What does the protocol require for the remaining burst transfers?",
+        "options": [
+          { "id": "must-cancel", "label": "The master must cancel every remaining beat" },
+          { "id": "must-continue", "label": "The master must continue every remaining beat" },
+          { "id": "choice", "label": "The master may cancel or may continue correctly" }
+        ],
+        "correctOptionId": "choice",
+        "explanation": "AHB permits cancellation after ERROR but does not require it; continuing the remaining transfers is also acceptable."
+      }
+    ],
+    "expectedTakeaway": "Treat the response pair as one semantic result: ERROR/LOW starts the response and ERROR/HIGH completes the failed transfer. Cancellation is a legal recovery choice, not a universal requirement.",
+    "relatedLessons": ["24_error_responses"]
+  },
+  {
+    "id": "lab-ahb-configured-liveness",
+    "title": "AHB Safety Versus Configured Liveness",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AHB5 / AHB-Lite + product contract",
+    "learnerQuestion": "Did the interface violate AHB safety, or did it exceed a configured completion bound?",
+    "prompt": "Separate protocol stability evidence from the product's four-cycle progress contract.",
+    "scenario": "A valid transfer remains stable while the slave holds HREADY LOW for five observed cycles. This product configures a maximum four-cycle completion bound; AHB itself does not define that universal bound.",
+    "evidence": {
+      "caption": "Stable transfer under a configured maximum of four waited cycles.",
+      "columns": [
+        { "key": "hready", "label": "HREADY" },
+        { "key": "htrans", "label": "HTRANS" },
+        { "key": "haddr", "label": "HADDR" },
+        { "key": "waitAge", "label": "Configured wait age" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "hready": "0", "htrans": "NONSEQ", "haddr": "0x2000", "waitAge": "1 of 4" } },
+        { "id": "c2", "label": "C2", "values": { "hready": "0", "htrans": "NONSEQ", "haddr": "0x2000", "waitAge": "2 of 4" } },
+        { "id": "c3", "label": "C3", "values": { "hready": "0", "htrans": "NONSEQ", "haddr": "0x2000", "waitAge": "3 of 4" } },
+        { "id": "c4", "label": "C4", "values": { "hready": "0", "htrans": "NONSEQ", "haddr": "0x2000", "waitAge": "4 of 4" } },
+        { "id": "c5", "label": "C5", "values": { "hready": "0", "htrans": "NONSEQ", "haddr": "0x2000", "waitAge": "5 · bound exceeded" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate contract failure",
+        "prompt": "When does the configured four-cycle completion property first fail?",
+        "options": [
+          { "id": "c1", "label": "C1" },
+          { "id": "c4", "label": "C4" },
+          { "id": "c5", "label": "C5" }
+        ],
+        "correctOptionId": "c5",
+        "explanation": "C1 through C4 are inside the configured window. C5 is the first sample beyond it."
+      },
+      {
+        "id": "own",
+        "label": "Classify the failure",
+        "prompt": "What has the evidence proven?",
+        "options": [
+          { "id": "safety", "label": "Address/control stability is violated" },
+          { "id": "configured", "label": "The configured liveness contract is violated while shown safety signals remain stable" },
+          { "id": "universal", "label": "AHB universally forbids more than four wait cycles" }
+        ],
+        "correctOptionId": "configured",
+        "explanation": "The visible address/control bundle remains stable. The failing claim is the product-specific progress bound, not a universal four-cycle AHB rule."
+      },
+      {
+        "id": "verify",
+        "label": "Choose signoff evidence",
+        "prompt": "Which checker set reports the distinction accurately?",
+        "options": [
+          { "id": "one-assertion", "label": "One assertion labeled protocol violation for every long wait" },
+          { "id": "separate", "label": "Separate protocol-stability assertions and a configured bounded-progress property" },
+          { "id": "coverage-only", "label": "Coverage bins without assertions" }
+        ],
+        "correctOptionId": "separate",
+        "explanation": "Separate properties preserve the difference between mandatory protocol safety and system-level progress policy."
+      }
+    ],
+    "expectedTakeaway": "A timeout can be a real product failure without being a standalone AHB safety violation. Name and configure liveness assumptions explicitly so debug evidence says which contract failed.",
+    "relatedLessons": ["32_ahb_formal_properties"]
+  },
+  {
+    "id": "lab-axi-write-response-prerequisites",
+    "title": "AXI4 Write Dependency Reconstruction",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped",
+    "learnerQuestion": "What accepted evidence must exist before the slave can assert BVALID?",
+    "prompt": "Reconstruct the independent AW and W handshakes, then identify the first legal response cycle and the state a checker must retain.",
+    "scenario": "A two-beat AXI4 write sends its first W beat before the AW handshake. The address and accepted final W beat arrive together one cycle later; the response is then held under B-channel backpressure.",
+    "evidence": {
+      "caption": "Independent AXI4 channel observations; a transfer occurs only where VALID and READY are both HIGH.",
+      "columns": [
+        { "key": "aw", "label": "AWVALID/AWREADY" },
+        { "key": "w", "label": "WVALID/WREADY/WLAST" },
+        { "key": "b", "label": "BVALID/BREADY" },
+        { "key": "meaning", "label": "Accepted evidence" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "aw": "0/0", "w": "1/1/0", "b": "0/0", "meaning": "W beat 0 accepted before AW" } },
+        { "id": "c2", "label": "C2", "values": { "aw": "1/1", "w": "1/1/1", "b": "0/0", "meaning": "AW and final W beat accepted" } },
+        { "id": "c3", "label": "C3", "values": { "aw": "0/0", "w": "0/0/0", "b": "1/0", "meaning": "Response valid; not accepted" } },
+        { "id": "c4", "label": "C4", "values": { "aw": "0/0", "w": "0/0/0", "b": "1/1", "meaning": "Response accepted" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate eligibility",
+        "prompt": "What is the first cycle in which BVALID may legally be asserted for this write?",
+        "options": [
+          { "id": "c1", "label": "C1, after any W beat" },
+          { "id": "c2", "label": "C2, in the same sampled edge as the prerequisites" },
+          { "id": "c3", "label": "C3, after both prerequisites were accepted at C2" }
+        ],
+        "correctOptionId": "c3",
+        "explanation": "AXI4 requires the AW transfer and the accepted final W transfer before the slave asserts BVALID. Those prerequisites are sampled at C2, so BVALID can be observed afterward in C3."
+      },
+      {
+        "id": "own",
+        "label": "Assign responsibility",
+        "prompt": "Who owns the obligation to withhold BVALID until the prerequisites exist?",
+        "options": [
+          { "id": "master", "label": "The master, because it drives BREADY" },
+          { "id": "slave", "label": "The slave or downstream response source that drives BVALID" },
+          { "id": "w-source", "label": "Only the W-channel source" }
+        ],
+        "correctOptionId": "slave",
+        "explanation": "BVALID is sourced by the slave side. It must correlate accepted AW state and the accepted final W beat before producing the response."
+      },
+      {
+        "id": "verify",
+        "label": "Choose scoreboard state",
+        "prompt": "What is the minimum useful write-response correlation state?",
+        "options": [
+          { "id": "aw-only", "label": "Accepted AW entries only" },
+          { "id": "w-only", "label": "A raw WLAST pulse only" },
+          { "id": "joined", "label": "Per-write accepted AW state joined with accepted final-W completion" }
+        ],
+        "correctOptionId": "joined",
+        "explanation": "The response becomes eligible only when both independent channel histories have been correlated for the same write transaction."
+      }
+    ],
+    "expectedTakeaway": "Channel independence does not remove transaction dependencies. W data can arrive before AW, but an AXI4 write response must follow an accepted address and the accepted final W transfer.",
+    "relatedLessons": ["13_write_transaction_walkthrough"]
+  },
+  {
+    "id": "lab-axi-stalled-read-payload",
+    "title": "AXI4 Read Payload Stability Failure",
+    "type": "diagnostic-lab",
+    "difficulty": "intermediate",
+    "protocolScope": "AXI4 memory-mapped",
+    "learnerQuestion": "Which cycle first proves that the slave changed an unaccepted read beat?",
+    "prompt": "Find the first payload mismatch, identify the R-channel source, and select the complete stability bundle.",
+    "scenario": "The slave asserts RVALID for RID 3 while the master holds RREADY LOW. Before the beat is accepted, the slave changes RDATA and RRESP.",
+    "evidence": {
+      "caption": "One pending R beat observed under backpressure.",
+      "columns": [
+        { "key": "handshake", "label": "RVALID/RREADY" },
+        { "key": "rid", "label": "RID" },
+        { "key": "rdata", "label": "RDATA" },
+        { "key": "rresp", "label": "RRESP" },
+        { "key": "rlast", "label": "RLAST" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "handshake": "1/0", "rid": "3", "rdata": "0xA5A5", "rresp": "OKAY", "rlast": "0" } },
+        { "id": "c2", "label": "C2", "values": { "handshake": "1/0", "rid": "3", "rdata": "0x5A5A", "rresp": "SLVERR", "rlast": "0" } },
+        { "id": "c3", "label": "C3", "values": { "handshake": "1/1", "rid": "3", "rdata": "0x5A5A", "rresp": "SLVERR", "rlast": "0" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the first failure",
+        "prompt": "Which cycle first proves that the pending beat changed?",
+        "options": [
+          { "id": "c1", "label": "C1, when RVALID first rises" },
+          { "id": "c2", "label": "C2, while the same beat is still stalled" },
+          { "id": "c3", "label": "C3, when the changed beat is accepted" }
+        ],
+        "correctOptionId": "c2",
+        "explanation": "C1 establishes the pending payload. RREADY is still LOW in C2, so the changes to RDATA and RRESP violate the hold requirement before acceptance."
+      },
+      {
+        "id": "own",
+        "label": "Assign responsibility",
+        "prompt": "Which endpoint owns the failed stability obligation?",
+        "options": [
+          { "id": "master", "label": "The master, because it controls RREADY" },
+          { "id": "slave", "label": "The slave-side R-channel source, because it drives RVALID and payload" },
+          { "id": "arbiter", "label": "An unrelated arbitration policy" }
+        ],
+        "correctOptionId": "slave",
+        "explanation": "The source of a VALID channel must retain VALID and its information until a VALID/READY accepting edge."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the checker bundle",
+        "prompt": "Which signals must be compared while RVALID is HIGH and RREADY is LOW?",
+        "options": [
+          { "id": "data-only", "label": "RDATA only" },
+          { "id": "valid-only", "label": "RVALID only" },
+          { "id": "full", "label": "RVALID plus RID, RDATA, RRESP, RLAST, and applicable RUSER" }
+        ],
+        "correctOptionId": "full",
+        "explanation": "The complete channel information belongs to one pending beat and must remain stable together until acceptance."
+      }
+    ],
+    "expectedTakeaway": "Backpressure freezes the entire pending channel payload, not only DATA. A monitor should report the first changed field and preserve the original beat for comparison.",
+    "relatedLessons": ["14_read_transaction_walkthrough"]
+  },
+  {
+    "id": "lab-axi-progress-classification",
+    "title": "AXI4 Stall or Liveness Failure?",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped + integration contract",
+    "learnerQuestion": "Does a long stable stall prove a protocol safety violation, or only a failed progress policy?",
+    "prompt": "Classify the evidence, assign system responsibility, and choose assertions that do not confuse safety with bounded progress.",
+    "scenario": "AWVALID and WVALID remain asserted with stable payloads. The destination keeps both READY signals LOW for 256 cycles. This system configures a 128-cycle progress watchdog, while AXI defines no universal READY deadline.",
+    "evidence": {
+      "caption": "Stable but unaccepted write channels under a configured 128-cycle progress limit.",
+      "columns": [
+        { "key": "aw", "label": "AWVALID/AWREADY" },
+        { "key": "awaddr", "label": "AWADDR" },
+        { "key": "w", "label": "WVALID/WREADY" },
+        { "key": "wdata", "label": "WDATA" },
+        { "key": "age", "label": "Stall age" }
+      ],
+      "rows": [
+        { "id": "c1", "label": "C1", "values": { "aw": "1/0", "awaddr": "0x8000", "w": "1/0", "wdata": "0xCAFE", "age": "1" } },
+        { "id": "c128", "label": "C128", "values": { "aw": "1/0", "awaddr": "0x8000", "w": "1/0", "wdata": "0xCAFE", "age": "128 · limit" } },
+        { "id": "c129", "label": "C129", "values": { "aw": "1/0", "awaddr": "0x8000", "w": "1/0", "wdata": "0xCAFE", "age": "129 · watchdog fails" } },
+        { "id": "c256", "label": "C256", "values": { "aw": "1/0", "awaddr": "0x8000", "w": "1/0", "wdata": "0xCAFE", "age": "256" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the configured failure",
+        "prompt": "When does this system's 128-cycle watchdog first fail?",
+        "options": [
+          { "id": "c1", "label": "C1" },
+          { "id": "c128", "label": "C128" },
+          { "id": "c129", "label": "C129" }
+        ],
+        "correctOptionId": "c129",
+        "explanation": "The configured allowance includes the first 128 stalled cycles. The next observed cycle is outside the contract."
+      },
+      {
+        "id": "own",
+        "label": "Classify responsibility",
+        "prompt": "What conclusion is justified by the shown signals alone?",
+        "options": [
+          { "id": "payload-fail", "label": "The source violated VALID or payload stability" },
+          { "id": "protocol-ready", "label": "AXI universally requires READY within 128 cycles" },
+          { "id": "integration", "label": "The configured system progress contract failed; the shown channel safety rules still hold" }
+        ],
+        "correctOptionId": "integration",
+        "explanation": "VALID and payload remain stable, and AXI does not impose this READY deadline. The failure belongs to the configured integration-level liveness contract."
+      },
+      {
+        "id": "verify",
+        "label": "Choose the evidence set",
+        "prompt": "Which verification structure keeps the diagnosis honest?",
+        "options": [
+          { "id": "timeout-only", "label": "One generic timeout labeled AXI protocol failure" },
+          { "id": "separate", "label": "Channel safety assertions plus separately named, configurable progress watchdogs" },
+          { "id": "ready-high", "label": "An assertion requiring every READY signal permanently HIGH" }
+        ],
+        "correctOptionId": "separate",
+        "explanation": "Separate safety and progress checks identify whether the source corrupted a pending transfer or the system exceeded an agreed service bound."
+      }
+    ],
+    "expectedTakeaway": "A long stall deserves investigation, but duration alone does not identify an AXI safety violation. Treat progress bounds as explicit system contracts and report them separately from VALID/payload rules.",
+    "relatedLessons": ["39_debug_case_studies"]
+  },
+  {
+    "id": "lab-axi-per-id-ordering",
+    "title": "AXI4 Per-ID Response Queue Debug",
+    "type": "diagnostic-lab",
+    "difficulty": "advanced",
+    "protocolScope": "AXI4 memory-mapped",
+    "learnerQuestion": "Which response first violates the issue-order queue for one ID?",
+    "prompt": "Use the accepted request order to identify the illegal response, the responsible correlation state, and the minimal scoreboard model.",
+    "scenario": "All write data has completed. The master accepted write addresses A(ID 5), B(ID 2), and C(ID 5) in that order. The slave returns C before A.",
+    "evidence": {
+      "caption": "Accepted write requests and observed B responses.",
+      "columns": [
+        { "key": "event", "label": "Accepted event" },
+        { "key": "id", "label": "AXI ID" },
+        { "key": "queue5", "label": "Expected ID-5 queue" },
+        { "key": "meaning", "label": "Meaning" }
+      ],
+      "rows": [
+        { "id": "e1", "label": "E1", "values": { "event": "AW A", "id": "5", "queue5": "[A]", "meaning": "A becomes oldest ID-5 write" } },
+        { "id": "e2", "label": "E2", "values": { "event": "AW B", "id": "2", "queue5": "[A]", "meaning": "Different ID; independent response order" } },
+        { "id": "e3", "label": "E3", "values": { "event": "AW C", "id": "5", "queue5": "[A, C]", "meaning": "C follows A for ID 5" } },
+        { "id": "e4", "label": "E4", "values": { "event": "B C", "id": "5", "queue5": "Expected A; observed C", "meaning": "C overtakes A" } },
+        { "id": "e5", "label": "E5", "values": { "event": "B B", "id": "2", "queue5": "[A, C]", "meaning": "Different-ID completion remains legal" } }
+      ]
+    },
+    "diagnosisSteps": [
+      {
+        "id": "locate",
+        "label": "Locate the first failure",
+        "prompt": "Which accepted response first violates ordering?",
+        "options": [
+          { "id": "e2", "label": "E2, when request B uses another ID" },
+          { "id": "e4", "label": "E4, when response C overtakes A on ID 5" },
+          { "id": "e5", "label": "E5, when ID-2 response B completes" }
+        ],
+        "correctOptionId": "e4",
+        "explanation": "A is the oldest outstanding write on ID 5. Returning C first violates the issue order of that ID stream."
+      },
+      {
+        "id": "own",
+        "label": "Assign correlation",
+        "prompt": "Which component state must prevent the illegal response order?",
+        "options": [
+          { "id": "global", "label": "One global FIFO forcing every ID into total order" },
+          { "id": "per-id", "label": "Per-ID issue-order state in the slave/interconnect response path" },
+          { "id": "data-only", "label": "The W-channel beat counter without AWID context" }
+        ],
+        "correctOptionId": "per-id",
+        "explanation": "The response path must preserve the accepted request order for each ID while allowing independent IDs to complete in another order."
+      },
+      {
+        "id": "verify",
+        "label": "Choose scoreboard behavior",
+        "prompt": "How should the monitor validate each accepted B response?",
+        "options": [
+          { "id": "membership", "label": "Check only that BID exists somewhere outstanding" },
+          { "id": "head", "label": "Match BID and transaction context against the head of that ID's issue queue" },
+          { "id": "same-cycle", "label": "Require B to return in the same cycle as AW" }
+        ],
+        "correctOptionId": "head",
+        "explanation": "Membership catches unknown responses but not overtaking. A per-ID head comparison detects C returning before A."
+      }
+    ],
+    "expectedTakeaway": "AXI ordering is neither one global FIFO nor unrestricted reordering. Preserve issue order inside each ID stream and retain enough context to match the head transaction, not only the BID value.",
+    "relatedLessons": ["42_axi_ordering_review_pack"]
+  }
+]

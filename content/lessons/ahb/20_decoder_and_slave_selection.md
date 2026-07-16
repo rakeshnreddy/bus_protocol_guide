@@ -10,7 +10,7 @@ tags: ["ahb", "architecture", "decoder"]
 relatedLessons: []
 prerequisites: ["19_arbiter_behavior"]
 visualIds: ["topo-ahb-multi-master"]
-exerciseIds: []
+exerciseIds: ["lab-ahb-decoder-response-owner"]
 glossaryTerms: []
 checklistIds: []
 ---

@@ -3,6 +3,6 @@
   "type": "reflection",
   "difficulty": "intermediate",
   "prompt": "Identify a coverage hole in the AHB Coverage Map grid above (e.g., WRAP16 + OKAY) and describe a specific test scenario you would write to close it.",
-  "expectedTakeaway": "A valid test scenario for WRAP16 + OKAY would involve configuring the master to initiate a 16-beat wrapping burst to a legal, unmapped address, and ensuring the slave responds with OKAY for all 16 beats. Finding these specific structural gaps is the primary goal of functional coverage.",
+  "expectedTakeaway": "A valid WRAP16 + OKAY scenario uses a legal, aligned address in a mapped region, generates all 16 wrapping beats, and accepts an OKAY completion for each transfer. The test should also predict the wrap boundary and every generated address before sampling the coverage cross.",
   "relatedLessons": ["31_ahb_functional_coverage"]
 }
