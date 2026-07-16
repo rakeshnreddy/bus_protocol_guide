@@ -1,0 +1,1291 @@
+# AHB Curriculum Master Implementation Backlog
+
+## 🚨 P0: Protocol Corrections & Critical Accuracy Fixes
+
+### Foundations
+
+#### `content/lessons/foundations/01_bus_mental_models.md`
+
+* Rewrite the definition of a bus to distinguish an interface, protocol, shared bus, point-to-point connection, and switched interconnect.
+* Replace the universal burst definition with separate AHB and AXI examples; state that AHB presents address/control for every beat while AXI normally presents one burst address followed by multiple data beats.
+* Qualify crossbar concurrency: permit parallel transfers only when routes and target resources do not conflict.
+* Remove the universal claim that every protocol consists of address, data, and control wire groups.
+
+#### `content/lessons/foundations/02_signal_thinking.md`
+
+* Restrict rising-edge synchronous timing claims to AHB, AXI, and the specific interfaces being taught.
+* Replace generic `CLK` examples with protocol-specific `HCLK` and `ACLK` examples.
+* Remove the claim that behavior between clock edges does not matter; explain setup, hold, propagation, glitches, combinational loops, and CDC implications.
+* Distinguish simulation `X` behavior from physical metastability.
+
+#### `content/lessons/foundations/03_timing_diagrams.md`
+
+* Remove the universal one-cycle registered-response model.
+* Separate phase pipelining, outstanding transaction count, ordering, and out-of-order completion.
+* State that AHB overlaps the next address phase with the current data phase but does not provide AXI-style transaction IDs or arbitrary outstanding queues.
+* Rewrite the exercise text so it does not require a subordinate to implement one particular internal address-register architecture.
+
+#### `content/lessons/foundations/04_handshakes_flow_control.md`
+
+* Split the lesson into AXI ready/valid transfer acceptance, AHB `HREADY` flow control, and original-AHB request/grant arbitration.
+* Correct `READY` semantics: acceptance occurs on an edge where both `VALID` and `READY` are asserted.
+* Replace “master is always the source” with channel-specific source and destination terminology.
+* Remove the claim that request/grant and ready/valid serve the same purpose.
+* State that an AXI source must not wait for `READY` before asserting `VALID`.
+
+#### `content/lessons/foundations/05_transaction_structure.md`
+
+* Replace the universal “address phase followed by data phase” transaction model with separate AHB read/write, AXI read, and AXI write structures.
+* Correct the AHB burst description so every beat has its own address/control phase.
+* Rewrite the ID discussion: IDs define ordering domains and can be reused subject to protocol and implementation limits; they are not universally unique per transaction.
+* Correct exclusive-access wording so an exclusive sequence detects interference rather than reserving or locking the address.
+* Separate AHB `OKAY/ERROR` response terminology from AXI `OKAY/EXOKAY/SLVERR/DECERR`.
+
+#### `content/lessons/foundations/06_senior_dv_mindset.md`
+
+* Replace the unconditional “100 outstanding reads” scenario with configured-limit testing and a separate illegal-over-limit negative test.
+* Separate legal constrained-random generation from deliberate protocol-violation injection.
+* Replace “100% coverage means done” with evidence-based signoff using assertions, scoreboards, coverage review, formal results, bug closure, and justified exclusions.
+* Replace “Constrained Random Testing” with standard constrained-random verification terminology.
+
+---
+
+### AHB Lessons 01–05
+
+#### `content/lessons/ahb/01_ahb_overview.md`
+
+* Distinguish original shared-bus AHB from modern single-manager AHB-Lite/AHB5 interfaces connected through matrices.
+* Remove or qualify the “early Cortex” historical claim.
+* Replace “the address phase becomes multi-cycle” with the correct rule: wait states extend the current data phase and block acceptance of the pending address phase.
+* Clarify that AXI ordering is constrained by IDs and ordering rules rather than arbitrarily out-of-order.
+
+#### `content/lessons/ahb/02_ahb_variants.md`
+
+* Replace informal AMBA-version dates with formal revision names and sourceable revision history.
+* State that AHB5 security, exclusives, and extended memory attributes are optional declared properties.
+* Remove unsupported deployment percentages and qualitative claims such as “90% of IP.”
+* Clarify that AHB-Lite removes shared-bus arbitration and legacy `SPLIT/RETRY`, while `HMASTLOCK` remains defined.
+
+#### `content/lessons/ahb/03_ahb_terminology.md`
+
+* Correct the claim that AXI signal names generally begin with `A`.
+* Mark `_M0`, `_S1`, and similar suffixes as vendor or project conventions rather than protocol rules.
+* Clarify that arbiters and standalone centralized decoders are topology-dependent implementation blocks.
+* Include default-subordinate behavior when describing “exactly one selected target.”
+
+#### `content/lessons/ahb/04_clock_and_reset.md`
+
+* Delete the rule that a signal changing on a falling edge or between rising edges is automatically a protocol violation.
+* Replace generic reset-output claims with signal-specific reset requirements.
+* Remove any implication that every implementation must insert a full IDLE cycle after reset release.
+* State that reset must be observed long enough to initialize interface state and that post-reset behavior is evaluated at legal `HCLK` sampling edges.
+
+#### `content/lessons/ahb/05_address_and_control.md`
+
+* Replace “physical address” with “byte address in the system address map.”
+* State that address width is an interface configuration supported by the selected specification revision.
+* Add exact `HPROT` bit polarity and AHB5 extended `HPROT` meanings.
+* Clarify that access-policy enforcement is implementation-defined; a target is not universally required to reject every privilege mismatch.
+* Expand the prose to cover `HTRANS`, `HSIZE`, `HBURST`, `HMASTLOCK`, and enabled AHB5 address attributes already present in the linked visual.
+
+---
+
+### AHB Core Transfer Mechanics 06–17
+
+#### `content/lessons/ahb/06_htrans_transfer_types.md`
+
+* Define `HTRANS` as describing the current address phase, not the simultaneous data phase.
+* Replace “SEQ means previous address plus four” with `2^HSIZE` increment and wrap-aware progression.
+* Explain that `BUSY` preserves burst context but does not guarantee arbitration ownership.
+* State that accepted `NONSEQ/SEQ` beats are sampled only when `HREADY` is high.
+* Add fixed-length versus undefined-length `INCR` termination rules.
+
+#### `content/lessons/ahb/07_burst_and_size.md`
+
+* Add all eight `HSIZE` encodings from 1 byte through 128 bytes.
+* State that an `HSIZE` encoding is legal only when the transfer size does not exceed the implemented data-bus width.
+* Replace “increment by HSIZE” with `bytes_per_beat = 1 << HSIZE`.
+* Add the rule that no AHB burst can cross a 1KB boundary.
+* Define fixed-burst length in accepted beats, excluding wait and BUSY cycles.
+
+#### `content/lessons/ahb/08_data_and_response.md`
+
+* Separate per-subordinate `HREADYOUT` from muxed global `HREADY`.
+* Expand the held-signal list to all applicable address/control attributes and stalled write data.
+* Move the complete two-cycle AHB-Lite/AHB5 ERROR explanation into the prose.
+* State that normal wait cycles use `HRESP=OKAY`; ERROR is a distinct two-cycle response sequence.
+* Explain that response signals must come from the subordinate owning the current data phase.
+
+#### `content/lessons/ahb/09_lock_exclusive_security.md`
+
+* Remove the claim that AHB5 introduced `HMASTLOCK`.
+* Separate original-AHB `HLOCKx/HMASTLOCK`, AHB5 exclusives, and AHB5 security into three distinct mechanisms.
+* Add `HMASTER` to the exclusive-access description.
+* State that a failed exclusive write can complete with `HRESP=OKAY` and `HEXOKAY=0`.
+* Replace unconditional security-denial wording with configured system-policy behavior.
+
+#### `content/lessons/ahb/10_single_transfers.md`
+
+* Replace “two overlapping phases of the same transfer” with the correct rule: one transfer’s address phase precedes its data phase, while the next transfer’s address phase can overlap that data phase.
+* Remove any implication that a subordinate always completes a SINGLE transfer in one data cycle.
+* Qualify arbitration statements as original shared-bus AHB behavior.
+
+#### `content/lessons/ahb/11_htrans_semantics.md`
+
+* Replace subordinate-generated-address wording with manager-driven `HADDR` semantics.
+* Qualify “every beat after NONSEQ is SEQ” to permit BUSY cycles between accepted beats.
+* Replace the blanket low-`HREADY` stability rule with a pending-valid-transfer rule that models IDLE, BUSY, and first-ERROR-cycle exceptions.
+* Add legal undefined-length `INCR → BUSY → IDLE/NONSEQ` termination.
+* Add the rule that a SINGLE transfer cannot continue with BUSY.
+
+#### `content/lessons/ahb/12_burst_progression.md`
+
+* Remove the implication that undefined-length `INCR` can continue across a 1KB boundary.
+* Require the manager to end before the boundary and restart with `NONSEQ`.
+* Reframe internal address prediction as protocol-checker logic; do not imply that a subordinate can ignore the manager’s actual `HADDR`.
+* Define progression using accepted beats only.
+
+#### `content/lessons/ahb/13_wrapping_bursts.md`
+
+* Replace “address increments until it hits the upper byte address” with next-beat boundary calculation.
+* Insert the exact formulas for byte increment, wrap span, wrap base, and modulo next address.
+* State that the starting address must be aligned to `HSIZE` but need not equal the wrap-region base.
+* Apply the 1KB boundary rule to wrapping bursts.
+
+#### `content/lessons/ahb/14_hsize_and_alignment.md`
+
+* Add every `HSIZE` encoding and gate each by the configured data-bus width.
+* Replace “8-bit master” with “byte-sized transfer on a wider interface.”
+* Qualify all lane mappings as 32-bit little-endian examples.
+* Remove “smart manager” and replication-as-requirement wording.
+* Remove the claim that an illegal transfer has a protocol-defined blocked data phase; describe it as deliberate invalid stimulus with implementation-defined recovery behavior.
+
+#### `content/lessons/ahb/15_address_data_phase.md`
+
+* Replace “the bus is free during the data phase” with parallel use of address/control and data/response resources.
+* Define visible, pending, and accepted address phases.
+* State that the pending address phase is accepted only on an edge where `HREADY` is high.
+* Explain that `HREADY` simultaneously completes the current data phase and permits pipeline advancement.
+
+#### `content/lessons/ahb/16_wait_states_hready.md`
+
+* Use `HREADYOUT` for the active subordinate’s output and `HREADY` for the global muxed signal.
+* Qualify the freeze rule to pending valid address phases and stalled write data.
+* Document IDLE, BUSY, and first-ERROR-cycle exceptions.
+* Normalize data-phase and payload numbering in the lesson and linked waveform.
+* State that AHB defines no universal maximum wait-state count.
+
+#### `content/lessons/ahb/17_multi_cycle_examples.md`
+
+* Make the existing worked example explicitly an INCR4 write.
+* Normalize address-beat, data-phase, and payload numbering.
+* Replace “Address Phase 5” for the final IDLE cycle with “idle address/control cycle.”
+* Add `HBURST`, `HSIZE`, `HWRITE`, and response values to the written cycle breakdown.
+
+---
+
+### AHB System-Level and Advanced Features 18–28
+
+#### `content/lessons/ahb/18_throughput_vs_latency.md`
+
+* Define the exact measurement points for first-beat latency, completion latency, throughput, and utilization.
+* Label DDR timing numbers as hypothetical implementation assumptions.
+* Remove the implication that `HBURST` guarantees one-cycle sequential completions.
+* State that contiguous SINGLE transfers can also be optimized by an implementation.
+
+#### `content/lessons/ahb/19_arbiter_behavior.md`
+
+* Qualify the statement that arbitration always has zero cycle cost.
+* Separate next grant, accepted ownership, active `HMASTER`, address owner, and data owner.
+* Define original shared-AHB `HMASTER` separately from AHB5 exclusive identity.
+
+#### `content/lessons/ahb/20_decoder_and_slave_selection.md`
+
+* Replace “central decoder using top bits” with implementation-neutral address-map decode wording.
+* Require `HSEL && HREADY && HTRANS[1]` for acceptance of a valid subordinate transfer.
+* State that the return mux must follow the data-phase owner rather than the currently decoded address target.
+
+#### `content/lessons/ahb/21_multi_master_systems.md`
+
+* Label burst-boundary handover, round-robin policy, and fairness as implementation choices.
+* State the assumptions needed before claiming that round-robin bounds starvation.
+* Clarify that strict fixed-priority starvation is a product/QoS failure only when a bounded-service contract exists.
+
+#### `content/lessons/ahb/22_ahb_lite_simplifications.md`
+
+* Remove “master design became trivially easy.”
+* Remove “the master drives whenever it wants”; require compliance with `HREADY`, reset, burst, and transfer rules.
+* State explicitly that `HMASTLOCK` remains on AHB-Lite/AHB5 interfaces.
+* Qualify the claim that contention occurs only when two inputs target the same subordinate; include shared internal resources, bridges, and limited output ports.
+
+#### `content/lessons/ahb/23_ahb_to_apb_bridge.md`
+
+* Correct AHB-side directions:
+
+  * Inputs: `HSEL`, `HADDR`, control, `HWDATA`, and global `HREADY`.
+  * Outputs: `HREADYOUT`, `HRESP`, and `HRDATA`.
+* Replace “APB is a two-cycle protocol” with “APB has a minimum Setup phase followed by an Access phase that can be extended by `PREADY=0`.”
+* Separate AHB-read and AHB-write translation sequences.
+* State that an unbuffered bridge cannot accept another AHB beat while holding `HREADY` low.
+
+#### `content/lessons/ahb/24_error_responses.md`
+
+* Use `HREADYOUT` when describing the subordinate output and global `HREADY` when describing manager observation.
+* State that ordinary wait cycles can precede ERROR1 only while `HRESP=OKAY`.
+* Clarify the precise first-ERROR-cycle exception that permits the manager to cancel the pending transfer.
+* Preserve both legal post-error policies: cancel or continue.
+
+#### `content/lessons/ahb/25_locked_sequences.md`
+
+* Replace “the arbiter never grants another manager” with “the arbiter must not transfer active ownership while the locked sequence is in progress.”
+* Clarify that a lock protects the applicable arbitration path or resource, not automatically every alias or independent system path.
+* Distinguish original `HLOCKx` request behavior from bus-level `HMASTLOCK`.
+
+#### `content/lessons/ahb/26_exclusive_accesses.md`
+
+* State explicitly that Exclusive Transfers are an optional AHB5 property.
+* Add `HMASTER` to both exclusive-read and exclusive-write descriptions.
+* Add exclusive-read `HEXOKAY` behavior so the manager knows whether monitor state was established.
+* Replace exact-address-only interference wording with monitored-location or granule semantics.
+* Add the matching attributes required by the selected specification issue.
+* State that failed exclusive writes do not update memory and can return `HRESP=OKAY`, `HEXOKAY=0`.
+
+#### `content/lessons/ahb/27_secure_vs_non_secure.md`
+
+* Remove the unconditional claim that the target itself must reject every Non-secure access.
+* State that the configured enforcement point—source firewall, interconnect, controller, or target—must prevent unauthorized access and return the system-defined failure response.
+* Cover denied reads as well as denied writes.
+* State that denied reads must not leak secure data and denied writes must not update secure state.
+
+#### `content/lessons/ahb/28_ahb5_vs_ahb2.md`
+
+* Separate RETRY and SPLIT mechanics:
+
+  * RETRY requests reattempt without `HSPLITx`.
+  * SPLIT removes the manager from eligibility until `HSPLITx` indicates it can retry.
+* Add `HSPLITx` to the comparison.
+* Replace vague `HMASTER` width wording with the exact base-interface width and source from the selected specification issue; document any interconnect extension separately.
+* State that the 1KB restriction applies to every AHB burst.
+
+---
+
+### AHB DV Lessons 29–38
+
+#### `content/lessons/ahb/29_ahb_simulation_strategy.md`
+
+* Separate legal constrained-random stimulus from deliberate protocol-violation tests.
+* Remove any implication that one expected-data path is suitable for managers, subordinates, bridges, and interconnects.
+* Require revision and optional-property configuration before enabling stimulus or checkers.
+
+#### `content/lessons/ahb/30_ahb_assertions.md`
+
+* Remove “every assertion failure means the designer must fix RTL.”
+* State that a failure can originate from DUT behavior, illegal stimulus, a checker defect, an invalid assumption, an unsupported configuration, or an intentional negative test.
+* Correct wrap wording so wrap occurs when the calculated next beat would reach the upper wrap limit.
+* Require saved data-phase direction when checking `HWDATA`, not current visible `HWRITE`.
+
+#### `content/lessons/ahb/31_ahb_functional_coverage.md`
+
+* Replace “every combination” with “every supported legal combination.”
+* Make `SPLIT/RETRY` bins legal only for original AHB and illegal for AHB-Lite/AHB5.
+* State that coverage proves a scenario was sampled, not that the DUT result was correct.
+* Add configuration-derived illegal and ignore bins.
+
+#### `content/lessons/ahb/32_ahb_formal_properties.md`
+
+* Replace the current bounded-completion example with a phase-aware accepted-transfer property.
+* Remove the same-cycle `HREADY` pass condition.
+* Start the completion obligation from the accepted address phase’s following data phase.
+* Add `disable iff (!HRESETn)`.
+* Rewrite the HWDATA property using captured data-phase direction.
+* Rewrite exclusive-integrity properties using `HEXCL`, `HMASTER`, direction, attributes, monitor state, and response.
+* Replace “protocol violation” with “configured service-contract violation” for implementation-specific latency failures.
+
+#### `content/lessons/ahb/33_common_rtl_bugs.md`
+
+* Replace the simplistic “advance while `HTRANS != IDLE`” root cause with phase-specific acceptance logic.
+* State that a raw HSEL transient is not itself an AHB violation; asynchronous consumption is the integration bug.
+* Qualify fixed-priority starvation as a product-contract or QoS failure.
+* Require source issue and section traceability before claiming that the rule explorer contains specification “shall/must” requirements.
+
+#### `content/lessons/ahb/34_debug_case_studies.md`
+
+* Replace implementation-specific repair instructions with behavioral requirements.
+* Clarify that registering HSEL is optional; accepting protocol-facing state only at the legal edge is mandatory.
+* Distinguish the first violating edge from later scoreboard symptoms.
+
+#### `content/lessons/ahb/35_ahb_expert_checklist.md`
+
+* Replace “checking every box means robust” with evidence-based, configuration-specific signoff wording.
+* State that every checklist item requires a linked artifact, owner, revision/property configuration, and reviewed waiver status.
+
+#### `content/lessons/ahb/36_ahb_signal_reference.md`
+
+* Correct `HRESP` timing so both ERROR cycles are described, including ERROR1 when completion has not occurred.
+* Mark combinational HSEL decode as a common implementation pattern, not a universal requirement.
+* Add exact HTRANS, HBURST, HSIZE, and HPROT encodings.
+* Replace vague HMASTER wording with exact configured-interface details.
+* Add complete exclusive-transfer restrictions.
+
+#### `content/lessons/ahb/37_ahb_waveform_review.md`
+
+* Rewrite the post-ERROR question so cancellation is not treated as mandatory.
+* Accept both legal post-ERROR strategies when the question supplies an implementation-policy context.
+* Require the learner to identify the data-phase owner before classifying any signal behavior.
+
+#### `content/lessons/ahb/38_ahb_interview_recap.md`
+
+* State explicitly that post-ERROR cancellation is permitted, not mandatory.
+* Make the 1KB wording consistent: no AHB burst may cross a 1KB boundary.
+* Add precise `HMASTER/HEXCL/HEXOKAY`, RETRY/SPLIT, lock, security, bridge, and formal-property summaries.
+
+---
+
+### Critical Visual, Exercise, Checklist, and Code Corrections
+
+#### `content/visuals/wf-signal-sampling.json`
+
+* Replace cycle-only setup/hold teaching with sub-cycle transitions around an active edge.
+* Remove any depiction that equates simulation `X` directly with physical metastability.
+
+#### `content/visuals/wf-pipeline-timing.json`
+
+* Replace generic CMD/DATA ownership with explicit AHB phase ownership and a separate AXI comparison.
+* Remove any implication that pipelining automatically creates multiple outstanding transactions.
+
+#### `content/visuals/wf-handshake-backpressure.json`
+
+* Separate AXI ready/valid behavior from AHB `HREADY`.
+* Remove request/grant from any backpressure-equivalence depiction.
+
+#### `content/visuals/tl-burst-transfer.json`
+
+* Replace the protocol-neutral ID-based burst with protocol-selectable AHB read/write and AXI read/write timelines.
+* Correct exclusive-access and response terminology.
+
+#### `content/visuals/wf-ahb-reset.json`
+
+* Remove any universal mandatory-IDLE restart cycle.
+* Show asynchronous assertion between edges and legal synchronous observation of release.
+* Remove falling-edge/mid-cycle transition violations.
+
+#### `content/visuals/signals/ahb_address_control.json`
+
+* Add exact HPROT encodings and AHB5 optional attributes.
+* Correct any unconditional policy-rejection wording.
+* Add accepted-edge and stall-stability semantics.
+
+#### `content/visuals/waveforms/ahb_htrans_sequences.json`
+
+* Add `HREADY`, accepted-beat state, and fixed-versus-undefined burst context.
+* Add SINGLE→BUSY and fixed-burst early-termination violations.
+* Do not advance beat state on BUSY or waited cycles.
+
+#### `content/visuals/signals/ahb_burst_size.json`
+
+* Add all HSIZE encodings.
+* Add configured bus-width legality.
+* Add the 1KB boundary rule for every burst.
+
+#### `content/visuals/waveforms/ahb_read_write_response.json`
+
+* Distinguish `HREADYOUT` from global `HREADY`.
+* Preserve two-cycle ERROR ownership and add preceding-OKAY-wait support.
+
+#### `content/visuals/wf-ahb-illegal-htrans.json`
+
+* Preserve the pending-valid-transfer violation but label it as a context-specific rule rather than a blanket low-HREADY rule.
+* Add first-ERROR-cycle and IDLE/BUSY legal-exception comparisons.
+
+#### `content/visuals/waveforms/ahb_hsize_byte_lanes.json`
+
+* Remove the protocol-invented `BLOCK` data phase.
+* Label the misaligned transfer as intentional invalid stimulus with implementation-defined downstream recovery.
+* Add complete HSIZE and bus-width gating.
+
+#### `content/visuals/wf-ahb-wait-state-heavy.json`
+
+* Normalize data-phase and payload numbering.
+* Add `HBURST`, `HSIZE`, `HWRITE`, selected subordinate, and `HREADYOUT`.
+
+#### `content/visuals/wf-ahb-review-error.json`
+
+* Preserve cancel and continue as separate legal scenarios.
+* Do not label the cancellation path as the only correct master response.
+
+#### `content/visuals/timelines/ahb_locked_sequence.json`
+
+* Replace any implication that future grant computation is prohibited; prohibit active ownership transfer instead.
+* Clarify the lock’s arbitration/resource scope.
+
+#### `content/visuals/tl-ahb-exclusive.json`
+
+* Add `HMASTER`, exclusive-read `HEXOKAY`, monitor establishment, matching attributes, unsupported target, and reset-cleared state.
+* Replace exact-address-only invalidation with monitored-granule semantics.
+
+#### `content/visuals/topologies/ahb_security_filter.json`
+
+* Label the topology as one configured enforcement architecture.
+* Add denied-read data suppression and denied-write side-effect suppression.
+* Remove any implication that only the target can enforce policy.
+
+#### `content/visuals/signals/ahb_evolution.json`
+
+* Separate RETRY and SPLIT.
+* Add `HSPLITx` only to the SPLIT path.
+* Correct HMASTER width/source wording.
+* Change “incrementing bursts do not cross 1KB” to “no AHB burst crosses 1KB.”
+
+#### `content/visuals/coverage/ahb_burst_response_coverage.json`
+
+* Make response bins revision-selectable.
+* Mark `SPLIT/RETRY` legal for original AHB and illegal for AHB-Lite/AHB5.
+* Add error beat index so an ERROR bin is not only burst-level.
+
+#### `content/visuals/formal-properties/ahb_bounded_liveness.json`
+
+* Replace the current SVA with a phase-aware accepted-transfer completion contract.
+* Use a non-overlapped obligation or explicit transaction token so same-cycle `HREADY` cannot satisfy the new transfer.
+* Add reset disabling and a configurable bound.
+* Rename the status from protocol violation to configured service-contract violation.
+
+#### `src/components/visuals/FormalPropertyPlayground.tsx`
+
+* Replace the evaluator’s same-cycle `HREADY` search.
+* Trigger only on an accepted valid address phase.
+* Track the accepted transfer into its data phase.
+* Prevent repeated obligations while a held address phase remains unaccepted.
+* Distinguish protocol, contract, assumption, and evaluator failures in the UI.
+
+#### `content/exercises/ex-ahb-bounded-liveness.json`
+
+* Replace “Protocol Violation” with “configured service-contract violation.”
+* Rewrite the expected takeaway to distinguish AHB legality from the product latency requirement.
+
+#### `content/exercises/ex-ahb-coverage-holes.json`
+
+* Replace “legal, unmapped address returning OKAY” with a mapped legal region for WRAP16+OKAY.
+* Require correct alignment, wrap span, and 1KB legality in the proposed test.
+
+#### `content/exercises/ahb.json`
+
+* Rewrite `ex-ahb-review-error` so abort is not mandatory.
+* Add a policy-aware option that accepts either continuation or cancellation when implemented legally.
+* Qualify the HTRANS stability exercise with pending-valid-transfer and first-ERROR-cycle context.
+
+#### `content/interactive/checklist-ahb-expert.json`
+
+* Delete this stale duplicate or replace it with a generated view of `chk-ahb-expert`.
+* Remove the false universal BUSY→IDLE prohibition.
+* Remove mandatory ERROR-abort wording.
+* Remove unconditional fairness and target-local security-enforcement requirements.
+
+#### `content/checklists/ahb-verification.json`
+
+* Retain `chk-ahb-expert` as the single source of truth.
+* Add explicit revision/property configuration and evidence-link requirements.
+
+#### `content/reference/spec-rules.json`
+
+* Correct and separate RETRY, SPLIT, ERROR, BUSY termination, HREADY stability, exclusives, and security rules.
+* Add specification issue and section metadata to every AHB rule.
+* Mark product-contract rules separately from AMBA protocol rules.
+
+---
+
+## 🛠️ P1: DV Rigor & Assertion Upgrades
+
+### Foundations
+
+#### `content/lessons/foundations/01_bus_mental_models.md`
+
+* Add design obligations for decode, arbitration, response routing, buffering, ordering, and target contention.
+* Add DV scenarios for same-target contention, different-target concurrency, decode overlap, decode miss, starvation, dropped requests, and duplicated completions.
+* Add coverage dimensions for topology, active initiators, target conflict, arbitration result, stalls, and response.
+
+#### `content/lessons/foundations/02_signal_thinking.md`
+
+* Add four-state simulation, unknown-control detection, reset-X propagation, clocking blocks, and race-free monitor sampling.
+* Add introductory properties for known controls at acceptance, stalled-payload stability, and safe reset release.
+
+#### `content/lessons/foundations/03_timing_diagrams.md`
+
+* Add monitor guidance for reconstructing accepted address phases and associating later data/response phases.
+* Add latency, throughput, phase-depth, and outstanding-count coverage concepts.
+
+#### `content/lessons/foundations/04_handshakes_flow_control.md`
+
+* Add legal ready/valid ordering permutations and the source persistence rule.
+* Add SVA examples for persistent VALID, stalled-payload stability, and handshake counting.
+* Add separate AHB pending-address and stalled-write-data checks.
+
+#### `content/lessons/foundations/05_transaction_structure.md`
+
+* Add FIFO/phase-based AHB scoreboard guidance and per-ID AXI queue guidance.
+* Add stimulus for outstanding limits, same-ID ordering, exclusives, burst boundaries, alignment, and illegal encodings.
+
+#### `content/lessons/foundations/06_senior_dv_mindset.md`
+
+* Add verification-plan traceability from requirement to stimulus, checker, coverage, and signoff evidence.
+* Add formal verification, fairness assumptions, bounded liveness, reset interruption, partial transaction, timeout, starvation, and error-recovery categories.
+* Add a complete UVM-style environment description.
+
+#### `content/checklists/dv-mindset.json`
+
+* Expand the checklist into stimulus, checking, scoreboard, coverage, formal, reset, error, performance, configuration, waiver, and debug-evidence sections.
+* Require every checked item to reference an evidence artifact.
+
+#### `content/exercises/foundations.json`
+
+* Add contention, phase ownership, legal/illegal handshake, ordering, coverage-closure, and checker-selection exercises.
+* Replace purely conceptual questions with waveform and configuration scenarios.
+
+---
+
+### AHB Lessons 01–17
+
+#### `content/lessons/ahb/01_ahb_overview.md`
+
+* Add the minimum AHB signal grouping and explicit phase-ownership rules.
+* Add zero-wait, stalled, read, write, error, reset-interruption, and back-to-back scenarios.
+* Add a basic transaction-identification exercise.
+
+#### `content/lessons/ahb/02_ahb_variants.md`
+
+* Add a version matrix for manager count, arbitration signals, responses, locks, security, exclusives, extended HPROT, and identity.
+* Add revision-aware checker and coverage configuration guidance.
+
+#### `content/lessons/ahb/03_ahb_terminology.md`
+
+* Add beat, burst, accepted phase, wait state, response, default subordinate, response mux, `HREADY`, and `HREADYOUT` definitions.
+* Add one-hot selection and response-routing checks.
+
+#### `content/lessons/ahb/04_clock_and_reset.md`
+
+* Add reset-under-idle, reset-under-transfer, reset-under-wait, reset-under-burst, and reset-under-ERROR scenarios.
+* Add scoreboard/monitor flush behavior.
+* Add reset assertions using `disable iff` and post-reset known/legal state checks.
+
+#### `content/lessons/ahb/05_address_and_control.md`
+
+* Add SVA for alignment, known controls, stable pending address/control, burst invariants, and first-beat NONSEQ.
+* Add coverage for `HWRITE × HSIZE × HBURST × HPROT × target × wait × response`.
+
+#### `content/lessons/ahb/06_htrans_transfer_types.md`
+
+* Add a stateful burst-context checker.
+* Add coverage for previous/current HTRANS, burst type, accepted beat count, and `HREADY`.
+* Add legal and illegal fixed-burst, undefined-INCR, BUSY, and SINGLE scenarios.
+
+#### `content/lessons/ahb/07_burst_and_size.md`
+
+* Add SVA for stable HBURST/HSIZE, supported size, fixed beat count, progression, alignment, and 1KB boundary.
+* Add the primary cross `HBURST × HSIZE × offset × direction × wait × response`.
+
+#### `content/lessons/ahb/08_data_and_response.md`
+
+* Add assertions for stalled HWDATA, read-data completion sampling, response ownership, two-cycle ERROR, and zero-wait IDLE/BUSY.
+* Add coverage for read/write, zero/multi-wait, response, target, and burst position.
+
+#### `content/lessons/ahb/09_lock_exclusive_security.md`
+
+* Add separate lock, exclusive, and security verification plans.
+* Add coverage for ownership retention, monitor identity, exclusive result, interfering write, security domain, policy result, and reset.
+
+#### `content/lessons/ahb/10_single_transfers.md`
+
+* Add all read/write transition combinations.
+* Add one-beat and no-SEQ continuation assertions.
+* Add direction-transition, wait, and response coverage.
+
+#### `content/lessons/ahb/11_htrans_semantics.md`
+
+* Add a transition automaton conditioned by active burst, fixed/undefined length, beat count, `HREADY`, and `HRESP`.
+* Add legal/illegal transition coverage and first-ERROR-cycle cases.
+
+#### `content/lessons/ahb/12_burst_progression.md`
+
+* Add an expected-address predictor that advances only on accepted valid beats.
+* Add checks for too few/many beats, BUSY, waits, early termination, wrong address, and 1KB crossing.
+* Add boundary-proximity coverage.
+
+#### `content/lessons/ahb/13_wrapping_bursts.md`
+
+* Add modulo-based WRAP4/8/16 assertions.
+* Add coverage for HSIZE, starting beat offset, wrap-event position, and wait count.
+* Add incorrect-base, early-wrap, late-wrap, and misaligned-start negative tests.
+
+#### `content/lessons/ahb/14_hsize_and_alignment.md`
+
+* Add general alignment SVA and supported-size checks.
+* Add read/write lane checking across configurable endianness and bus widths.
+* Add `HSIZE × address-low-bits × direction × lane × legality` coverage.
+
+#### `content/lessons/ahb/15_address_data_phase.md`
+
+* Add monitor pseudocode for accepted-address capture and current-data ownership.
+* Add assertions that every completed data phase has a previously accepted address.
+* Add pipeline occupancy and phase-overlap coverage.
+
+#### `content/lessons/ahb/16_wait_states_hready.md`
+
+* Add read waits, cross-target waits, reset during wait, waits before ERROR, and configured liveness scenarios.
+* Add wait-count, target-transition, direction, response, and burst-position coverage.
+
+#### `content/lessons/ahb/17_multi_cycle_examples.md`
+
+* Add worked cases for WRAP4 with waits, read burst with ERROR, undefined INCR before 1KB, BUSY insertion, and reset interruption.
+* Add learner prompts for owner, acceptance, expected next address, coverage bin, and firing SVA.
+
+---
+
+### AHB Lessons 18–28
+
+#### `content/lessons/ahb/18_throughput_vs_latency.md`
+
+* Add performance counters for first completion, average completion spacing, bytes/cycle, waits, and arbitration delay.
+* Add target- and burst-specific latency coverage.
+* Add configured performance-contract assertions.
+
+#### `content/lessons/ahb/19_arbiter_behavior.md`
+
+* Add one-owner, stable-owner-during-stall, no-early-drive, and lock-aware handover properties.
+* Add coverage for simultaneous requests, winner, wait-state handover, request withdrawal, parking, and grant latency.
+
+#### `content/lessons/ahb/20_decoder_and_slave_selection.md`
+
+* Add one-hot/zero-hot decode assertions.
+* Add no-unselected-side-effect and response-owner properties.
+* Add coverage for regions, boundaries, holes, aliases, overlap, and cross-target traffic.
+
+#### `content/lessons/ahb/21_multi_master_systems.md`
+
+* Add assumption-gated bounded-service properties.
+* Add coverage for requester population, policy, target, lock, burst length, waits, and service latency.
+* Add early-burst-termination restart checking.
+
+#### `content/lessons/ahb/22_ahb_lite_simplifications.md`
+
+* Add per-port matrix protocol checking and end-to-end route scoreboards.
+* Add coverage for independent routes, same-target contention, shared-resource contention, lock propagation, and property mismatches.
+
+#### `content/lessons/ahb/23_ahb_to_apb_bridge.md`
+
+* Add assertions that every accepted AHB beat creates exactly one APB transfer and exactly one AHB completion.
+* Add address, direction, size, lane, data, and response translation scoreboards.
+* Add APB wait, error, reset, buffering-depth, and burst-decomposition coverage.
+
+#### `content/lessons/ahb/24_error_responses.md`
+
+* Add a stateful ERROR1/ERROR2 checker that cannot retrigger on ERROR2.
+* Add side-effect checks for failed writes.
+* Add coverage for preceding waits, direction, target, burst beat index, and cancel/continue policy.
+
+#### `content/lessons/ahb/25_locked_sequences.md`
+
+* Add lock-start/end, ownership retention, bounded-lock-duration, reset, error, and matrix-propagation properties.
+* Add lock length, target, waits, competing request, and error coverage.
+
+#### `content/lessons/ahb/26_exclusive_accesses.md`
+
+* Add monitor-state scoreboarding keyed by manager identity and matching attributes.
+* Add assertions for legal exclusive form, read acceptance, matching write, `HEXOKAY` timing, no update on failure, and `HEXOKAY`/ERROR exclusion.
+* Add success, interference, unsupported, mismatch, replacement, reset, and error coverage.
+
+#### `content/lessons/ahb/27_secure_vs_non_secure.md`
+
+* Add assertions for HNONSEC phase alignment, denied-read no-data-leak, and denied-write no-side-effect.
+* Add source-domain, target-policy, direction, adapter, reset-default, and response coverage.
+
+#### `content/lessons/ahb/28_ahb5_vs_ahb2.md`
+
+* Add revision-gated checkers for response encoding, arbitration, identity, security, exclusives, locking, and 1KB behavior.
+* Add separate RETRY and SPLIT stimulus and coverage.
+* Add unsupported-option and adapter verification.
+
+---
+
+### AHB DV Lessons 29–38
+
+#### `content/lessons/ahb/29_ahb_simulation_strategy.md`
+
+* Add separate environment architectures for manager, subordinate, bridge, and interconnect verification.
+* Add active/passive agent configuration, reset agent, memory model, register model, and protocol-checker placement.
+* Add requirement-to-test/checker/coverage traceability.
+
+#### `content/lessons/ahb/30_ahb_assertions.md`
+
+* Insert executable, stateful SVA templates with `disable iff`.
+* Add properties for:
+
+  * Pending address/control.
+  * Stalled HWDATA.
+  * HTRANS legality.
+  * Fixed beat count.
+  * Increment/wrap progression.
+  * Alignment.
+  * 1KB boundary.
+  * IDLE/BUSY response.
+  * ERROR1/ERROR2.
+  * Decode.
+  * Response ownership.
+  * Lock.
+  * Exclusive.
+  * Security.
+  * Bridge conservation.
+* Add assertion severity and negative-test suppression guidance.
+
+#### `content/lessons/ahb/31_ahb_functional_coverage.md`
+
+* Sample coverage only from accepted address phases and completed data phases.
+* Add error beat, BUSY location, boundary proximity, target, policy, exclusive result, lock, arbitration, bridge, and security dimensions.
+* Require coverage hits to correlate with passing checkers and scoreboards.
+* Add bin-to-test traceability.
+
+#### `content/lessons/ahb/32_ahb_formal_properties.md`
+
+* Add assume-guarantee decomposition.
+* Add reset assumptions, vacuity review, cover properties, proof depth, abstraction, and reachable-state discussion.
+* Add formal examples for decode exclusivity, response ownership, arbitration service, bridge conservation, lock retention, exclusives, and security.
+
+#### `content/lessons/ahb/33_common_rtl_bugs.md`
+
+* Add bugs for response-owner muxing, malformed ERROR, wrong wrap, 1KB crossing, reset-under-stall, lock release, exclusive identity, HNONSEC corruption, and bridge duplication.
+* Map every bug to an assertion, scoreboard symptom, and first failing edge.
+
+#### `content/lessons/ahb/34_debug_case_studies.md`
+
+* Add case studies for response misrouting, two-cycle ERROR, bridge duplication, exclusive mismatch, and security leakage.
+* Include assertion log, scoreboard state, expected owner, actual owner, and root cause.
+
+#### `content/lessons/ahb/35_ahb_expert_checklist.md`
+
+* Add signoff evidence for assertion vacuity, formal assumptions, code coverage, lint, reset/CDC review, timing, combinational loops, waivers, and open bugs.
+* Add role-specific filters for manager, subordinate, bridge, and interconnect.
+
+#### `content/lessons/ahb/36_ahb_signal_reference.md`
+
+* Link each signal to relevant SVA, coverage points, lessons, waveforms, and common bugs.
+* Add property-gated signal-presence validation.
+
+#### `content/lessons/ahb/37_ahb_waveform_review.md`
+
+* Add arbitration, default-subordinate, bridge, lock, exclusive, security, and legal-BUSY review cases.
+* Require first-violating-edge and checker-selection answers.
+
+#### `content/lessons/ahb/38_ahb_interview_recap.md`
+
+* Add principal-level interview prompts for:
+
+  * AHB versus AHB-Lite.
+  * RETRY versus SPLIT.
+  * Lock versus exclusive.
+  * HMASTER identity.
+  * HNONSEC.
+  * AHB-to-APB bridges.
+  * Coverage configuration.
+  * Formal vacuity.
+  * System-level routing.
+* Require answers to name verification evidence, not only protocol rules.
+
+---
+
+### Shared DV Assets
+
+#### `content/visuals/signals/ahb_assertion_library.json`
+
+* Add executable SVA references and captured-state requirements.
+* Add alignment, 1KB, beat-count, decode, response-owner, lock, bridge, security, and exclusive entries.
+* Retain explicit protocol exceptions and configuration gates.
+
+#### `content/visuals/topologies/ahb_dv_environment.json`
+
+* Add configurable DUT roles and independent predictors.
+* Add legal-stimulus and negative-test paths.
+* Add reset, memory/register model, configuration, traceability, and waiver nodes.
+
+#### `content/visuals/coverage/ahb_burst_response_coverage.json`
+
+* Add accepted-phase sampling metadata.
+* Add revision, size, wait, error position, policy, and target filters.
+* Link zero-hit legal bins to targeted test definitions.
+
+#### `content/visuals/signals/ahb_signoff_evidence.json`
+
+* Add artifact link, owner, configuration, regression, waiver, and reviewer fields.
+* Add assertion-vacuity, formal-assumption, lint, CDC/reset, timing, and code-coverage evidence.
+
+#### `content/checklists/ahb-verification.json`
+
+* Add fields for evidence URI, owner, status, revision, optional properties, waiver, reviewer, and last regression.
+* Add manager, subordinate, bridge, and matrix-specific checklist items.
+
+#### `content/exercises/ahb.json`
+
+* Add exercises for accepted-beat counting, 1KB splitting, BUSY handling, response ownership, arbitration, decode, bridge translation, lock, exclusives, and security.
+* Separate legal traffic exercises from intentional violation exercises.
+
+#### `content/exercises/ex-ahb-bounded-liveness.json`
+
+* Ask the learner to identify assumptions, trigger acceptance, data-phase completion, and the configured bound.
+* Add a vacuous-pass scenario.
+
+#### `content/exercises/ex-ahb-coverage-holes.json`
+
+* Require the learner to specify legal address, size, wrap span, target, response, checker, and expected coverage bin.
+
+#### `content/reference/spec-rules.json`
+
+* Add checker-ready fields:
+
+  * Revision.
+  * Optional property.
+  * Trigger.
+  * Obligation.
+  * Exceptions.
+  * Design role.
+  * Suggested SVA.
+  * Coverage link.
+  * Specification provenance.
+
+---
+
+### Test and Validation Code
+
+#### `src/ahb-batch-three-accuracy.test.ts`
+
+* Add regression guards for corrected RETRY/SPLIT, exclusive-read, HMASTER, HNONSEC, lock, and bridge wording.
+* Add checks that all advanced visuals expose required signals and configuration labels.
+
+#### `src/ahb-batch-four-accuracy.test.ts`
+
+* Add guards against:
+
+  * Mandatory post-ERROR abort.
+  * Universal BUSY→IDLE prohibition.
+  * Same-cycle bounded-liveness completion.
+  * Unmapped+OKAY coverage exercises.
+  * Revision-independent SPLIT/RETRY illegality.
+* Add checks for phase-aware assertion metadata.
+
+#### `src/formal-property-lessons.test.tsx`
+
+* Add tests that an accepted transfer cannot be satisfied by same-cycle `HREADY`.
+* Add reset, repeated-trigger, vacuity, pass, and fail traces.
+
+#### `src/components/visuals/FormalPropertyPlayground.test.tsx`
+
+* Add evaluator tests for:
+
+  * Same-cycle false pass prevention.
+  * Unaccepted held address.
+  * First data-cycle completion.
+  * Bound expiration.
+  * Reset cancellation.
+  * Multiple non-overlapping transfers.
+
+#### `src/components/interactive/InteractiveExercise.test.tsx`
+
+* Add multiple-legal-answer and implementation-policy-aware scoring.
+* Add first-violating-edge and waveform-owner question support.
+
+#### `src/lib/visualLoaders.test.ts`
+
+* Validate all new and modified visual schemas.
+* Require unique IDs, aligned cycle counts, supported capability metadata, and valid linked lesson IDs.
+
+#### `src/visual-rendering-integration.test.tsx`
+
+* Render every new AHB waveform, topology, formal property, coverage map, and signal explorer.
+* Verify configuration controls, annotations, violations, and accessible descriptions.
+
+#### `src/topology-visual-integrity.test.tsx`
+
+* Validate response paths, highlighted routes, non-overlapping nodes, and configurable topology modes.
+* Add assertions for bridge, security, matrix, and address-map diagrams.
+
+---
+
+## 🎨 P2: Visual, UI, and Interactive Enhancements
+
+### Foundation Visuals
+
+#### `content/visuals/tp-bus-architectures.json`
+
+* Add shared-bus contention, crossbar different-target concurrency, and crossbar same-target contention modes.
+* Animate request, arbitration, target routing, and response routing.
+* Add illegal overlapping-decode mode.
+* Display latency and completed-transfer counters.
+
+#### `content/visuals/wf-signal-sampling.json`
+
+* Add setup and hold windows around rising edges.
+* Add legal transition, setup violation, and hold violation modes.
+* Add simulation-X and physical-metastability explanatory overlays.
+
+#### `content/visuals/wf-pipeline-timing.json`
+
+* Add explicit AHB address/data owners.
+* Add zero-wait, bubble, back-to-back, and multi-wait modes.
+* Add a separate AXI ready/valid channel comparison.
+
+#### `content/visuals/wf-handshake-backpressure.json`
+
+* Add AXI READY-before-VALID, VALID-before-READY, simultaneous, continuous, and illegal-withdrawal scenarios.
+* Add a separate AHB `HREADY` waveform rather than mixing arbitration with backpressure.
+
+#### `content/visuals/tl-burst-transfer.json`
+
+* Add tabs for AHB burst, AXI read, AXI write, same-ID ordering, different-ID reordering, and exclusives.
+* Display configured outstanding limits and blocked-request state.
+
+#### `content/lessons/foundations/06_senior_dv_mindset.md`
+
+* Add `topo-ahb-dv-environment` to `visualIds`.
+* Add a coverage-closure evidence visual reference.
+
+---
+
+### Early AHB Visuals
+
+#### `content/visuals/topologies/sample_ahb.json`
+
+* Add explicit signal-direction paths.
+* Add a zero-wait/stalled pipeline overlay.
+* Add monitor-view phase ownership.
+
+#### `content/visuals/signals/ahb_variants.json`
+
+* Add exact signal-presence and response-encoding matrices.
+* Add revision and optional-property selectors.
+* Show generated checker and legal-bin changes.
+
+#### `content/visuals/topologies/ahb_terminology_map.json`
+
+* Add default subordinate, response mux, address owner, data owner, `HREADYOUT`, and global `HREADY`.
+* Add overlapping-select and unmapped-address modes.
+
+#### `content/visuals/wf-ahb-reset.json`
+
+* Add reset during idle, active transfer, wait, burst, and ERROR.
+* Add conservative and earliest-legal restart policies.
+* Add monitor and scoreboard flush annotations.
+
+#### `content/visuals/signals/ahb_address_control.json`
+
+* Add a synchronized waveform pane.
+* Highlight accepted edge, stall stability, and later data owner for the selected signal.
+* Add legal and illegal alignment and policy modes.
+
+---
+
+### Transfer and Timing Visuals
+
+#### `content/visuals/waveforms/ahb_htrans_sequences.json`
+
+* Add an interactive HTRANS automaton and accepted-beat counter.
+* Add fixed/undefined burst selector.
+* Add BUSY, wait, IDLE, ERROR, and illegal transition injection.
+
+#### `content/visuals/wf-ahb-simple-transfer.json`
+
+* Add read→read, read→write, write→read, and write→write selectors.
+* Add independent wait-state controls for both transfers.
+* Add illegal SINGLE→SEQ mode.
+
+#### `content/visuals/signals/ahb_burst_size.json`
+
+* Convert the explorer into an address calculator.
+* Add start address, HBURST, HSIZE, bus width, beat count, wrap span, and 1KB result.
+* Add legal/illegal boundary scenarios.
+
+#### `content/visuals/wf-ahb-incr4-burst.json`
+
+* Add wait and BUSY insertion.
+* Display elapsed clocks separately from accepted beats.
+* Add wrong-address, wrong-count, and 1KB-crossing fault injection.
+
+#### `content/visuals/wf-ahb-wrap4-burst.json`
+
+* Add the required WRAP4 example with two waits at the wrap point.
+* Add WRAP8 and WRAP16 modes.
+* Add editable HSIZE and starting offset.
+* Display wrap base, upper limit, next-address calculation, and accepted-beat counter.
+
+#### `content/visuals/waveforms/ahb_read_write_response.json`
+
+* Add zero-, one-, and multi-wait modes.
+* Add wait-then-ERROR and default-subordinate-error modes.
+* Add response-mux and exact read/write sampling-edge overlays.
+
+#### `content/visuals/wf-ahb-wait-state.json`
+
+* Add zero-wait comparison.
+* Add read and write direction modes.
+* Add pending-address, data-owner, and selected-target labels.
+
+#### `content/visuals/wf-ahb-illegal-htrans.json`
+
+* Add legal exception comparisons beside the actual pending-valid-transfer violation.
+* Add a checker-state panel showing why the address phase is pending.
+
+#### `content/visuals/waveforms/ahb_hsize_byte_lanes.json`
+
+* Add selectable 32-/64-bit bus width.
+* Add little-/big-endian modes.
+* Add read and write lane views.
+* Highlight active and inactive lanes at bit level.
+* Add wait-state phase ownership.
+
+#### `content/visuals/wf-ahb-pipelined-sequence.json`
+
+* Add pipeline fill, steady state, stall, restart, and drain controls.
+* Add mixed reads/writes.
+* Add selected-target, response-source, and monitor queue overlays.
+
+#### `content/visuals/wf-ahb-wait-state-heavy.json`
+
+* Add zero-wait comparison.
+* Add cross-target routing and `HREADYOUT` muxing.
+* Add read, ERROR, reset, and configured-timeout modes.
+
+#### `content/lessons/ahb/17_multi_cycle_examples.md`
+
+* Add frontmatter links for the enhanced WRAP, ERROR, 1KB, BUSY, and reset multi-cycle visual modes.
+
+---
+
+### System-Level Visuals
+
+#### `content/visuals/timelines/ahb_performance_comparison.json`
+
+* Add configurable first-beat cost, sequential cost, wait count, bus width, and HSIZE.
+* Display transfers/cycle, bytes/cycle, latency, utilization, and elapsed cycles.
+* Add same-target and different-target matrix performance modes.
+
+#### `content/visuals/waveforms/ahb_arbitration_handover.json`
+
+* Add fixed-priority, round-robin, parking, lock, and request-withdrawal modes.
+* Add data-owner and active-owner rows.
+* Add illegal early-drive injection.
+
+#### `content/visuals/topo-ahb-multi-master.json`
+
+* Add separate address-phase and data-phase return paths.
+* Add matrix mode alongside original shared-bus mode.
+* Add overlapping decode, default route, lock scope, and same/different-target scenarios.
+
+#### `content/visuals/timelines/ahb_multi_master_contention.json`
+
+* Add actual request, grant, `HREADY`, and ownership-boundary signals below policy lanes.
+* Add configured starvation limit and early-burst-termination modes.
+
+#### `content/visuals/tp-bus-architectures.json`
+
+* Reuse the upgraded shared-bus/crossbar interaction in Lesson 22.
+* Add shared internal bridge and limited-output-port contention scenarios.
+
+#### `content/visuals/topo-ahb-apb-bridge.json`
+
+* Add bridge buffering and APB wait-state state.
+* Add explicit upstream `HREADYOUT` and downstream `PREADY/PSLVERR`.
+* Add data-width and byte-lane adaptation nodes.
+
+#### `content/visuals/waveforms/ahb_apb_bridge_timing.json` **(new)**
+
+* Render synchronized AHB and APB read timing.
+* Render synchronized AHB and APB write timing.
+* Add unbuffered and one-entry-buffered modes.
+* Add APB wait, APB error, AHB burst decomposition, and reset modes.
+
+#### `content/lessons/ahb/23_ahb_to_apb_bridge.md`
+
+* Add `wf-ahb-apb-bridge-timing` to `visualIds`.
+
+---
+
+### Error, Lock, Exclusive, and Security Visuals
+
+#### `content/visuals/wf-ahb-review-error.json`
+
+* Add preceding wait-state controls.
+* Add first/middle/final burst-error selectors.
+* Add cancel and continue policies.
+* Add expected-side-effect and scoreboard-state overlays.
+
+#### `content/visuals/timelines/ahb_locked_sequence.json`
+
+* Add waits, error, reset, and lock-release modes.
+* Add arbitration-resource scope and competing-target behavior.
+
+#### `content/visuals/waveforms/ahb_locked_sequence.json` **(new)**
+
+* Render cycle-accurate `HBUSREQx`, `HLOCKx`, `HGRANTx`, `HMASTLOCK`, `HMASTER`, `HTRANS`, `HREADY`, read data, and write data.
+* Add legal and illegal ownership-transfer modes.
+
+#### `content/lessons/ahb/25_locked_sequences.md`
+
+* Add `wf-ahb-locked-sequence` to `visualIds`.
+
+#### `content/visuals/tl-ahb-exclusive.json`
+
+* Add editable manager identity, address, size, protection, security, and monitor granule.
+* Display monitor-table state and invalidation events.
+
+#### `content/visuals/waveforms/ahb_exclusive_accesses.json` **(new)**
+
+* Render exclusive read and write with `HEXCL`, `HMASTER`, `HEXOKAY`, `HREADY`, and `HRESP`.
+* Add supported, unsupported, success, interference, mismatch, reset, and error cases.
+
+#### `content/lessons/ahb/26_exclusive_accesses.md`
+
+* Add `wf-ahb-exclusive-accesses` to `visualIds`.
+
+#### `content/visuals/topologies/ahb_security_filter.json`
+
+* Add source-firewall, interconnect-policy, and target-policy selectors.
+* Add security-aware/unaware adapters.
+* Add reset-default and attribute-corruption fault modes.
+
+#### `content/visuals/waveforms/ahb_security_access.json` **(new)**
+
+* Render allowed Secure and Non-secure reads/writes.
+* Render denied read with no data leakage.
+* Render denied write with no state update.
+* Render two-cycle ERROR response and HNONSEC stall stability.
+
+#### `content/lessons/ahb/27_secure_vs_non_secure.md`
+
+* Add `wf-ahb-security-access` to `visualIds`.
+
+#### `content/visuals/signals/ahb_evolution.json`
+
+* Add original-AHB RETRY and SPLIT sequence tabs.
+* Add revision/property configuration controls.
+* Display legal signal and checker changes interactively.
+
+---
+
+### DV and Signoff Visuals
+
+#### `content/visuals/topologies/ahb_dv_environment.json`
+
+* Add selectable manager, subordinate, bridge, and interconnect DUT roles.
+* Rewire expected and actual paths for each role.
+* Add requirement traceability and configuration state.
+
+#### `content/visuals/signals/ahb_assertion_library.json`
+
+* Add naive-versus-correct assertion comparisons.
+* Show trigger, captured state, obligation, exception, and first failure edge.
+* Add assert/assume/cover mode.
+
+#### `content/visuals/coverage/ahb_burst_response_coverage.json`
+
+* Add revision, capability, direction, size, target, wait, and error-position filters.
+* Add a generated test skeleton for selected zero-hit bins.
+
+#### `content/visuals/formal-properties/ahb_bounded_liveness.json`
+
+* Display an accepted-transfer token moving into the data phase.
+* Add same-cycle false-pass, vacuous-pass, bound-fail, reset, and legal-completion scenarios.
+* Add editable configured-bound control.
+
+#### `src/components/visuals/FormalPropertyPlayground.tsx`
+
+* Add distinct UI states for protocol failure, contract failure, failed assumption, vacuous pass, and unchecked result.
+* Add editable bound and reset controls.
+* Add transaction-token rendering.
+
+#### `content/visuals/wf-ahb-bug-wait-state.json`
+
+* Add expected/actual data owner, firing property, and scoreboard mismatch panels.
+* Add a corrected-RTL comparison mode.
+
+#### `content/visuals/wf-ahb-bug-decoder-glitch.json`
+
+* Add accepted-edge zoom.
+* Add unsafe latch, unsafe gate, and safe synchronous-consumption modes.
+* Add corrected integration comparison.
+
+#### `content/visuals/spec-rule-explorer-ahb.json`
+
+* Display specification issue, section, revision, role, rule class, exceptions, related SVA, and bug links.
+* Add separate filters for protocol requirements and implementation contracts.
+
+#### `content/visuals/signals/ahb_signoff_evidence.json`
+
+* Convert each area into a status card with artifact link, owner, revision, regression, waiver, and reviewer.
+* Add role and capability filters.
+
+#### `content/visuals/sig-ahb-full.json`
+
+* Add revision/property filters.
+* Add exact encodings.
+* Add “show in waveform,” “show assertion,” and “show common bug” links.
+* Add specification provenance.
+
+#### `content/visuals/signals/ahb_senior_recap.json`
+
+* Add RETRY/SPLIT, lock/exclusive, security, bridge, formal, coverage, and topology anchors.
+* Add beginner, senior, and principal answer-depth modes.
+
+#### `content/lessons/ahb/37_ahb_waveform_review.md`
+
+* Add visual references for arbitration, bridge, lock, exclusive, and security waveform cases.
+
+#### `content/lessons/ahb/38_ahb_interview_recap.md`
+
+* Add a mock-interview interaction reference with timed waveform, address-math, architecture, and signoff questions.
+
+---
+
+### UI and Regression Support
+
+#### `src/components/interactive/InteractiveExercise.tsx`
+
+* Add multi-answer scoring.
+* Add implementation-policy context.
+* Add waveform-cycle selection and first-violation marking.
+* Add test-skeleton output for coverage exercises.
+
+#### `src/components/visuals/WaveformVisualizer.tsx`
+
+* Add accepted-edge markers, phase-owner lanes, sub-cycle timing windows, state panels, and selectable scenario controls.
+* Add support for legal-exception and contract-violation classifications.
+
+#### `src/components/visuals/SignalExplorer.tsx`
+
+* Add revision/property filtering, exact encoding tables, deep links, and configuration-dependent signal visibility.
+
+#### `src/components/visuals/TopologyVisualizer.tsx`
+
+* Add selectable topology modes, animated request/response paths, editable address maps, and policy-location controls.
+
+#### `src/components/visuals/CoverageMap.tsx`
+
+* Add multidimensional filters, revision-aware illegal bins, bin-to-test links, and exclusion justification.
+
+#### `src/pages/Visuals.test.tsx`
+
+* Add rendering and interaction tests for all new AHB visual modes.
+* Verify mobile layouts for long signal names, phase-owner lanes, and configuration panels.
+
+#### `src/visual-rendering-integration.test.tsx`
+
+* Add every new visual ID to the production rendering matrix.
+* Verify that linked lessons resolve every visual and exercise without fallback content.
+
+#### `docs/AHB_AXI_VISUAL_COMPLETION_TRACKER.md`
+
+* Update every modified and newly created AHB visual entry.
+* Record protocol-accuracy review status, DV review status, responsive-layout status, and linked tests.
+* Mark the AHB visual phase complete only after all P0 tests and P1/P2 acceptance criteria pass.
+
+---
+
+# End of Phase 1
+
+The complete AHB curriculum audit is finished. Tasks 1–3 have been consolidated into this deduplicated, file-mapped P0/P1/P2 implementation backlog.
+
+The AHB phase is ready for coding execution, regression validation, and signoff. The next curriculum-audit phase can begin with the AMBA AXI protocol.

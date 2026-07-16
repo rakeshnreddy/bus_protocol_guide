@@ -1,0 +1,1280 @@
+# Task 3 — AHB Advanced System-Level, Protocol, and Verification Audit
+
+## System-Level and Interconnect Lessons
+
+### [18_throughput_vs_latency — Throughput vs Latency Intuition]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* “Minimum latency is two clock cycles” is acceptable only when latency means the two bus-cycle phases occupied by a transfer. Request-to-completion edge latency can be described differently depending on the measurement convention. The lesson must define the measurement points.
+* Wait states add cycles to the current data phase and reduce completion throughput; this is correctly represented.
+* The zero-wait result of one completed transfer per cycle after pipeline fill is correct.
+* The fixed DDR examples—20 cycles per random transfer and 23 cycles for an `INCR4`—are illustrative implementation assumptions, not AHB behavior. DDR row mapping, scheduling, buffering, and controller policy can produce different results.
+* A burst does not guarantee that every `SEQ` transfer completes in one cycle. `HBURST` communicates intent, but subordinate performance remains implementation-dependent.
+* Four contiguous `SINGLE` transfers might still be recognized and optimized by a memory controller. The current text overstates the unique performance benefit provided by `HBURST`.
+* The timeline is internally consistent but represents one synthetic performance model rather than a protocol guarantee.
+
+Completeness Audit:
+
+* Missing precise definitions of:
+
+  * First-beat latency.
+  * Completion latency.
+  * Sustained throughput.
+  * Bus utilization.
+  * Useful bytes per cycle.
+* Missing read versus write performance.
+* Missing arbitration delay, bridge delay, target contention, and matrix concurrency.
+* Missing the effect of `HSIZE`; one transfer per cycle can mean one byte or a full-width data beat.
+* Missing performance assertions and counters:
+
+  * Request-to-completion latency.
+  * Wait-state count.
+  * Consecutive completion spacing.
+  * Arbitration service latency.
+* Missing functional coverage for latency buckets crossed with target, burst type, size, direction, and response.
+
+Visuals & Animations Required:
+
+* Add configurable inputs for first-beat latency, per-beat latency, wait states, bus width, and `HSIZE`.
+* Display both transfers/cycle and bytes/cycle.
+* Add matrix scenarios:
+
+  * Two managers accessing different targets concurrently.
+  * Two managers contending for one target.
+* Distinguish protocol timing from a selected memory-controller performance model.
+* Add performance-counter overlays showing first completion, average completion spacing, and total elapsed cycles.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Label all DDR cycle counts as hypothetical implementation assumptions.
+* Define the exact start and end points used for latency measurement.
+* Remove the implication that a burst guarantees one-cycle later beats.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add latency and completion-spacing coverpoints.
+* Add configured maximum-latency assertions per target.
+* Cross burst, HSIZE, wait bucket, target, and arbitration delay.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Convert the fixed timeline into a configurable performance calculator.
+* Add concurrent matrix traffic and target-contention modes.
+
+---
+
+### [19_arbiter_behavior — Arbiter Behavior]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The lesson correctly limits `HBUSREQx/HGRANTx` arbitration to original shared-bus AHB.
+* A grant names the next owner; it does not allow that manager to immediately replace an unfinished address phase.
+* The handover waveform correctly keeps the CPU as `HMASTER` while `HREADY=0`, accepts the DMA grant at the completion boundary, and shows DMA ownership in the following cycle.
+* “Arbitration happens in parallel and does not waste cycles” is too absolute. Arbitration can be overlapped, but a handover can still introduce an IDLE cycle if the next manager is unprepared or system policy requires one.
+* The explanation does not cover default-manager or bus-parking behavior.
+* The AHB5 `HMASTER` wording is underspecified. The lesson should distinguish the original arbiter-generated field from the AHB5 exclusive-identity mechanism without loosely implying that arbitrary identity construction is part of the base protocol.
+
+Completeness Audit:
+
+* Missing simultaneous request behavior.
+* Missing request withdrawal and grant changes during wait states.
+* Missing locked ownership.
+* Missing early burst termination.
+* Missing original `RETRY/SPLIT` re-arbitration.
+* Missing default manager and bus parking.
+* Missing assertions for:
+
+  * One selected owner.
+  * Ownership stable through a stalled transfer.
+  * Only the current owner drives active transfer signals.
+  * Lock prevents illegal handover.
+* Missing coverage for requester count, winner, wait-state handover, lock, priority reversal, and grant latency.
+
+Visuals & Animations Required:
+
+* Add simultaneous CPU/DMA request scenarios.
+* Add fixed-priority, round-robin, parking, and locked-handover modes.
+* Show separate rows for request, grant, accepted ownership, `HMASTER`, address owner, and data owner.
+* Add an illegal mode where the granted manager drives before the current transfer completes.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Qualify the claim that arbitration has no cycle cost.
+* Define original-AHB `HMASTER` separately from AHB5 exclusive identity.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add one-owner, stable-owner, and lock-aware handover properties.
+* Cover handover under zero, single, and long waits.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Extend the waveform with policy, parking, and illegal-early-drive selectors.
+* Display grant ownership separately from active bus ownership.
+
+---
+
+### [20_decoder_and_slave_selection — Decoder and Slave Selection]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* Decoder selection and arbitration are correctly presented as separate operations.
+* The decoder is not necessarily one centralized block and does not necessarily decode only the “top bits.” Address ranges can use masks, full comparisons, remapping, aliases, or distributed decode.
+* `HSELx` can be combinational, but a subordinate must act only on a valid accepted address phase.
+* The sampling condition must include:
+
+  * `HSELx=1`.
+  * `HREADY=1`.
+  * `HTRANS` indicating `NONSEQ` or `SEQ`.
+* The default-subordinate handling is correct for AHB-Lite/AHB5:
+
+  * Valid unmapped transfer → two-cycle `ERROR`.
+  * `IDLE/BUSY` → zero-wait `OKAY`.
+* The topology does not demonstrate that the response mux must use the subordinate owning the current data phase, which can differ from the subordinate selected by the current address phase.
+
+Completeness Audit:
+
+* Missing overlapping address-region detection.
+* Missing zero-hot decode handling and default-subordinate enable.
+* Missing alias regions and programmable address maps.
+* Missing response-source pipeline state.
+* Missing target change while the prior target holds `HREADYOUT=0`.
+* Missing one-hot/zero-hot assertions.
+* Missing checks that unselected subordinates produce no side effects.
+* Missing response-mux assertions for `HRDATA`, `HREADY`, and `HRESP`.
+* Missing coverage for every address region, boundaries, holes, aliases, and cross-target back-to-back accesses.
+
+Visuals & Animations Required:
+
+* Add address and data-phase target-owner rows.
+* Show a stalled Slave A data phase while the pending address decodes to Slave B.
+* Add illegal overlapping-select and missing-default modes.
+* Add an editable memory map with automatic boundary and overlap checks.
+* Animate response routing from the prior selected subordinate.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Replace “top bits” and “central combinatorial decoder” with implementation-neutral wording.
+* Include valid `HTRANS` in the subordinate acceptance condition.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add one-hot selection, default-route, no-unselected-side-effect, and response-owner assertions.
+* Cover region boundaries and cross-target stalls.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an editable address-map and response-owner animation.
+* Add overlapping and unmapped decode fault modes.
+
+---
+
+### [21_multi_master_systems — Multi-Master Systems]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The protocol does not mandate fixed-priority or round-robin arbitration; this is correctly stated.
+* Round-robin only bounds starvation when eligibility, transfer completion, service quantum, and locking assumptions are defined.
+* Fixed priority can legally starve a lower-priority manager at the protocol level. It becomes a design failure only when the product promises fairness or bounded service.
+* Arbitration commonly prefers burst boundaries, but this is an implementation policy rather than a universal requirement.
+* Original AHB permits early burst termination. The lesson correctly avoids claiming that only undefined-length `INCR` can be terminated.
+* The timeline shows policy-level service windows rather than actual AHB request, grant, `HREADY`, and transfer-boundary signals.
+
+Completeness Audit:
+
+* Missing locks and their effect on fairness.
+* Missing `SPLIT/RETRY` behavior for original AHB.
+* Missing arbitration during prolonged `HREADY=0`.
+* Missing default-manager behavior.
+* Missing matrix contention:
+
+  * Same target.
+  * Different targets.
+  * Shared internal bottleneck.
+* Missing implementation-specific fairness assumptions.
+* Missing assertions for bounded service, only when promised by the product.
+* Missing coverage for requester population, priority, target, burst length, lock state, and service latency.
+
+Visuals & Animations Required:
+
+* Add request/grant/HREADY traces beneath the policy timeline.
+* Add same-target and different-target matrix cases.
+* Add indefinite fixed-priority starvation versus configured starvation-limit behavior.
+* Add early termination of a fixed burst and legal restart of remaining traffic.
+* Add lock-aware arbitration.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Label fairness and burst-boundary service as implementation policies.
+* State the assumptions required before claiming round-robin bounds starvation.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add assumption-gated fairness properties.
+* Cover target contention, early termination, locks, and request withdrawal.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Couple the policy timeline to actual AHB arbitration signals.
+* Add matrix concurrency and bottleneck modes.
+
+---
+
+### [22_ahb_lite_simplifications — AHB-Lite Simplifications]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* AHB-Lite defines exactly one manager per interface; that does not limit an SoC to one manager.
+* Removing `HBUSREQ/HGRANT` and `SPLIT/RETRY` from the interface is correctly described.
+* `HMASTLOCK` remains part of the AHB-Lite/AHB5 interface and must not be implied to have disappeared with arbitration signals.
+* “Master design became trivially easy” is misleading. A manager must still implement:
+
+  * Pipelining.
+  * Wait-state stability.
+  * Burst progression.
+  * Error handling.
+  * Reset behavior.
+  * Optional AHB5 capabilities.
+* “A master simply drives whenever it wants” is incorrect. It can present traffic only while obeying `HREADY`, burst, reset, and transfer-type rules.
+* Arbitration in a matrix is not necessarily required only when two inputs target the exact same subordinate. Internal bandwidth limits, bridges, shared ports, or implementation topology can introduce additional contention.
+* The linked topology correctly qualifies that not every access pair is contention-free, but the prose remains overly absolute.
+
+Completeness Audit:
+
+* Missing per-port address and data-phase ownership in a matrix.
+* Missing matrix response routing.
+* Missing lock propagation through a matrix.
+* Missing AHB5 optional properties on single-manager interfaces.
+* Missing adapters between differently configured AHB5 ports.
+* Missing matrix-level assertions and cross-port scoreboards.
+* Missing configuration-aware coverage.
+
+Visuals & Animations Required:
+
+* Add an original shared-bus versus AHB-Lite matrix comparison with actual port signals.
+* Show two independent routes progressing concurrently.
+* Show same-target contention.
+* Show an internal shared bridge causing contention even for apparently different addresses.
+* Add HMASTLOCK and AHB5-capability overlays.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Remove “trivially easy” and “whenever it wants.”
+* Qualify the claim that only same-target requests contend.
+* Explicitly retain `HMASTLOCK`.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add per-port protocol checking and end-to-end matrix routing checks.
+* Cover independent, contending, locked, and option-mismatched routes.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build a selectable shared-bus/matrix architecture comparison.
+* Animate request and response ownership through multiple matrix ports.
+
+---
+
+## Bridges and Advanced Protocol Features
+
+### [23_ahb_to_apb_bridge — AHB to APB Bridge Behavior]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The bridge’s role is correctly described as an upstream AHB subordinate and downstream APB manager.
+* The upstream signal-direction list is incomplete and misleading:
+
+  * The bridge receives `HSEL`, `HADDR`, control, `HWDATA`, and global `HREADY`.
+  * It drives `HREADYOUT`, `HRESP`, and `HRDATA`.
+* APB has a minimum two-phase Setup/Access transfer. `PREADY=0` can extend the Access phase, so APB is not always exactly two cycles.
+* The timing description is plausible for a simple unbuffered read, but write translation needs separate treatment. AHB write data arrives in the data phase and must be captured before it can safely become APB `PWDATA`.
+* The bridge cannot accept Beat 2 while Beat 1 is still holding global `HREADY` low unless it contains explicit buffering.
+* The topology is structurally useful but lacks cycle-level APB timing.
+
+Completeness Audit:
+
+* Missing separate read and write bridge sequences.
+* Missing APB `PREADY` wait states.
+* Missing `PSLVERR` to AHB two-cycle `ERROR` translation.
+* Missing AHB burst decomposition.
+* Missing data-width and HSIZE adaptation.
+* Missing byte-lane handling.
+* Missing buffering depth and backpressure.
+* Missing reset while an APB transfer is active.
+* Missing APB side-effect protection when an AHB transfer is canceled or errors.
+* Missing assertions tying one accepted AHB beat to exactly one APB transfer and one AHB completion.
+
+Visuals & Animations Required:
+
+* Add cycle-accurate read and write waveforms containing:
+
+  * `HSEL`, `HTRANS`, `HADDR`, `HWDATA`.
+  * `HREADYOUT`, `HRDATA`, `HRESP`.
+  * `PSEL`, `PENABLE`, `PADDR`, `PWDATA`, `PRDATA`, `PREADY`, `PSLVERR`.
+* Show unbuffered and one-entry-buffered bridge modes.
+* Show an `INCR4` burst decomposed into four APB transfers.
+* Add APB wait and error scenarios.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Correct AHB-side signal directions.
+* Replace “APB is a two-cycle protocol” with “minimum Setup plus Access.”
+* Separate read and write translation timing.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add one-AHB-beat-to-one-APB-transfer conservation assertions.
+* Add response/data translation scoreboards and error coverage.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build synchronized AHB/APB read and write waveforms.
+* Add buffering, `PREADY`, and `PSLVERR` controls.
+
+---
+
+### [24_error_responses — Error Responses]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The two-cycle AHB-Lite/AHB5 `ERROR` sequence is explained correctly:
+
+  * ERROR1: `HRESP=1`, `HREADYOUT=0`.
+  * ERROR2: `HRESP=1`, `HREADYOUT=1`.
+* Additional ordinary waits can precede ERROR1, but must use `HRESP=OKAY`.
+* The visual correctly attributes both error cycles to the failing data phase rather than the pending following address.
+* The master is permitted either to cancel remaining burst transfers or continue them. The lesson correctly avoids making cancellation mandatory.
+* Cancellation timing should be expressed precisely: the pending address can be changed to `IDLE` for the completion cycle under the defined ERROR exception.
+* The lesson should consistently use subordinate `HREADYOUT` when describing the source signal and global `HREADY` when describing what the manager observes.
+
+Completeness Audit:
+
+* Missing ERROR after preceding waits.
+* Missing read versus write error handling.
+* Missing first, middle, and final burst-beat errors.
+* Missing cancel versus continue scoreboard behavior.
+* Missing side-effect checks for failed writes.
+* Missing default-subordinate and bridge-generated errors.
+* Missing reset during ERROR1.
+* Missing stateful SVA that distinguishes ERROR1 from ERROR2.
+
+Visuals & Animations Required:
+
+* Add selectable:
+
+  * ERROR after zero waits.
+  * ERROR after several normal waits.
+  * Error on first/middle/final burst beat.
+  * Cancel and continue policies.
+* Show pending-address ownership and expected side effects.
+* Add default-subordinate and APB-bridge error sources.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Use `HREADYOUT` versus global `HREADY` consistently.
+* Clarify the precise cycle in which cancellation changes `HTRANS`.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add a two-state ERROR checker that cannot retrigger from ERROR2.
+* Verify failed writes cause no prohibited side effect.
+* Cover error beat index and cancel/continue policy.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Extend the waveform with preceding waits, policy selection, and multiple error sources.
+
+---
+
+### [25_locked_sequences — Locked Sequences (HMASTLOCK)]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* Original AHB correctly distinguishes per-manager `HLOCKx` from arbiter-generated bus-level `HMASTLOCK`.
+* Locked ownership prevents another manager from accessing the protected shared bus resource until the sequence ends.
+* The statement that the arbiter will not grant another manager is better phrased as “must not transfer ownership.” An arbiter might calculate or signal future grants without allowing active ownership to change.
+* A lock protects the applicable bus path or target arbitration domain, not automatically every alias, independent interconnect path, external agent, or coherent observer in the complete memory system.
+* `HMASTLOCK` remains defined in AHB-Lite/AHB5; the lesson correctly states that exclusives did not delete locking.
+* The conceptual timeline lacks wait-state, data-phase, and error mechanics.
+
+Completeness Audit:
+
+* Missing lock assertion/deassertion alignment.
+* Missing waits during locked read or write.
+* Missing ERROR during a locked sequence.
+* Missing reset during lock.
+* Missing lock propagation through a matrix.
+* Missing aliases and external writers.
+* Missing maximum-lock-duration product checks.
+* Missing assertions for legal lock start/end and ownership retention.
+* Missing coverage for lock length, target, wait count, competing requests, and error.
+
+Visuals & Animations Required:
+
+* Add an actual AHB waveform with `HLOCKx`, `HMASTLOCK`, grant, owner, `HTRANS`, `HREADY`, and read/write phases.
+* Show DMA requesting throughout the lock.
+* Add error and reset variants.
+* Add a matrix topology clarifying the resource scope of the lock.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Describe ownership retention rather than claiming raw grants can never change.
+* Clarify that lock scope is a system-integration property.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add lock-boundary and ownership-retention properties.
+* Cover contention, waits, errors, and reset under lock.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Replace the purely conceptual timeline with a cycle-accurate lock waveform.
+* Add lock-scope visualization in a multilayer matrix.
+
+---
+
+### [26_exclusive_accesses — Exclusive Accesses (AHB5)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* Exclusive transfers are an optional AHB5 capability, not an unconditional feature.
+* The lesson omits the essential `HMASTER` identity used by the exclusive monitor.
+* It explains `HEXOKAY` only as the exclusive-write verdict. The response to the exclusive read must also be taught so the manager knows whether a monitor was successfully established or the target supports the operation.
+* A matching exclusive sequence includes more than an address:
+
+  * Manager identity.
+  * Address or monitored granule.
+  * Transfer size.
+  * Relevant protection/security attributes.
+  * Other specification-defined matching attributes.
+* “If no other master wrote to that address” is too narrow. Interference is defined against the monitored location/granule and system monitor behavior, not merely textual equality of one byte address.
+* `HEXOKAY=0` with `HRESP=OKAY` is correctly separated from a bus error.
+* The monitor must not update memory on a failed exclusive write.
+* The timeline includes unique identity in an annotation, but the lesson does not expose `HMASTER` as a signal or let the learner vary it.
+
+Completeness Audit:
+
+* Missing exclusive-read `HEXOKAY`.
+* Missing unsupported-exclusive target.
+* Missing mismatched `HMASTER`.
+* Missing mismatched address, size, protection, and security attributes.
+* Missing monitor replacement and clearing rules.
+* Missing reset clearing monitor state.
+* Missing normal writes that invalidate a monitor.
+* Missing error response during exclusive read/write.
+* Missing legal transfer-shape restrictions.
+* Missing assertions and coverage gated by the `Exclusive_Transfers` property.
+
+Visuals & Animations Required:
+
+* Add signal rows for `HEXCL`, `HMASTER`, `HEXOKAY`, `HRESP`, and `HREADY`.
+* Add scenarios:
+
+  * Successful exclusive read and write.
+  * Exclusive read unsupported.
+  * Identity mismatch.
+  * Attribute mismatch.
+  * Interfering write.
+  * Reset-cleared monitor.
+  * `HRESP=ERROR`.
+* Display monitor-table state per manager.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Add `HMASTER` and exclusive-read response semantics.
+* Replace exact-address-only interference wording with monitor/granule semantics.
+* State the exact legal transfer restrictions for exclusives.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add identity/attribute matching assertions.
+* Assert `HEXOKAY` timing and exclusion from `HRESP=ERROR`.
+* Cover every success, failure, unsupported, and reset path.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an editable exclusive-monitor table.
+* Add selectable HMASTER, attributes, interference, and reset events.
+
+---
+
+### [27_secure_vs_non_secure — Secure vs Non-Secure (AHB5)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* `HNONSEC=0` for Secure and `HNONSEC=1` for Non-secure is correct.
+* The signal is optional and present only when the interface declares the relevant capability; this is correctly noted.
+* AHB5 defines the security attribute but does not define one mandatory system security policy or enforcement location.
+* The lesson first states that policy can be enforced in a subordinate, interconnect, or controller, then says the subordinate “must” return ERROR. This is contradictory.
+* A configured system must prevent an unauthorized access, but the selected enforcement point might block the request before it reaches the target.
+* Reads and other side-effecting accesses require the same scrutiny as writes.
+* Security verification must prove that denied reads do not leak secure data and denied writes do not update secure state.
+* The current topology is valid as one configured policy example, not as the only required AHB5 behavior.
+
+Completeness Audit:
+
+* Missing secure and non-secure reads.
+* Missing security-aware to security-unaware adapters.
+* Missing reset defaults.
+* Missing attribute spoofing or corruption in the interconnect.
+* Missing alias-address protection.
+* Missing DMA security attribution.
+* Missing response and data-leak checking.
+* Missing assertions that `HNONSEC` remains associated with the accepted address phase.
+* Missing coverage of source domain × target policy × direction × response.
+
+Visuals & Animations Required:
+
+* Add policy-location selectors:
+
+  * Source firewall.
+  * Interconnect protection controller.
+  * Target enforcement.
+* Add allowed and denied reads and writes.
+* Show read-data suppression and no-write-side-effect behavior.
+* Add adapters between interfaces with different Secure_Transfers settings.
+* Add reset-default and misrouted-HNONSEC fault modes.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Replace the unconditional subordinate-ERROR rule with system-policy wording.
+* Cover unauthorized reads as well as writes.
+* Label the visual as one configured enforcement example.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add attribute-alignment, no-data-leak, and no-side-effect assertions.
+* Cover source, target, direction, policy, adapter, and response.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an interactive security-policy and adapter topology.
+* Add allowed/denied read and write waveforms.
+
+---
+
+### [28_ahb5_vs_ahb2 — AHB5 vs AHB2: What Changed?]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The high-level topology and response comparison is useful.
+* AHB-Lite and AHB5 use one manager per interface, while original AHB supports shared-bus arbitration.
+* `HMASTLOCK` correctly remains defined in AHB-Lite/AHB5.
+* AHB5 security and exclusive capabilities are correctly identified as optional.
+* The lesson conflates RETRY and SPLIT:
+
+  * Both require the original transfer to be attempted again.
+  * SPLIT removes the manager from arbitration eligibility until the subordinate later signals readiness using `HSPLITx`.
+  * RETRY does not use `HSPLITx` to announce later readiness.
+* Therefore, “SPLIT or RETRY tells the arbiter to ban the master and later tell it when ready” is incorrect.
+* The base protocol width and any system extension of `HMASTER` must be documented precisely. “Implementation-defined-width identity” is too loose for a signal reference.
+* The 1KB restriction should be stated for every burst, not only incrementing bursts. The lesson table is broader than its linked explorer text.
+
+Completeness Audit:
+
+* Missing separate RETRY and SPLIT timelines.
+* Missing `HSPLITx`.
+* Missing original-AHB locked-request behavior.
+* Missing AHB5 option interoperability.
+* Missing a precise HMASTER source/width table.
+* Missing revision-selectable protocol checking and coverage.
+* Missing unsupported optional-capability behavior.
+
+Visuals & Animations Required:
+
+* Add side-by-side original AHB RETRY and SPLIT sequences.
+* Show `HSPLITx` only in the SPLIT path.
+* Add a revision/property selector that changes legal signals, responses, and checker rules.
+* Add explicit 1KB behavior to every revision.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Separate RETRY from SPLIT and teach `HSPLITx`.
+* Correct HMASTER width/source wording.
+* Apply the 1KB statement to all bursts.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add revision-gated response and identity checkers.
+* Cover every optional AHB5 property and unsupported-capability path.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build RETRY/SPLIT comparison timelines.
+* Add an interface-revision and property configuration panel.
+
+---
+
+## DV Strategy, Assertions, Coverage, Formal, and Debug
+
+### [29_ahb_simulation_strategy — AHB Simulation Strategy]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The BFM-versus-VIP distinction is appropriately risk-based.
+* A subordinate VIP should vary legal waits and generate valid two-cycle errors.
+* A manager VIP should generate legal aligned traffic by default. Misalignment and other violations should be separated into intentional negative testing.
+* Monitoring every interconnect port is useful, but end-to-end checking must preserve phase ownership and route identity.
+* The visual correctly separates stimulus, monitoring, assertions, scoreboard, and coverage.
+* Sending sequence intent directly to a scoreboard can be useful for manager verification, but other DUT partitions require an independent predictor based on monitored accepted requests. One architecture does not fit every DUT role.
+
+Completeness Audit:
+
+* Missing configuration objects for revision and optional capabilities.
+* Missing active/passive agent selection.
+* Missing negative-test mode.
+* Missing reset and clock agents.
+* Missing manager, subordinate, bridge, and matrix-specific scoreboards.
+* Missing error, lock, exclusive, security, and arbitration stimulus.
+* Missing register-model and memory-model integration.
+* Missing test-plan traceability.
+* Missing protocol-checker placement and error-severity policy.
+
+Visuals & Animations Required:
+
+* Add selectable DUT roles:
+
+  * Manager.
+  * Subordinate.
+  * Bridge.
+  * Interconnect.
+* Reconfigure expected-data paths for each role.
+* Show legal stimulus versus deliberate violation injection as separate paths.
+* Add configuration and test-plan traceability nodes.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Separate legal constrained stimulus from negative protocol-violation testing.
+* Avoid presenting one scoreboard architecture as universal.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add revision-aware agent configuration and independent predictors.
+* Add reset, error, arbitration, exclusive, and security test families.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Make the DV topology reconfigure by DUT type.
+* Add traceability from requirement to stimulus, checker, and coverage.
+
+---
+
+### [30_ahb_assertions — AHB Assertions and Checkers]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* Assertions are not always proof of an RTL defect. A firing property can indicate:
+
+  * DUT failure.
+  * Illegal testbench stimulus.
+  * Incorrect assumption.
+  * Checker defect.
+  * Unsupported configuration.
+  * Intentional negative test.
+* Therefore, “the designer must fix the RTL” is too absolute.
+* The wait-state property correctly acknowledges IDLE, BUSY, and first-ERROR-cycle exceptions.
+* Address progression must use accepted beats and not advance during waits or BUSY.
+* The wrap description should say that wrapping occurs when the next increment would reach the upper wrap limit, not when the current address “reaches the boundary.”
+* The two-cycle ERROR property is conceptually sound when triggered only from ERROR1.
+* The HWDATA rule must use saved data-phase direction, not current visible `HWRITE`.
+* Exclusive checking needs stronger identity and transfer-context tracking.
+
+Completeness Audit:
+
+* No executable SVA examples are provided.
+* Missing `disable iff (!HRESETn)`.
+* Missing X/unknown checks.
+* Missing alignment and 1KB assertions.
+* Missing fixed-burst beat-count assertion.
+* Missing HSEL one-hot/default-route checks.
+* Missing response-mux ownership checks.
+* Missing lock and arbiter properties.
+* Missing bridge conservation properties.
+* Missing secure/exclusive property gating.
+* Missing assertion severity and negative-test handling.
+
+Visuals & Animations Required:
+
+* Show actual SVA templates with:
+
+  * Trigger.
+  * State captured.
+  * Obligation.
+  * Legal exceptions.
+* Add legal and illegal traces for every property.
+* Add an “assert/assume/cover” selector.
+* Show false-positive examples caused by naive one-line assertions.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Remove the claim that every assertion failure is an RTL defect.
+* Correct wrap-boundary and data-phase-direction wording.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add syntactically valid stateful SVA templates.
+* Add reset, X, burst, decode, lock, bridge, security, and exclusive properties.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an assertion playground comparing naive and correct properties.
+* Display antecedent, captured context, exception, and first failure edge.
+
+---
+
+### [31_ahb_functional_coverage — AHB Functional Coverage]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* Functional coverage does not prove a feature works; it proves a sampled scenario occurred. The lesson later acknowledges this appropriately.
+* Not every `HBURST × HSIZE × HWRITE` combination is legal or supported by every interface or target.
+* Coverage must be generated from declared interface width, supported features, target restrictions, and revision.
+* The coverage grid marks SPLIT/RETRY illegal, which is correct for AHB-Lite/AHB5 but incorrect for original AHB. It needs a revision selector.
+* A burst-level ERROR bin without error beat index and cancel/continue behavior is too coarse.
+* The associated exercise contains a direct contradiction: it asks for a “legal, unmapped address” that returns `OKAY`. An unmapped valid transfer normally routes to the default subordinate and returns `ERROR`; a successful WRAP16 must use a mapped legal region.
+
+Completeness Audit:
+
+* Missing accepted-beat-only sampling.
+* Missing HSIZE versus bus width.
+* Missing alignment and 1KB proximity.
+* Missing BUSY position.
+* Missing error beat index.
+* Missing cancel/continue policy.
+* Missing target, security, exclusive, lock, arbitration, and bridge dimensions.
+* Missing illegal and ignore-bin generation from configuration.
+* Missing coverage-to-test traceability.
+* Missing assertion and scoreboard pass correlation.
+
+Visuals & Animations Required:
+
+* Add a revision and capability selector.
+* Expand the grid to include error beat index and wait-state bucket.
+* Add coverage slices for:
+
+  * Burst × size.
+  * Burst × wait position.
+  * Error beat × policy.
+  * Security × target.
+  * Exclusive result × interference.
+* Link a zero-hit bin to a generated test skeleton.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Fix the exercise to use a mapped legal address for WRAP16+OKAY.
+* Make SPLIT/RETRY legality revision-dependent.
+* Replace “every combination” with “every supported legal combination.”
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add configuration-generated bins and accepted-phase sampling.
+* Add error-position, policy, boundary, security, and exclusive crosses.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build a multidimensional, revision-aware coverage dashboard.
+* Add bin-to-test traceability.
+
+---
+
+### [32_ahb_formal_properties — AHB Formal Properties]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* Formal verification analyzes symbolic RTL state and transitions; it is not accurately summarized as merely analyzing “logic gates statically.”
+* The lesson correctly warns about assumptions and over-constraint.
+* The proposed data-stability property is unsafe if it uses current `HWRITE`. During a stall, current `HWRITE` can describe the pending address phase while `HWDATA` belongs to the earlier data phase.
+* The exclusive property “HEXOKAY requires a preceding HEXCL” is far too weak. It can miss identity, direction, attribute, and monitor-state errors.
+* The displayed bounded-liveness SVA is fundamentally incorrect:
+
+  `HTRANS == NONSEQ |-> ##[0:4] HREADY`
+
+  Problems:
+
+  * It can pass immediately because `HREADY` is already high in the NONSEQ address-acceptance cycle for the previous data phase.
+  * It does not prove completion of the newly accepted transfer.
+  * It triggers on a visible NONSEQ without requiring acceptance.
+  * It can trigger repeatedly when NONSEQ is held.
+  * It lacks reset handling.
+* The JavaScript evaluator implements the same incorrect same-cycle search.
+* The exercise then labels failure of this configured latency contract a “Protocol Violation,” contradicting the lesson’s statement that the bound is not an AHB requirement.
+
+Completeness Audit:
+
+* Missing accept-to-data-completion token tracking.
+* Missing non-overlapped implication from accepted address to later data phase.
+* Missing assume-guarantee decomposition.
+* Missing reset assumptions.
+* Missing vacuity checks.
+* Missing cover properties proving scenarios are reachable.
+* Missing bounded versus unbounded proof discussion.
+* Missing arbitration, bridge, lock, exclusive, and security formal examples.
+* Missing proof-depth, abstraction, and state-space guidance.
+
+Visuals & Animations Required:
+
+* Replace the current property with a transaction-aware model such as:
+
+  * Define accepted valid address as `HREADY && HTRANS[1]`.
+  * Begin the completion window in the following cycle.
+  * Observe completion of that transfer’s data phase.
+* Show the accepted transfer as a token moving into the data phase.
+* Add vacuous-pass and repeated-trigger demonstrations.
+* Rename UI failure states:
+
+  * Protocol violation.
+  * Configured contract violation.
+  * Assumption violation.
+  * Inconclusive/unchecked.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Replace the bounded-liveness SVA and evaluator.
+* Fix the exercise wording from “Protocol Violation” to “configured service-contract violation.”
+* Rewrite HWDATA and exclusive properties using captured phase context.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add reset, vacuity, assume-guarantee, and cover-property examples.
+* Add formal properties for decode, arbitration, bridge conservation, and exclusives.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build a phase-token formal playground.
+* Show same-cycle false pass, correct non-overlapped check, and assumption failures.
+
+---
+
+### [33_common_rtl_bugs — Common RTL Bugs]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The write-data early-advance bug is realistic and accurately illustrated.
+* The probable root cause should not use only `HTRANS != IDLE`; BUSY is also not a valid transfer, and address/data advancement must follow phase-specific acceptance.
+* The decoder example correctly distinguishes a raw combinational transient from a transfer accepted at the legal edge.
+* A raw HSEL glitch is not itself an AHB violation. The bug is asynchronous consumption or unsafe clock gating.
+* Combinational `HREADY` behavior can be legal locally, but an assembled feedback loop is not.
+* Fixed-priority starvation is not automatically a protocol bug. It is a product/QoS bug only when fairness or bounded service is required.
+* The rule explorer claims to map specification “shall/must” rules, but the visual asset contains no visible source issue, section, or traceable rule metadata.
+
+Completeness Audit:
+
+* Missing wrong response-mux owner.
+* Missing invalid HTRANS progression.
+* Missing wrong wrap or 1KB behavior.
+* Missing HSEL overlap and default-subordinate failures.
+* Missing reset-under-stall.
+* Missing malformed two-cycle ERROR.
+* Missing lock-release and exclusive-monitor bugs.
+* Missing HNONSEC corruption and data leakage.
+* Missing source traceability in the rule explorer.
+
+Visuals & Animations Required:
+
+* Add a bug gallery with symptom, first bad edge, root cause, property, and fix.
+* Add response-mux, wrap, ERROR, exclusive, and security failures.
+* Add source issue/section metadata to each spec-rule card.
+* Let learners toggle the faulty RTL behavior.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Qualify starvation as a product-contract failure.
+* Remove the simplistic `HTRANS != IDLE` advancement explanation.
+* Add traceable specification references to the rule explorer.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Map every bug to an assertion and scoreboard symptom.
+* Add reset, response routing, exclusive, and security bug classes.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Expand the interactive bug gallery.
+* Add faulty/correct RTL behavior toggles and first-failure markers.
+
+---
+
+### [34_debug_case_studies — Debug Case Studies]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The wait-state data-owner diagnosis is correct.
+* The implementation fix should be expressed behaviorally: do not advance the write-data owner until the current data phase completes. Mandating one particular register-enable implementation is unnecessarily prescriptive.
+* The decoder-glitch diagnosis is correct.
+* A subordinate does not necessarily need to register HSEL itself; it must ensure protocol-facing state and side effects occur only from the value accepted at the correct edge.
+* Both waveforms represent plausible real-world integration failures.
+
+Completeness Audit:
+
+* Only two debug cases are provided.
+* Missing:
+
+  * Wrong response owner.
+  * Two-cycle ERROR mishandling.
+  * Burst-count failure.
+  * 1KB crossing.
+  * Lock handover.
+  * Exclusive identity mismatch.
+  * Security data leak.
+  * Bridge request duplication.
+* Missing assertion logs, monitor reconstruction, and scoreboard state.
+* Missing “first failure versus downstream symptoms” methodology.
+* Missing learner exercises.
+
+Visuals & Animations Required:
+
+* Add a debug panel with:
+
+  * First failing assertion.
+  * Scoreboard mismatch.
+  * Expected phase owner.
+  * Actual phase owner.
+  * Root-cause signal.
+* Add at least four more case studies.
+* Hide the answer until the learner selects the first violating edge.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Phrase fixes behaviorally rather than mandating one RTL implementation.
+* Clarify that registering HSEL is optional; accepted-edge behavior is mandatory.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add assertion and scoreboard evidence to every case.
+* Add response, error, bridge, exclusive, and security cases.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an interactive first-bad-edge debugging exercise.
+* Add expected/actual phase-owner overlays.
+
+---
+
+### [35_ahb_expert_checklist — AHB Expert Checklist]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The production checklist is substantially better than the lesson’s brief prose. It includes reset, waits, bursts, errors, data integrity, options, coverage, progress, and debug evidence.
+* Checking boxes does not by itself prove robustness. Every box needs configuration-specific evidence and review.
+* The repository also contains a stale secondary checklist with contradictory rules:
+
+  * It says `BUSY → IDLE` is always illegal.
+  * It says all masters must abort after ERROR.
+  * It treats arbitration fairness as unconditional.
+  * It implies every secure target must itself reject with ERROR.
+* Those statements conflict with the corrected production checklist and other lessons. Even if the stale asset is currently unlinked, it is a content-registry and maintenance risk.
+
+Completeness Audit:
+
+* Missing links from each checklist item to concrete artifacts.
+* Missing ownership and signoff status.
+* Missing revision/property configuration snapshot.
+* Missing assertion vacuity review.
+* Missing code/functional/formal coverage correlation.
+* Missing lint, CDC/reset, timing, and combinational-loop evidence.
+* Missing waiver justification and approver.
+* Missing stale-content detection.
+
+Visuals & Animations Required:
+
+* Turn every checklist item into an evidence card with:
+
+  * Artifact link.
+  * Status.
+  * Owner.
+  * Revision.
+  * Waiver.
+  * Last regression.
+* Add consistency validation that flags contradictory checklist assets.
+* Add role filters for manager, subordinate, bridge, and interconnect signoff.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Remove or quarantine the stale contradictory checklist.
+* Replace “all boxes means robust” with evidence-based signoff wording.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Require assertion, scoreboard, coverage, formal, and analysis evidence per item.
+* Add configuration and waiver review fields.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Convert the checklist into an evidence-linked signoff dashboard.
+* Add automatic content-consistency warnings.
+
+---
+
+### [36_ahb_signal_reference — AHB Signal Quick Reference]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The reference correctly separates:
+
+  * Core AHB signals.
+  * Original shared-bus arbitration signals.
+  * Optional AHB5 capabilities.
+* `HREADY` and `HREADYOUT` are correctly separated.
+* `HRESP` is meaningful during both ERROR cycles, including ERROR1 when `HREADY=0`. Its sampling text should not imply that response matters only at completion.
+* `HSELx` is commonly combinationally decoded, but that is an implementation pattern rather than the only legal structure.
+* `HPROT` needs exact bit values and revision-aware meaning, not only semantic categories.
+* The `HMASTER` entry must state the exact externally implemented signal width and source for the selected specification issue. “Implementation-defined-width identity” is too vague without explaining the base protocol field and any interconnect extension.
+* Exclusive restrictions are summarized too compactly. The exact permitted `HTRANS`, `HBURST`, alignment, and response rules should be visible.
+
+Completeness Audit:
+
+* Missing exact encodings for HSIZE, HBURST, HTRANS, and HPROT.
+* Missing revision/property filter.
+* Missing phase-owner examples.
+* Missing error-cycle semantics in the HRESP card.
+* Missing unsupported-property adaptation behavior.
+* Missing direct links to assertions and waveforms.
+* Missing source specification issue/section.
+
+Visuals & Animations Required:
+
+* Add filters by:
+
+  * Revision.
+  * Source.
+  * Direction.
+  * Phase.
+  * Optional property.
+* Add exact encoding tables.
+* Add “show in waveform” links.
+* Add issue/section provenance to every signal card.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Correct HRESP timing wording.
+* Replace vague HMASTER width language with exact configured-interface details.
+* State exact exclusive transfer restrictions.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Link each signal to relevant assertions, coverage, and common bugs.
+* Add property-gated signal validation.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add revision and phase filters.
+* Add encoding tables and waveform deep links.
+
+---
+
+### [37_ahb_waveform_review — AHB Waveform Review Pack]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The three waveforms themselves correctly demonstrate:
+
+  * Two-cycle ERROR ownership.
+  * Illegal pending-address mutation.
+  * HREADY’s pipeline domino effect.
+* The error waveform and lesson correctly state that cancellation is optional.
+* The associated exercise contradicts them. It says the master’s “correct response” is to drive `IDLE` and that the master “must cleanly abort.”
+* A master may cancel or continue according to the permitted protocol behavior and its documented implementation policy.
+* Therefore, the exercise currently teaches an incorrect mandatory-abort rule.
+
+Completeness Audit:
+
+* Missing arbitration-handover review.
+* Missing default-subordinate review.
+* Missing bridge review.
+* Missing lock/exclusive review.
+* Missing HNONSEC review.
+* Missing a legal BUSY sequence.
+* Missing answer scoring that recognizes multiple legal post-ERROR policies.
+* Missing requirement to identify phase owner before diagnosing signal behavior.
+
+Visuals & Animations Required:
+
+* Add multiple-answer or implementation-policy-aware ERROR questions.
+* Add “select first violating edge” interaction.
+* Add arbiter, bridge, exclusive, and security waveform reviews.
+* Show expected checker output after the learner answers.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Rewrite `ex-ahb-review-error` so abort is not mandatory.
+* Make the question explicitly policy-aware or accept both legal behaviors.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Require phase-owner reasoning in every answer.
+* Add checker-selection and first-failure questions.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add interactive edge selection and multi-policy scoring.
+* Expand the review pack to advanced system features.
+
+---
+
+### [38_ahb_interview_recap — AHB Interview & Work Recap]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The HREADY answer is correctly qualified to a pending valid address phase and notes protocol exceptions.
+* The two-cycle ERROR explanation is correct, but the concise answer should explicitly say that canceling the pending transfer is permitted rather than mandatory.
+* The 1KB statement is correct in the lesson: no AHB burst can cross the boundary.
+* The linked recap visual says “no incrementing burst crosses 1KB,” which is narrower and should be made consistent with the lesson.
+* The daily-work guidance on HREADYOUT loops and configuration-aware verification is strong.
+* The recap underrepresents the exact `HMASTER` and exclusive-access mechanics expected by this batch’s evaluation scope.
+
+Completeness Audit:
+
+* Missing interview anchors for:
+
+  * AHB versus AHB-Lite.
+  * RETRY versus SPLIT.
+  * Lock versus exclusive.
+  * `HMASTER/HEXCL/HEXOKAY`.
+  * `HNONSEC`.
+  * AHB-to-APB bridges.
+  * Formal vacuity and false properties.
+  * Coverage configuration.
+* Missing design-versus-DV answer structure.
+* Missing worked address and wrap calculations.
+* Missing system-level topology questions.
+
+Visuals & Animations Required:
+
+* Expand the recall map with advanced protocol and DV topics.
+* Add timed mock-interview questions.
+* Add one waveform, one address calculation, and one architecture question per topic.
+* Show beginner answer versus senior answer versus principal-level answer.
+
+Implementation Action Items:
+
+**P0 (Protocol Corrections):**
+
+* Make the 1KB wording consistent across prose and visual.
+* Explicitly describe ERROR cancellation as optional.
+* Add precise exclusive-identity wording.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add formal-property, coverage, configuration, and system-level interview questions.
+* Require evidence-based answers, not protocol recitation only.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build a mock-interview mode with waveform and topology challenges.
+* Add answer-depth comparison and scoring.
+
+---
+
+# Final AHB Curriculum Findings
+
+## P0 — Immediate protocol and content corrections
+
+1. Replace the invalid bounded-liveness SVA, evaluator, and exercise wording.
+2. Fix the WRAP16 coverage exercise’s “unmapped address with OKAY” contradiction.
+3. Fix the waveform-review exercise that mandates abort after ERROR.
+4. Separate RETRY and SPLIT behavior.
+5. Add `HMASTER` and exclusive-read response semantics to the exclusive lesson.
+6. Remove unconditional subordinate security-policy wording.
+7. Correct AHB-to-APB signal directions and read/write timing.
+8. Remove or quarantine the stale contradictory checklist.
+9. Correct HMASTER width/source and HRESP timing wording in the signal reference.
+
+## P1 — DV and assertion upgrades
+
+1. Introduce stateful, phase-aware SVA rather than direct current-signal comparisons.
+2. Build configuration-gated checker and coverage libraries.
+3. Add response-mux, bridge-conservation, lock, exclusive, security, and arbitration properties.
+4. Sample coverage only from accepted transfers and completed data phases.
+5. Add assumption, vacuity, reset, and formal-abstraction review.
+6. Require independent scoreboards and end-to-end route/data checking.
+
+## P2 — Visual and interactive upgrades
+
+1. Add actual cycle-accurate arbitration, bridge, lock, exclusive, and security waveforms.
+2. Add editable matrix, security-policy, exclusive-monitor, and address-map diagrams.
+3. Add revision and capability selectors throughout the advanced curriculum.
+4. Convert coverage and signoff components into traceable evidence dashboards.
+5. Add first-failing-edge and mock-interview interactions.

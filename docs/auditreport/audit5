@@ -1,0 +1,929 @@
+# Task 5 — AXI Architecture, Five-Channel Model, and Handshake Mechanics Audit
+
+## [01_what_is_axi — What is AXI?]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* The lesson correctly identifies AW, W, B, AR, and R as separate unidirectional information channels, but calling them **“five completely independent channels”** is too strong. Each channel has an independent handshake, but AXI defines explicit cross-channel dependencies:
+
+  * `RVALID` requires a previously accepted AR request.
+  * AXI4 `BVALID` requires both the AW handshake and the accepted final W beat.
+  * AXI4 write-data bursts follow write-address order.
+* Multiple outstanding transactions and different-ID response reordering are protocol capabilities, not guaranteed implementation behavior. Their actual use depends on:
+
+  * Interface ID width.
+  * Manager limits.
+  * Subordinate limits.
+  * Interconnect buffering.
+  * Target concurrency.
+* Replace “out-of-order execution” with **out-of-order response completion where permitted**. AXI does not define a target’s internal execution architecture.
+* The AHB comparison again treats AHB only as one original shared bus. AHB-Lite and multilayer AHB systems can have independent routes, although each individual AHB interface still uses the coupled address/data pipeline.
+* “AHB forces transactions to complete in exact issue order” is accurate for a single AHB interface path, but should not be generalized to every independent path in an AHB matrix.
+* AXI supports unaligned starting addresses for permitted burst types, but this does not mean arbitrary lane usage is legal. The transaction must still obey `AxSIZE`, strobe, wrap-alignment, and 4KB-boundary rules.
+
+### Completeness Audit
+
+* Missing the distinction between:
+
+  * Independent channel handshake.
+  * Cross-channel transaction dependency.
+  * Ordering dependency.
+  * Implementation resource dependency.
+* Missing the no-combinational-path requirement between interface inputs and outputs.
+* Missing the critical rule that a source must not wait for READY before asserting VALID.
+* Missing configuration awareness for outstanding depth and ID width.
+* Missing direct comparison of AHB phase coupling versus AXI channel decoupling.
+* Missing DV scenarios:
+
+  * AW accepted before W.
+  * W accepted before AW.
+  * AW and W accepted simultaneously.
+  * Different channels stalled independently.
+  * Different-ID responses reordered.
+  * Same-ID responses preserved in order.
+  * Target supports only one outstanding request despite the AXI interface having IDs.
+* Missing coverage for channel-order permutations and simultaneous channel activity.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/tp-axi-crossbar.json` with:
+
+  * Same-target contention.
+  * Different-target concurrency.
+  * Per-channel arbitration.
+  * Configurable ID remapping.
+  * Configurable outstanding limits.
+* Add an AHB-versus-AXI comparison showing:
+
+  * AHB address/data phase coupling through `HREADY`.
+  * AXI AW/W/B and AR/R channel independence.
+  * AXI’s mandatory dependency arrows.
+* Add an “interface capability versus implementation limit” panel.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace “completely independent” with “independently handshaken, subject to explicit cross-channel and ordering dependencies.”
+* Replace unconditional outstanding/reordering language with capability- and configuration-aware wording.
+* Qualify the AHB comparison to a single AHB interface path.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add channel-order permutation coverage.
+* Add outstanding-limit, same-ID ordering, and different-ID reordering checks.
+* Add a configured transaction-completion watchdog, explicitly labeled as a product requirement rather than an AXI protocol limit.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an AHB-versus-AXI architecture animation.
+* Add target-contention, outstanding-limit, and ID-routing controls to the crossbar visual.
+
+---
+
+## [02_axi_variants — AXI Variants and Evolution]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AXI3’s 16-beat maximum and AXI4’s 256-beat maximum for `INCR` are correct.
+* AXI4 `FIXED` bursts can contain up to 16 beats, but WRAP lengths are not merely “up to 16.” Legal WRAP lengths are specifically 2, 4, 8, or 16 beats.
+* AXI4 removes WID and write-data interleaving. Write-data bursts must follow write-address transaction order.
+* AXI4-Lite uses the same five channel categories, but has no burst-length, size, burst-type, or ID signals.
+* The statement that AXI4-Lite has one “full-bus-width beat” requires explanation:
+
+  * Its transfer size is fixed by the interface width.
+  * `WSTRB` can still select individual byte lanes for writes.
+* AXI4-Lite does not mean one-outstanding-only. An implementation can support multiple outstanding requests, but without IDs responses must remain in order.
+* AXI4 and AXI3 **permit** out-of-order completion across appropriate ID streams; they do not require targets to reorder.
+* “A memory controller needs 256-beat bursts and out-of-order execution” is too prescriptive. An AXI4 memory controller can support a smaller configured outstanding depth or shorter accepted burst lengths.
+* AXI4-Stream is a separate streaming protocol family and should not be presented as merely a reduced memory-mapped AXI channel.
+
+### Completeness Audit
+
+* Missing exact revision-dependent differences for:
+
+  * WID.
+  * Locked accesses.
+  * QoS.
+  * REGION.
+  * Maximum burst lengths.
+  * IDs.
+  * Exclusive accesses.
+* Missing explanation of AXI4-Lite partial writes through WSTRB.
+* Missing legal WRAP lengths.
+* Missing implementation configuration versus protocol maximum.
+* Missing DV configuration guidance to prevent applying AXI4 assertions to AXI3 or AXI4-Lite.
+* Missing tests for adapters:
+
+  * AXI3 to AXI4.
+  * AXI4 to AXI4-Lite.
+  * Memory-mapped AXI to AXI-Stream packet engines.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/signals/axi_variants.json` with exact signal-presence tables.
+* Add a revision selector that changes:
+
+  * Legal burst lengths.
+  * WID presence.
+  * ID behavior.
+  * Locked/exclusive behavior.
+  * QoS and REGION availability.
+* Add AXI4-Lite byte-strobe examples.
+* Add an adapter topology showing where outstanding depth, burst conversion, and ID conversion are required.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* State that WRAP burst lengths are exactly 2, 4, 8, or 16.
+* Replace mandatory out-of-order and 256-beat language with “protocol permits” and “implementation supports.”
+* Explain AXI4-Lite’s fixed transfer width together with WSTRB byte selection.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Gate assertions and coverage by the selected AXI variant.
+* Add adapter tests for ID conversion, burst splitting, and response ordering.
+* Add configuration-generated illegal bins.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Expand the variant explorer into a revision-aware signal matrix.
+* Add AXI4-Lite partial-write and multi-outstanding demonstrations.
+
+---
+
+## [03_axi_terminology — AXI Terminology Primer]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The read transaction lifetime is correctly described as accepted AR through the accepted final R beat.
+* The write definition must accommodate W data appearing before AW. The transaction uses AW, W, and B, but its observable channel activity does not necessarily begin with the AW handshake.
+* “Outstanding write” should be defined using accepted address bookkeeping, while separately acknowledging that W beats can already have transferred before AW acceptance.
+* The 64-byte example incorrectly derives beat count only from data-bus width. Beat count is determined by the transfer size:
+
+  `beats = total_bytes / (1 << AxSIZE)`
+
+  subject to alignment and lane rules.
+* A channel handshake is a transfer of one channel payload. An AW handshake and a B handshake are channel transfers, but they are not **data beats**.
+* IDs identify ordering and correlation streams. They are not necessarily globally unique transaction numbers.
+* The terminology map says a write remains outstanding after its address is accepted until B. That is useful for credit tracking, but should show any W beats that were accepted before AW as pre-address buffered write data.
+
+### Completeness Audit
+
+* Missing definitions for:
+
+  * Source.
+  * Destination.
+  * Offered payload.
+  * Accepted payload.
+  * Backpressure.
+  * Ordering domain.
+  * Transaction correlation.
+  * Interleaving versus reordering.
+  * Outstanding limit.
+* Missing distinction between channel transfer and transaction completion.
+* Missing write-data-before-address terminology.
+* Missing AXI4-Lite behavior when IDs are absent.
+* Missing transaction-monitor guidance for independently reconstructing AW, W, and B activity.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/topologies/axi_terminology_map.json` to show:
+
+  * W beat accepted before AW.
+  * Address acceptance creating outstanding state.
+  * Buffered pre-address W state.
+  * Final B or R handshake retiring state.
+* Add an interactive beat calculator using:
+
+  * Total bytes.
+  * Data-bus width.
+  * `AxSIZE`.
+  * Starting address.
+* Add ID ordering-domain examples rather than representing IDs as unique transaction numbers.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Rewrite the beat-count example using `AxSIZE`.
+* Clarify the write lifetime when W precedes AW.
+* Define IDs as ordering/correlation identifiers.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add monitor reconstruction pseudocode for AW/W/B and AR/R.
+* Add transaction-state coverage for pre-address W data, outstanding, and completed states.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add pre-address W buffering to the terminology map.
+* Build the AxSIZE-based beat calculator.
+
+---
+
+## [04_five_channel_model — The Five-Channel Mental Model]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* The AHB explanation is inaccurate:
+
+  * AHB is pipelined rather than “strictly sequential.”
+  * A manager does not always “put data on the wires”; read data is returned by the subordinate.
+  * The next address phase overlaps the current data phase.
+* “Completely abandon the AHB shared-bus mental model” is unnecessarily absolute. The useful transition is from **coupled address/data phases** to **separately handshaken channels**.
+* AXI channels are unidirectional for their information payload, but each channel includes READY flowing in the reverse direction. Calling each a simple one-direction pipe without explaining READY direction can mislead.
+* “Operate asynchronously relative to each other” is technically incorrect. All five memory-mapped AXI channels are synchronous to `ACLK`; their handshakes progress independently.
+* All channels can be active in the same cycle, but this is a possible concurrency state rather than an implementation guarantee.
+* The write-response visual correctly waits for both AW acceptance and the final accepted W beat.
+* The read visual correctly waits for AR acceptance before producing R data.
+* The existing topology clearly identifies source, destination, and READY ownership, but must also display mandatory cross-channel dependencies.
+
+### Completeness Audit
+
+* Missing explicit dependency arrows:
+
+  * AR handshake → first RVALID.
+  * AW handshake plus final accepted W beat → BVALID.
+  * AXI4 AW order → W burst association.
+* Missing the source-must-not-wait-for-READY rule on every channel.
+* Missing B and R backpressure implications.
+* Missing simultaneous read and write progress with independent stalls.
+* Missing warning that internal resources can still couple channels even though the protocol handshakes are independent.
+* Missing DV coverage of all active-channel combinations.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/topologies/axi_five_channels.json` with:
+
+  * VALID and payload direction.
+  * READY direction.
+  * Mandatory dependency arrows.
+  * Optional implementation-resource dependency arrows in a different style.
+* Add a scenario in which:
+
+  * AW is stalled.
+  * W progresses.
+  * R is backpressured.
+  * AR accepts a new request.
+  * An older B response completes.
+* Add an invalid-dependency mode.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct the AHB pipeline explanation.
+* Replace “asynchronously” with “independently but synchronously handshaken.”
+* Replace “completely independent” with dependency-aware wording.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add simultaneous-channel activity coverage.
+* Add explicit transaction-dependency checkers.
+* Add configured-liveness checks for channel dependency loops.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add dependency arrows and resource-coupling overlays.
+* Build a five-channel simultaneous-stall interaction.
+
+---
+
+## [05_write_address_channel — The Write Address Channel]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AW acceptance occurs on a rising `ACLK` edge with both `AWVALID` and `AWREADY` high.
+* The source must hold `AWVALID` and every AW payload/attribute stable until the accepting edge.
+* The lesson says `AWVALID` cannot fall “until AWREADY is seen.” It must say **until an AWVALID/AWREADY handshake occurs**, since READY being high while VALID is low is not acceptance.
+* The lesson should explicitly state that `AWVALID` must not depend on `AWREADY`.
+* `AWADDR` is a start byte address in the interface address space, not necessarily a “physical memory address.”
+* `AWLEN`:
+
+  * INCR permits 1–256 beats in AXI4.
+  * FIXED permits up to 16.
+  * WRAP permits only 2, 4, 8, or 16.
+* `AWID` defines the transaction’s ordering/correlation stream; it need not be unique among all outstanding transactions.
+* AWLOCK in AXI4 distinguishes normal and exclusive accesses. AXI4 removed AXI3 locked transactions.
+* The address explorer correctly includes the reserved `AWBURST=2'b11` encoding and 4KB checks, but its alignment guidance must not imply every INCR transfer must start naturally aligned.
+
+### Completeness Audit
+
+* Missing:
+
+  * `AWUSER`.
+  * Exact AWLOCK encodings.
+  * Exact WRAP lengths and wrap alignment.
+  * Unaligned INCR start behavior.
+  * 4KB-boundary calculation.
+  * ID reuse and outstanding limits.
+* Missing AWREADY-before-AWVALID and simultaneous-handshake cases.
+* Missing random AWVALID generation delay and AWREADY backpressure strategy.
+* Missing checks for payload mutation during stall.
+* Missing coverage:
+
+  `AWLEN × AWSIZE × AWBURST × alignment × stall length × AWID`
+
+### Visuals & Animations Required
+
+* Add an AW handshake visual with:
+
+  * VALID first.
+  * READY first.
+  * Simultaneous.
+  * Payload held through stalls.
+  * Illegal VALID withdrawal.
+  * Illegal payload mutation.
+* Extend `content/visuals/signals/axi_address_channels.json` with exact encodings.
+* Add a 4KB and WRAP legality calculator.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct WRAP-length wording.
+* Replace “physical address” with start byte address.
+* Replace “until AWREADY is seen” with “until an accepting AW handshake.”
+* Define AWID as an ordering/correlation ID.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add AWVALID/payload persistence SVA.
+* Add accepted-AW transaction queue checks.
+* Add random AWREADY and AWVALID delay scenarios and crossed coverage.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add an interactive AW handshake waveform.
+* Add burst-legality and 4KB-boundary controls to the address explorer.
+
+---
+
+## [06_write_data_channel — The Write Data Channel]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AXI permits W data to be presented before, with, or after the corresponding AW request.
+* The lesson should not imply every subordinate will accept W data before AW. A subordinate may keep `WREADY` low until it has sufficient context or buffering.
+* If a subordinate accepts W beats before AW, it must buffer and later associate those beats correctly.
+* The W-channel source must not wait for `WREADY` before asserting `WVALID`.
+* When `WVALID=1` and `WREADY=0`, the manager must hold:
+
+  * `WVALID`.
+  * `WDATA`.
+  * `WSTRB`.
+  * `WLAST`.
+  * Enabled `WUSER`.
+* `WSTRB` enables byte qualification, including partial writes. Its legal value must match the beat address, transfer size, and data-bus lanes.
+* `WLAST` must identify exactly the accepted beat numbered `AWLEN+1`.
+* AXI4 write-data bursts cannot be interleaved. Their association follows write-address transaction order even though an individual W burst can begin before its AW handshake.
+* The linked waveform correctly holds the second beat through backpressure and accepts the first W beat before AW.
+
+### Completeness Audit
+
+* Missing explicit warning that early W acceptance requires subordinate/interconnect buffering.
+* Missing zero-length/extra/missing WLAST cases.
+* Missing WSTRB legality for:
+
+  * Narrow transfers.
+  * Unaligned first beat.
+  * Final partial beat.
+* Missing multiple outstanding writes and AW-to-W association checking.
+* Missing random WVALID delay and WREADY backpressure.
+* Missing long W stall while AW and other channels continue.
+* The linked exercise tests only whether W may precede AW; it does not test acceptance, buffering, or deadlock.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-write-channels.json` with:
+
+  * W-before-AW accepted.
+  * W-before-AW backpressured.
+  * AW-before-W.
+  * Simultaneous AW/W.
+  * Missing WLAST.
+  * Early WLAST.
+  * Extra W beat.
+  * Invalid WSTRB.
+* Add an AW-order/W-owner queue panel.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* State that W may be offered early but the subordinate is not required to accept it.
+* Explain AXI4 AW-order association precisely.
+* Add WUSER to held payload when implemented.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add W payload stability, WLAST count, and WSTRB legality assertions.
+* Add an address-order-to-W-burst scoreboard.
+* Randomize WVALID and WREADY independently of AW timing.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add early-W accept/backpressure modes.
+* Add WLAST and WSTRB fault injection.
+* Display AW queue and current W owner.
+
+---
+
+## [07_write_response_channel — The Write Response Channel]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AXI4 correctly requires `BVALID` to follow:
+
+  * An accepted AW request.
+  * The accepted final W beat with WLAST.
+* `BVALID` must not wait for `BREADY`.
+* The manager may wait for `BVALID` before asserting `BREADY`, although always-ready behavior often improves performance.
+* `BID` correlates the response to AWID.
+* Different-ID B responses can be reordered where supported.
+* Responses for transactions using the same ID must preserve required order.
+* EXOKAY indicates successful exclusive write completion; an unsuccessful exclusive write normally returns OKAY rather than EXOKAY.
+* Saying failure to assert BREADY will “bring the entire system to a halt” is too absolute. It creates persistent response backpressure and can exhaust finite resources, but the scope depends on buffering and topology.
+* The response waveform correctly demonstrates different-ID response reordering after W data follows AW order.
+
+### Completeness Audit
+
+* Missing B payload persistence under `BVALID && !BREADY`.
+* Missing illegal early-BVALID examples:
+
+  * Before AW acceptance.
+  * Before final W acceptance.
+  * Before either prerequisite.
+* Missing BID-with-no-outstanding-AW and duplicate-response checks.
+* Missing same-ID response-order violation.
+* Missing random BREADY backpressure and BVALID response latency.
+* Missing exclusive success/failure comparison.
+* Missing write-response conservation: exactly one B response per accepted write transaction.
+
+### Visuals & Animations Required
+
+* Add a B dependency visualizer with state flags:
+
+  * AW accepted.
+  * Final W accepted.
+  * B eligible.
+  * B offered.
+  * B accepted.
+* Add illegal BVALID dependency on BREADY.
+* Add response queue occupancy and resource-exhaustion behavior.
+* Extend the ID waveform with same-ID legal and illegal cases.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* State that BVALID must not depend on BREADY.
+* Qualify the system-wide halt claim.
+* Add unsuccessful-exclusive response semantics.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add stateful AW/W-to-B eligibility checking.
+* Assert one B response per write and valid BID correlation.
+* Randomize response latency and BREADY backpressure.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build the B-response dependency state machine.
+* Add early-BVALID and same-ID-order fault modes.
+
+---
+
+## [08_read_address_channel — The Read Address Channel]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AR channel structure correctly parallels AW for corresponding address and attribute fields.
+* The lesson should explicitly state that `ARVALID` must not depend on `ARREADY`.
+* AR payload must remain stable until an accepting AR handshake.
+* `ARADDR` is a start byte address in the AXI address space.
+* `ARLEN` has the same corrections as AWLEN:
+
+  * INCR: 1–256.
+  * FIXED: no more than 16.
+  * WRAP: exactly 2, 4, 8, or 16.
+* ARID defines an ordering and correlation stream rather than a universally unique transaction.
+* The interconnect does not necessarily require every identical AW/AR field; each direction has corresponding address and attribute information.
+* The linked address explorer correctly emphasizes RID correlation and exact RLAST count.
+
+### Completeness Audit
+
+* Missing:
+
+  * `ARUSER`.
+  * Exact ARLOCK behavior.
+  * Unaligned INCR behavior.
+  * WRAP alignment.
+  * 4KB restriction.
+  * Target outstanding-read limits.
+* Missing random ARVALID and ARREADY delays.
+* Missing same-cycle simultaneous AW and AR handshakes.
+* Missing coverage:
+
+  `ARLEN × ARSIZE × ARBURST × ARID × alignment × AR stall`
+
+### Visuals & Animations Required
+
+* Add AR-specific legal and illegal handshake modes.
+* Add concurrent AW and AR acceptance.
+* Add an outstanding-read-credit display.
+* Reuse the address legality calculator with AR-specific output.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct WRAP-length wording.
+* Define ARID as an ordering/correlation ID.
+* Add the ARVALID-independence and payload-stability rules.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add AR persistence and accepted-request queue assertions.
+* Add random address-source and destination delays.
+* Add outstanding-limit and burst-attribute coverage.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add AR handshake scenarios and simultaneous read/write address activity.
+* Add read-credit and 4KB-boundary visualization.
+
+---
+
+## [09_read_data_channel — The Read Data Channel]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* R data and response correctly share one channel.
+* The subordinate must not assert `RVALID` for a transaction until its AR request has been accepted.
+* `RVALID` must not depend on `RREADY`.
+* Under R backpressure, all R payload must remain stable:
+
+  * RID.
+  * RDATA.
+  * RRESP.
+  * RLAST.
+  * RUSER when implemented.
+* RRESP qualifies every R beat.
+* An error response does not terminate the burst early; the configured number of R transfers must still be produced.
+* RLAST must occur on exactly the accepted beat `ARLEN+1`.
+* The narrow-read explanation is directionally correct. Unrequested byte lanes are not necessarily meaningful and must not be blindly compared by a scoreboard.
+* The existing waveform correctly holds a stalled middle beat and completes a final SLVERR beat.
+
+### Completeness Audit
+
+* Missing different-ID read-data interleaving and reordering.
+* Missing same-ID ordering.
+* Missing RID with no outstanding request.
+* Missing early, missing, or repeated RLAST.
+* Missing random response latency, RVALID gaps, and RREADY backpressure.
+* Missing read-response coverage per beat.
+* Missing narrow and unaligned lane checking.
+* Missing exactly `ARLEN+1` accepted R beats.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-read-channels.json` with:
+
+  * RVALID gaps.
+  * Random RREADY stalls.
+  * Two outstanding IDs.
+  * Legal different-ID interleaving.
+  * Illegal same-ID reordering.
+  * Early/missing RLAST.
+  * RID mismatch.
+* Add active byte-lane highlighting for narrow reads.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* State explicitly that RVALID requires an accepted AR and must not depend on RREADY.
+* Add RUSER to the held payload when enabled.
+* Clarify undefined/unrequested narrow-read lanes.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add AR-to-R beat-count, RID, RLAST, and same-ID-order checking.
+* Randomize RVALID latency/gaps and RREADY stalls.
+* Cross RID, response, beat index, stall count, and RLAST.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add ID-interleaving and RLAST fault modes.
+* Add narrow-read byte-lane visualization.
+
+---
+
+## [10_sideband_signals — Sideband Signals and Attributes]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AxPROT bit definitions are correct:
+
+  * Bit 0: unprivileged/privileged.
+  * Bit 1: Secure/Non-secure.
+  * Bit 2: data/instruction.
+* AXI carries the protection attributes, but the system defines the enforcement policy.
+* AxCACHE bit 0 is Bufferable; AXI4 treats bit 1 as Modifiable, while the upper bits carry read/write allocation hints.
+* “Bufferable allows an early BRESP” is broadly useful but must be tied to the permitted write-response point and system buffering rules. It does not waive the AW/final-W BVALID prerequisites.
+* AxCACHE affects buffering, modification, and ordering behavior, but calling it the complete basis of “fundamental ordering rules” is too broad.
+* AxQOS is a priority indication; exact arbitration and starvation behavior remain implementation-defined.
+* AxREGION identifies logical regions behind an interface but does not replace address decoding.
+* The lesson title is broad, but it omits other important address sidebands such as AxLOCK and optional AxUSER.
+
+### Completeness Audit
+
+* Missing complete legal AxCACHE encoding tables.
+* Missing separate read and write allocation meanings.
+* Missing AxLOCK.
+* Missing AxUSER.
+* Missing attribute conversion through interconnects and bridges.
+* Missing security-policy, QoS, and REGION coverage.
+* Missing stable-attribute SVA during address-channel backpressure.
+* Missing invalid attribute combinations and unsupported-option handling.
+
+### Visuals & Animations Required
+
+* Expand `content/visuals/signals/axi_sideband_attributes.json` with:
+
+  * Exact AxCACHE encodings.
+  * AxLOCK.
+  * AxUSER configuration.
+  * Policy versus protocol columns.
+* Add a route-policy topology showing:
+
+  * AxPROT enforcement.
+  * AxQOS arbitration.
+  * AxREGION logical selection.
+  * AxCACHE modification/buffering.
+* Add attribute mutation during AW/AR stall as an illegal scenario.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Qualify early-BRESP wording with the normal AXI4 write-response prerequisites.
+* Narrow the AxCACHE ordering claim.
+* Expand the lesson scope to include AxLOCK and optional AxUSER.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add stable-sideband assertions.
+* Add policy-aware security, QoS, REGION, and AxCACHE scoreboards.
+* Add coverage for attribute combinations and adapter conversion.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add complete encodings and policy routing to the sideband explorer.
+* Add sideband-stall fault injection.
+
+---
+
+## [11_ready_valid_in_depth — Ready/Valid in Depth]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The central rule is correct: a transfer occurs only on a rising edge where VALID and READY are both high.
+* The source must not wait for READY before asserting VALID.
+* The destination may wait for VALID before asserting READY.
+* Once VALID is asserted and no handshake occurs, VALID and the complete channel payload must remain stable.
+* The lesson should state “until the accepting handshake,” not merely “until READY is asserted.”
+* After a handshake, a source can keep VALID high and present the next payload for the following cycle. VALID need not pulse low between transfers.
+* READY can remain continuously asserted and can be withdrawn when no transfer is being accepted, subject to synchronous interface rules.
+* AXI prohibits combinational paths between interface inputs and outputs. This is a foundational anti-loop requirement missing from the lesson.
+* The current visual correctly demonstrates VALID-first, READY-first, simultaneous acceptance, persistence, and illegal early VALID withdrawal.
+
+### Completeness Audit
+
+* Missing continuous one-transfer-per-cycle operation with VALID remaining high.
+* Missing payload replacement immediately after a handshake.
+* Missing destination READY toggling.
+* Missing no-combinational-input-to-output rule.
+* Missing channel-specific source/destination table.
+* Missing:
+
+  * VALID persistence SVA.
+  * Payload stability SVA.
+  * Transfer counter.
+  * Unknown-control checks.
+* Proving that VALID did not wait for READY requires access to internal pending intent or a formal abstraction; black-box pins alone cannot always prove that the source had information available earlier.
+* Missing random delay strategy:
+
+  * Random source delay before VALID.
+  * Random destination delay before READY.
+  * Independent delay distributions on all five channels.
+  * Long and bursty backpressure.
+* Missing stall-length and timing-order coverage.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/waveforms/axi_ready_valid_scenarios.json` with:
+
+  * Continuous transfers.
+  * VALID held high with changing payload after each handshake.
+  * READY toggling.
+  * Unknown VALID/READY.
+  * Illegal payload mutation under stall.
+  * Combinational-loop illustration.
+* Add a source/destination selector for AW, W, B, AR, and R.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace “until READY asserts” with “until a VALID/READY handshake.”
+* Add the no-combinational-path requirement.
+* State that VALID can remain asserted across consecutive transfers.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Insert generic parameterized persistence and payload-stability SVA templates.
+* Add independent random VALID/READY delay strategies for every channel.
+* Add order, stall-length, and continuous-throughput coverage.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Turn the handshake waveform into a randomizable channel visualizer.
+* Add continuous-transfer, mutation, X-state, and combinational-loop modes.
+
+---
+
+## [12_independent_channel_behavior — Independent Channel Behavior]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* The lesson correctly states that W can be presented before AW.
+* It incorrectly implies that the subordinate will necessarily accept and buffer W data until AW arrives. The subordinate is permitted to keep WREADY low and wait for address context.
+* If W is accepted before AW, buffering and correct later association are mandatory implementation responsibilities.
+* AXI4 BVALID requires:
+
+  * Accepted AW.
+  * Accepted final W beat.
+* BVALID must not depend on BREADY.
+* RVALID requires an accepted AR request and must not depend on RREADY.
+* AXI4 W bursts must follow write-address transaction order.
+* “The only absolute dependencies” is too broad unless the lesson includes:
+
+  * Per-channel VALID persistence.
+  * No source VALID dependency on READY.
+  * No combinational input/output path.
+  * AXI4 write-data order.
+  * Same-ID ordering.
+* A destination waiting for VALID before asserting READY is legal. A deadlock arises when the source also waits for READY before asserting VALID.
+* The existing exercise claiming that a subordinate can legally wait for `BREADY` before asserting `WREADY` is misleading. `BREADY` is not a protocol prerequisite for W acceptance, and a combinational input-to-output dependency is prohibited.
+* The exercise option saying the design violates “VALID must not depend on READY” is also not directly applicable to a rule controlling BREADY. The actual issue is an unsafe cross-channel dependency and potential progress deadlock.
+
+### Completeness Audit
+
+* Missing a complete dependency matrix for:
+
+  * AWVALID/AWREADY.
+  * WVALID/WREADY.
+  * BVALID/BREADY.
+  * ARVALID/ARREADY.
+  * RVALID/RREADY.
+  * AW/W prerequisites for B.
+  * AR prerequisite for R.
+* Missing legal versus unsafe cross-channel READY dependencies.
+* Missing same-ID ordering and AXI4 W ordering.
+* Missing internal buffering requirements for early W acceptance.
+* Missing random independent delays on every source and destination.
+* Missing exhaustive order coverage:
+
+  * W before AW.
+  * AW before W.
+  * Same-cycle.
+  * B backpressure before/after write prerequisites.
+  * AR accepted while R stalled.
+* Missing deadlock watchdogs and progress assumptions.
+* The current true/false exercise is far too shallow for this lesson.
+
+### Visuals & Animations Required
+
+* Create a channel-dependency graph with:
+
+  * Mandatory arrows.
+  * Permitted optional dependencies.
+  * Prohibited dependencies.
+  * Implementation resource coupling.
+* Add an interactive deadlock example:
+
+  * Subordinate waits for AWVALID before raising WREADY—legal.
+  * Manager incorrectly waits for WREADY before raising AWVALID—illegal.
+  * Neither progresses.
+* Add another failure:
+
+  * Subordinate incorrectly waits for BREADY before generating BVALID.
+  * Manager legally waits for BVALID before raising BREADY.
+* Upgrade the write waveform with visible buffer occupancy and AW/W association state.
+* Add randomized independent delay controls for all five channels.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Remove the claim that the subordinate automatically buffers early W data.
+* Add BVALID-not-dependent-on-BREADY and RVALID-not-dependent-on-RREADY.
+* Add AXI4 W-order and same-ID-order dependencies.
+* Rewrite `ex-axi-deadlock` to describe a genuinely protocol-relevant dependency cycle.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add an ID-aware AW/W/B transaction checker.
+* Add an AR/R outstanding-request checker.
+* Add independent random delay sequences for all VALID and READY drivers.
+* Add cross coverage for channel-order permutation, stall length, and simultaneous activity.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build the dependency/deadlock graph.
+* Add buffer-state and transaction-association overlays.
+* Replace the simple true/false exercise with waveform-driven dependency debugging.
+
+---
+
+# Batch-Wide Findings
+
+## P0 — Immediate Corrections
+
+1. Replace “five completely independent channels” with dependency-aware language.
+2. Correct the AHB comparison in Lessons 01 and 04.
+3. Replace “asynchronous channels” with synchronous, independently handshaken channels.
+4. Teach exact WRAP lengths: 2, 4, 8, or 16.
+5. Define IDs as ordering/correlation identifiers rather than unique tags.
+6. State consistently that source VALID must not depend on READY.
+7. State consistently that BVALID must not depend on BREADY and RVALID must not depend on RREADY.
+8. Remove the assumption that every subordinate accepts and buffers W before AW.
+9. Correct the cross-channel deadlock exercise.
+10. Add the AXI no-combinational-input-to-output-path requirement.
+
+## P1 — DV and Assertion Priorities
+
+The common assertion library for this batch should include:
+
+* `VALID && !READY |=> VALID`.
+* `VALID && !READY |=> $stable(payload)`.
+* Accepted AW creates a write-address queue entry.
+* Accepted W beats associate with the oldest applicable AXI4 AW stream.
+* WLAST occurs exactly on beat `AWLEN+1`.
+* BVALID is legal only after accepted AW and final accepted W.
+* Every BID maps to one outstanding AWID.
+* Accepted AR creates a read-request queue entry.
+* RVALID/RID map to an outstanding AR.
+* RLAST occurs exactly on beat `ARLEN+1`.
+* Same-ID response ordering is preserved.
+* Exactly one B response retires each write.
+* Exactly `ARLEN+1` R beats retire each read.
+
+The common constrained-random strategy should independently randomize:
+
+* AWVALID initiation delay.
+* AWREADY backpressure.
+* WVALID beat gaps.
+* WREADY backpressure.
+* BVALID response latency.
+* BREADY backpressure.
+* ARVALID initiation delay.
+* ARREADY backpressure.
+* RVALID initial latency and inter-beat gaps.
+* RREADY backpressure.
+
+## P2 — Shared Visual Priorities
+
+1. Build one authoritative five-channel dependency graph and reuse it across Lessons 01, 04, 07, 09, 11, and 12.
+2. Expand the write waveform into AW-first, W-first, simultaneous, stalled, and deadlocked modes.
+3. Expand the read waveform into outstanding-ID, R-gap, R-backpressure, and RLAST-failure modes.
+4. Add source/destination and dependency overlays to the READY/VALID visualizer.
+5. Add revision, burst, ID-width, and outstanding-limit configuration throughout the first AXI batch.

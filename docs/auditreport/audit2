@@ -1,0 +1,918 @@
+# Task 2 — AHB Core Transfer Mechanics and Timing Audit
+
+## [06_htrans_transfer_types — Transfer Types (HTRANS)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* `HTRANS` describes the **current address phase**, not the state of the current data phase. Because AHB is pipelined, the visible `HTRANS` can belong to Transfer N+1 while the data phase belongs to Transfer N.
+* The `IDLE` description is substantially correct: it is not a valid transfer, and it must receive a zero-wait `OKAY` response. However, the lesson should distinguish subordinate `HREADYOUT` from the system-level `HREADY`.
+* The `BUSY` explanation—“Don’t disconnect me”—is misleading. `BUSY` preserves burst context but does not independently guarantee arbitration ownership. In a matrix-based AHB-Lite system, there might not be a visible shared-bus arbiter at all.
+* `BUSY` is not merely an `IDLE` cycle. Both cause no data transfer and require zero-wait `OKAY`, but `BUSY` preserves the active burst context while `IDLE` terminates it.
+* `SEQ` addresses are not always “previous address + 4.” The increment is `2^HSIZE` bytes, and wrapping bursts can move from the upper wrap address back to the lower wrap boundary.
+* The statement that a master returns to `IDLE` “once the slave acknowledges” a single transfer blurs address acceptance and data completion. In AHB, the next address phase can already be `IDLE` while the prior transfer’s data phase is still executing.
+* The legal/illegal sequence visual correctly distinguishes `BUSY → SEQ` from `IDLE → SEQ`, but it has no `HREADY` or accepted-beat indication, so learners can incorrectly count elapsed cycles instead of accepted transfer beats.
+
+Completeness Audit:
+
+* Missing the fundamental acceptance rule: `NONSEQ` and `SEQ` address phases are accepted only on a rising `HCLK` edge where `HREADY` is high.
+* Missing fixed-burst versus undefined-length `INCR` rules:
+
+  * `BUSY` does not consume a beat.
+  * Fixed-length bursts must still complete the required accepted beats.
+  * Undefined-length `INCR` can terminate with `IDLE` or a new `NONSEQ`.
+* Missing the requirement that a `SINGLE` transfer cannot be followed by `BUSY` as part of that transfer.
+* Missing the protocol-defined exceptions that make a blanket “HTRANS is stable whenever HREADY is low” assertion incorrect. A pending valid transfer must normally remain stable, but `IDLE`, `BUSY`, and the first cycle of the two-cycle `ERROR` response require more precise handling.
+* Missing stimulus scenarios:
+
+  * `NONSEQ → SEQ`.
+  * `NONSEQ → BUSY → SEQ`.
+  * `INCR → BUSY → IDLE`.
+  * Illegal `IDLE → SEQ`.
+  * Illegal `SINGLE → BUSY`.
+  * Fixed burst with more or fewer accepted beats.
+* Missing functional coverage for transition pairs and crosses such as `previous HTRANS × current HTRANS × HBURST × HREADY`.
+* Missing a stateful SVA/checker that tracks active burst context rather than checking HTRANS values independently.
+* The exercise verifies only the final HTRANS of a zero-wait four-beat burst. It does not test BUSY, waits, accepted-beat counting, or illegal termination.
+
+Visuals & Animations Required:
+
+* Add an interactive HTRANS state diagram with legal transitions conditioned by:
+
+  * Current `HBURST`.
+  * Accepted beat count.
+  * `HREADY`.
+  * Active burst context.
+* Add a waveform showing `NONSEQ → SEQ → BUSY → BUSY → SEQ`, with `HREADY` low during one interval and accepted edges clearly marked.
+* Add a fixed `INCR4` comparison where BUSY cycles do not increment the beat counter.
+* Add an illegal scenario where a pending `SEQ` changes while `HREADY=0`.
+* Label every cycle as one of:
+
+  * Valid address phase accepted.
+  * Valid address phase pending.
+  * BUSY/IDLE non-transfer.
+  * Data-phase completion.
+
+Action Items for Coding Model:
+
+1. Rewrite the opening definition so `HTRANS` is explicitly tied to the address phase, not the simultaneous data phase.
+2. Add fixed-versus-undefined burst transition rules and a stateful transition table.
+3. Upgrade `wf-ahb-htrans-sequences` with `HREADY`, accepted-beat counters, and selectable legal/illegal scenarios.
+
+---
+
+## [07_burst_and_size — Burst and Size (HBURST, HSIZE)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The listed `HSIZE` values stop at `011`, but `HSIZE` is three bits and encodes sizes from 1 byte through 128 bytes:
+
+  * `000` = 1 byte.
+  * `001` = 2 bytes.
+  * `010` = 4 bytes.
+  * `011` = 8 bytes.
+  * `100` = 16 bytes.
+  * `101` = 32 bytes.
+  * `110` = 64 bytes.
+  * `111` = 128 bytes.
+
+* The selected size must not exceed the implemented data-bus width. The larger encodings must therefore be presented as protocol encodings that are legal only on a sufficiently wide interface.
+
+* “Address increments by the HSIZE” is mathematically imprecise. `HSIZE` is an encoding; the byte increment is:
+
+  `bytes_per_beat = 2^HSIZE`
+
+* The `WRAP4` word example starting at `0x04` and producing `0x04, 0x08, 0x0C, 0x00` is correct.
+
+* The claim that `HBURST` and `HSIZE` remain constant throughout a burst is correct, but it must be evaluated over the accepted transfers forming the burst, not merely over clock cycles.
+
+* The lesson entirely omits the AHB requirement that a burst must not cross a 1KB address boundary. The repository teaches this rule later and already has an address-progression checker description containing the 1KB restriction.
+
+Completeness Audit:
+
+* Missing the 1KB boundary rule for `INCR`, fixed incrementing bursts, and wrapping bursts.
+
+* Missing the standard boundary test:
+
+  `first_address[ADDR_WIDTH-1:10] == every_accepted_beat_address[ADDR_WIDTH-1:10]`
+
+* Missing examples close to a 1KB boundary:
+
+  * Legal word `INCR4` starting at `0x3F0`: `0x3F0, 0x3F4, 0x3F8, 0x3FC`.
+  * Illegal word `INCR4` starting at `0x3F4`, because the fourth beat would reach `0x400`.
+  * Undefined `INCR` must terminate before crossing and restart with `NONSEQ` on the other side.
+
+* Missing distinction between elapsed cycles and accepted beats when wait states or BUSY cycles occur.
+
+* Missing unsupported-size stimulus where `HSIZE` exceeds the bus width.
+
+* Missing coverage cross:
+
+  `HBURST × HSIZE × starting-address offset × HWRITE × wait-state bucket × response`
+
+* Missing illegal bins for misalignment, 1KB crossing, unsupported HSIZE, and wrong fixed-burst beat count.
+
+* Missing SVA/checkers for:
+
+  * Stable `HBURST` and `HSIZE`.
+  * Correct address increment.
+  * Fixed accepted-beat count.
+  * No 1KB crossing.
+  * Natural alignment.
+
+Visuals & Animations Required:
+
+* Expand the signal explorer to all eight HSIZE encodings, with unsupported values disabled according to a selectable bus width.
+* Add an address-generator calculator with inputs:
+
+  * Start address.
+  * `HBURST`.
+  * `HSIZE`.
+  * Data-bus width.
+* Show generated addresses, wrap span, accepted-beat count, and 1KB boundary result.
+* Add an interactive legal/illegal comparison near `0x400`.
+* Add wait-state and BUSY toggles so users can observe that neither changes the expected address sequence or accepted-beat count.
+* Display the formulas:
+
+  `increment = 1 << HSIZE`
+
+  `wrap_span = beat_count × increment`
+
+Action Items for Coding Model:
+
+1. Add all HSIZE encodings and clearly gate them by the configured data-bus width.
+2. Introduce the 1KB boundary rule with legal and illegal address examples.
+3. Upgrade `sig-ahb-burst-size` into an executable address calculator with checker and coverage outputs.
+
+---
+
+## [08_data_and_response — Data and Response (HWDATA, HRDATA, HREADY, HRESP)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The dedicated `HWDATA` and `HRDATA` descriptions are correct.
+* Strict terminology should distinguish:
+
+  * `HREADYOUT`: driven by an individual subordinate.
+  * `HREADY`: completion signal returned through the interconnect and observed by managers and subordinates.
+* Saying the subordinate directly drives global `HREADY` is acceptable only as an explicitly simplified single-subordinate example.
+* The statement that `HRDATA` is not valid while `HREADY=0` is correct. It may change during wait states and is sampled only at successful completion.
+* The rule that the master must freeze only `HADDR` and `HTRANS` is incomplete. A pending valid address phase requires all applicable address/control signals to remain stable, including `HWRITE`, `HSIZE`, `HBURST`, `HPROT`, and enabled AHB5 attributes.
+* For a stalled write data phase, `HWDATA` must also remain stable.
+* The blanket freeze wording does not account for protocol exceptions involving `IDLE`, `BUSY`, and the first cycle of a two-cycle `ERROR`.
+* The linked response visual correctly depicts the AHB-Lite/AHB5 two-cycle `ERROR` sequence:
+
+  * First error cycle: `HRESP=ERROR`, `HREADY=0`.
+  * Completion cycle: `HRESP=ERROR`, `HREADY=1`.
+* That critical two-cycle requirement appears only in the visual, not in the lesson prose.
+* An unmapped-address error is normally generated by the decoder/default subordinate, not necessarily by a normal selected subordinate.
+
+Completeness Audit:
+
+* Missing zero-wait read and zero-wait write explanations with exact sampling edges.
+
+* Missing data-phase ownership: the visible `HWRITE` in the address phase can belong to the next transfer, so the subordinate must retain the earlier transfer’s direction for the current data phase.
+
+* Missing write-data stability during waits.
+
+* Missing explanation that ordinary wait states use `HRESP=OKAY`; `ERROR` is a separate response sequence.
+
+* Missing treatment of:
+
+  * Wait states followed by `OKAY`.
+  * Wait states followed by the two-cycle `ERROR`.
+  * Back-to-back read/write direction changes.
+  * Error during a fixed burst.
+  * Reset during a stalled data phase.
+
+* Missing response-mux DV checks ensuring `HRDATA`, `HREADY`, and `HRESP` come from the subordinate owning the current data phase—not the currently decoded address phase.
+
+* Missing assertions:
+
+  * Stalled write data remains stable.
+  * Read data is sampled only at completion.
+  * Two-cycle `ERROR` sequence.
+  * `HRESP` is known at completion.
+  * IDLE/BUSY produce zero-wait `OKAY`.
+
+* Missing coverage cross:
+
+  `read/write × zero/multi-wait × OKAY/ERROR × burst position`
+
+* Neither lesson visual shows a selectable zero-wait versus multi-wait version of the same transfer.
+
+Visuals & Animations Required:
+
+* Add a combined phase-ownership waveform with:
+
+  * `ADDR_OWNER`.
+  * `DATA_OWNER`.
+  * `HSEL`.
+  * `HREADYOUT`.
+  * Global `HREADY`.
+  * `HRESP`.
+  * `HWDATA`.
+  * `HRDATA`.
+* Provide toggles for:
+
+  * Zero wait.
+  * One wait.
+  * Three waits.
+  * Waits followed by `ERROR`.
+* Animate response multiplexing from two subordinates so the response follows the data-phase owner.
+* Highlight the exact edge where read data is sampled or write data is consumed.
+* Add an illegal master mode that advances `HWDATA` before the stalled write completes.
+
+Action Items for Coding Model:
+
+1. Separate `HREADYOUT` from global `HREADY` throughout the prose and visuals.
+2. Move the full two-cycle `ERROR` explanation into the lesson text.
+3. Add read/write wait-state assertions and response-routing coverage examples.
+
+---
+
+## [09_lock_exclusive_security — Lock, Exclusive, and Security]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* `HMASTLOCK` was not introduced by AHB5. Locked-transfer support predates AHB5; AHB5 added optional exclusive and security capabilities.
+* In original shared-bus AHB, a manager requests locking using `HLOCKx`, and the arbiter produces the bus-level `HMASTLOCK`. In AHB-Lite/AHB5 interfaces, `HMASTLOCK` remains an interface signal. The lesson must identify which model it describes.
+* “The arbiter refuses to grant the bus to any other master” overstates the system-wide scope. A lock constrains the applicable arbitrated bus path or resource. An independent path in a multilayer interconnect might continue operating.
+* Locked transfers do not provide address-granular conditional atomicity. They retain ownership of an applicable bus segment.
+* The exclusive description omits `HMASTER`, which provides the identity required for monitor matching.
+* An exclusive read also has response semantics. The monitor must indicate whether the exclusive operation is supported/accepted before the manager relies on a later exclusive write.
+* The timeline includes `HMASTER` identity in its annotations, but the lesson prose never introduces that signal.
+* `HEXOKAY=0` with `HRESP=OKAY` for a failed exclusive write is correctly distinguished from a protocol error.
+* Security denial is policy-dependent. `HNONSEC=1` does not itself require every subordinate to return `ERROR`; the interconnect or subordinate applies the configured security policy.
+
+Completeness Audit:
+
+* Missing a version-aware lock explanation: original AHB `HLOCKx/HMASTLOCK` versus AHB-Lite/AHB5 `HMASTLOCK`.
+* Missing `HMASTER` and interconnect identity-extension requirements.
+* Missing exclusive-read acceptance, successful exclusive write, failed exclusive write, unsupported-exclusive target, and monitor invalidation.
+* Missing reset behavior for exclusive-monitor state.
+* Missing coverage:
+
+  * Exclusive read/write.
+  * Matching and mismatching address.
+  * Matching and mismatching identity.
+  * Interfering write.
+  * Success/failure.
+  * `HEXOKAY × HRESP`.
+  * Secure/non-secure × target policy.
+* Missing assertions:
+
+  * `HEXOKAY` only at completion.
+  * `HEXOKAY` not asserted with `HRESP=ERROR`.
+  * Exclusive identity and attributes remain associated with the correct transfer.
+  * Lock release occurs at a legal sequence boundary.
+* Missing stress scenarios combining locked/exclusive transfers with wait states and errors.
+
+Visuals & Animations Required:
+
+* Add a topology showing two managers, a matrix, two independent subordinate paths, and which path is actually locked.
+* Extend the exclusive timeline with:
+
+  * `HMASTER`.
+  * Exclusive-read `HEXOKAY`.
+  * Monitor state.
+  * Interfering write.
+  * Successful and failed exclusive write.
+* Add a reset event that clears exclusive-monitor state.
+* Add a security-policy selector:
+
+  * Access permitted.
+  * Access denied with `ERROR`.
+  * Attribute ignored by a non-secure-aware target.
+* Show wait states during both exclusive read and exclusive write.
+
+Action Items for Coding Model:
+
+1. Separate legacy locking from optional AHB5 exclusives and security.
+2. Introduce `HMASTER` and complete the exclusive-read response behavior.
+3. Expand the timeline into success, interference, unsupported-target, and reset-invalidated scenarios.
+
+---
+
+## [10_single_transfers — Single Transfers]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* A single transfer has an address phase followed by a data phase. Those two phases of the **same transfer** do not overlap each other; the address phase of the next transfer can overlap the current transfer’s data phase.
+* The statement that a single transfer “consists of two overlapping phases” should therefore be rewritten.
+* The subordinate does not necessarily “fetch or store the data” in one cycle. It can insert any implementation-supported number of wait states.
+* For a write, the subordinate consumes `HWDATA` at completion. For a read, it supplies `HRDATA` at completion. These directional behaviors need to be stated separately.
+* The back-to-back read/write waveform correctly associates `HRDATA` and `HWDATA` with the preceding addresses and uses `NONSEQ` for both independent `SINGLE` transfers.
+* The arbitration statement applies to original shared-bus AHB. AHB-Lite has one manager per interface, and any matrix-level arbitration is internal.
+* Even in a multi-manager system, ownership changes only at a legal transfer boundary; a newly granted manager cannot corrupt an unfinished data phase.
+
+Completeness Audit:
+
+* Missing a single read with zero waits and with multiple waits.
+
+* Missing a single write with zero waits and with multiple waits.
+
+* Missing back-to-back:
+
+  * Read followed by read.
+  * Read followed by write.
+  * Write followed by read.
+  * Write followed by write.
+
+* Missing `HREADY` freeze behavior when the first transfer stalls but the second address is already visible.
+
+* Missing single-transfer `ERROR`.
+
+* Missing coverage cross:
+
+  `previous direction × current direction × wait count × response`
+
+* Missing assertion that `HBURST=SINGLE` has exactly one accepted valid beat and cannot continue using `SEQ`.
+
+* Missing a monitor example showing that `HWDATA` belongs to the previous cycle’s accepted write address.
+
+Visuals & Animations Required:
+
+* Expand the existing waveform with direction selectors for all four back-to-back combinations.
+* Add a wait-state slider on the first and second transfer independently.
+* Show the pending next address held while the prior data phase is stalled.
+* Add a `SINGLE → SEQ` illegal mode.
+* Add an accepted-edge marker so learners can distinguish “visible address” from “accepted address.”
+
+Action Items for Coding Model:
+
+1. Correct the statement that a single transfer’s own address and data phases overlap.
+2. Add stalled single-read and single-write examples.
+3. Add one-beat assertions and read/write transition coverage.
+
+---
+
+## [11_htrans_semantics — HTRANS Semantics In-Depth]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* A subordinate is not required to implement a literal address latch. It must accept and correctly process the address/control information at the applicable sampling edge.
+* For `SEQ`, the manager—not the subordinate—drives the next address. A subordinate may predict the next address for optimization or checking, but it must not replace the manager’s `HADDR` with an internal calculation as the protocol definition.
+* “Every beat after NONSEQ must be SEQ” needs the BUSY qualification: BUSY cycles can appear between accepted beats and do not themselves consume a beat.
+* BUSY can be used in incrementing and wrapping fixed-length bursts as well as undefined-length `INCR`; the current text says only “INCR or WRAP” ambiguously.
+* `IDLE → SEQ` is correctly identified as illegal because no active burst context remains.
+* The “Golden Rule” is too broad. It is correct for the specific visual—a pending valid `SEQ` is changed while `HREADY=0`—but it is not a universal `$stable(HTRANS)` rule for every low-HREADY cycle.
+* Protocol checkers must handle legal transitions from `IDLE` or `BUSY` while a previous data phase is stalled, and the manager’s required cancellation behavior during the first cycle of a two-cycle `ERROR`.
+* The repository’s own later assertion library explicitly warns against a blanket stability assertion during every `HREADY=0` cycle.
+
+Completeness Audit:
+
+* Missing a formal transition table conditioned on:
+
+  * Active burst state.
+  * Fixed versus undefined length.
+  * Accepted beat count.
+  * `HREADY`.
+  * `HRESP`.
+* Missing BUSY behavior in fixed-length bursts.
+* Missing undefined `INCR` termination after BUSY.
+* Missing `SINGLE → BUSY` illegality.
+* Missing first-ERROR-cycle handling.
+* Missing distinction between:
+
+  * Address/control that are merely visible.
+  * Address/control pending because `HREADY=0`.
+  * Address/control accepted at an edge.
+* Missing stateful SVA for burst context.
+* Missing transition coverage, including legal and illegal bins.
+* The exercise’s answer is correct for its specific pending `SEQ` case, but its explanation should state the valid-transfer precondition and the `ERROR` exception.
+
+Visuals & Animations Required:
+
+* Add a state-machine visual with states such as:
+
+  * No active burst.
+  * Fixed burst active with accepted-beat counter.
+  * Undefined `INCR` active.
+  * BUSY pause.
+  * Error termination/recovery.
+* Add selectable sequences:
+
+  * Legal `NONSEQ → SEQ`.
+  * Legal `NONSEQ → BUSY → SEQ`.
+  * Legal undefined `INCR → BUSY → IDLE`.
+  * Illegal fixed burst early termination.
+  * Illegal `IDLE → SEQ`.
+  * Illegal pending-valid change while waited.
+* Add a two-cycle `ERROR` waveform showing why address/control behavior cannot be checked using a naive blanket stability property.
+
+Action Items for Coding Model:
+
+1. Replace subordinate-address-calculation wording with manager-driven address semantics.
+2. Rewrite the Golden Rule as a precise pending-valid-transfer stability rule with exceptions.
+3. Add an interactive HTRANS transition automaton and stateful SVA examples.
+
+---
+
+## [12_burst_progression — Burst Progression Rules]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The zero-wait `INCR4` address sequence `0x20, 0x24, 0x28, 0x2C` is correct.
+* The linked waveform correctly shows one-cycle-delayed write-data ownership in the zero-wait case.
+* “The master can keep issuing SEQ beats indefinitely” is incomplete and misleading. An undefined-length `INCR` has no HBURST-encoded beat count, but it still must not cross a 1KB boundary.
+* Before reaching the boundary, the manager must terminate the burst and begin another burst using `NONSEQ`.
+* Undefined `INCR` can also pass through BUSY cycles. BUSY does not terminate the burst and does not increment the accepted-beat count.
+* The lesson implies that the subordinate can use an internal predicted address instead of the manager’s `HADDR`. A functional subordinate must process the address presented by the manager. Address-progression policing belongs primarily in a protocol checker; optional prediction must not mask the actual address.
+* Fixed burst completion must be counted using accepted `NONSEQ/SEQ` transfers, not elapsed cycles. The linked signal explorer correctly says this, but the prose does not develop it.
+
+Completeness Audit:
+
+* Missing the 1KB boundary rule.
+
+* Missing accepted-beat counters for `INCR4`, `INCR8`, and `INCR16`.
+
+* Missing fixed burst with BUSY cycles.
+
+* Missing fixed burst with wait states.
+
+* Missing undefined `INCR` termination using:
+
+  * `IDLE`.
+  * New `NONSEQ`.
+  * `BUSY → IDLE`.
+  * `BUSY → NONSEQ`.
+
+* Missing illegal cases:
+
+  * Fixed burst too short.
+  * Fixed burst too long.
+  * Wrong `SEQ` address.
+  * Predictor advancing while `HREADY=0`.
+  * Predictor advancing on BUSY.
+  * Crossing 1KB.
+
+* Missing coverage cross:
+
+  `HBURST × accepted beat index × wait bucket × BUSY presence × boundary proximity`
+
+* Missing SVA/checker that advances expected address and beat count only on accepted valid transfers.
+
+* No exercise tests accepted-beat counting or 1KB termination.
+
+Visuals & Animations Required:
+
+* Add interactive `INCR4`, `INCR8`, `INCR16`, and undefined `INCR` waveforms.
+* Permit insertion of wait states and BUSY cycles between any accepted beats.
+* Display two counters:
+
+  * Elapsed clocks.
+  * Accepted burst beats.
+* Add an undefined `INCR` starting near `0x3F0` and show the required termination before `0x400`.
+* Add an illegal mode where the generator continues using `SEQ` at `0x400`.
+* Show the address predictor state and prevent it from advancing on `IDLE`, `BUSY`, or `HREADY=0`.
+
+Action Items for Coding Model:
+
+1. Add the 1KB restriction and remove the implication that undefined INCR is literally unbounded.
+2. Reframe address prediction as checker logic rather than replacement functional addressing.
+3. Add accepted-beat and boundary-aware multi-cycle burst interactions.
+
+---
+
+## [13_wrapping_bursts — Wrapping Burst Intuition]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The `WRAP4`, word-sized sequence starting at `0x38` is correct:
+
+  `0x38 → 0x3C → 0x30 → 0x34`
+
+* The wrap span calculation is correct:
+
+  `4 beats × 4 bytes = 16 bytes`
+
+* The aligned wrap region `0x30–0x3F` is also correct.
+
+* “The address increments until it hits `0x3F`” is imprecise because the protocol presents aligned transfer start addresses. The waveform never drives `0x3F`; wrapping occurs when the next calculated beat address would leave the region.
+
+* The mathematical definition should be explicit:
+
+  `bytes_per_beat = 1 << HSIZE`
+
+  `wrap_span = beats × bytes_per_beat`
+
+  `wrap_base = floor(start_address / wrap_span) × wrap_span`
+
+  `next_address = wrap_base + ((current_address - wrap_base + bytes_per_beat) mod wrap_span)`
+
+* The start address must be aligned to `HSIZE`, but it does not need to equal the wrap-region base.
+
+* The 1KB burst-boundary rule still applies. For normal wrap spans up to 1KB, power-of-two alignment naturally keeps the burst in one 1KB region; configurations producing a span greater than 1KB cannot form a legal AHB burst.
+
+* The existing exercise correctly computes a `WRAP8` halfword span as 16 bytes but does not require the learner to calculate actual addresses.
+
+Completeness Audit:
+
+* Missing WRAP8 and WRAP16 examples.
+
+* Missing multiple HSIZE examples.
+
+* Missing start addresses at:
+
+  * Wrap-region base.
+  * Middle of region.
+  * Final beat position.
+
+* Missing waits and BUSY inside a wrapping burst.
+
+* Missing accepted-beat counting.
+
+* Missing 1KB interaction.
+
+* Missing invalid cases:
+
+  * Misaligned start address.
+  * Incorrect wrap base.
+  * Wrong wrap span.
+  * Wrapping one beat early or late.
+  * Address predictor advancing during a wait.
+
+* Missing coverage cross:
+
+  `WRAP4/8/16 × HSIZE × starting beat offset × wrap-event beat × wait count`
+
+* Missing SVA/checker implementing modulo wrap progression.
+
+Visuals & Animations Required:
+
+* Add the specifically required waveform:
+
+  * Word-sized `WRAP4` starting at `0x38`.
+  * Two wait states inserted during the `0x3C` data phase.
+  * Pending `0x30` address held while `HREADY=0`.
+  * Accepted-beat counter unchanged during both wait cycles.
+* Add WRAP8 and WRAP16 tabs.
+* Add a wrap-region bar with lower boundary, upper boundary, current address, and next address.
+* Add editable start address and HSIZE controls.
+* Mark the exact cycle and mathematical condition causing wrap-around.
+* Add an illegal calculator output for misalignment or 1KB crossing.
+
+Action Items for Coding Model:
+
+1. Add the formal wrap-address calculation and clarify that `0x3F` is not a driven word address.
+2. Add WRAP8/WRAP16 and multiple-HSIZE examples.
+3. Upgrade `wf-ahb-wrap4-burst` with wait-state insertion, accepted-beat tracking, and boundary visualization.
+
+---
+
+## [14_hsize_and_alignment — HSIZE and Alignment]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The alignment rules shown for byte, halfword, word, and doubleword transfers are correct.
+* The lesson omits the larger `HSIZE` encodings for 16-, 32-, 64-, and 128-byte transfers.
+* “An 8-bit master writes a byte” is incorrect terminology. It is a byte-sized transfer from a manager on a wider interface.
+* The little-endian 32-bit lane mappings are correct:
+
+  * Byte at offset 0 → `[7:0]`.
+  * Byte at offset 1 → `[15:8]`.
+  * Byte at offset 2 → `[23:16]`.
+  * Byte at offset 3 → `[31:24]`.
+  * Halfword at offset 0 → `[15:0]`.
+  * Halfword at offset 2 → `[31:16]`.
+* These mappings are configuration-specific and must not be presented as universal without the explicit “32-bit little-endian” qualifier.
+* Inactive write-data lanes are not significant to the transfer. Replicating narrow data across lanes is permitted as an implementation choice, but it is neither required nor evidence of a “smart” manager.
+* The visual’s misaligned halfword is useful as an intentional negative stimulus. However, its statement that “a compliant master must not generate a data phase for it” is misleading. A compliant manager must never issue the illegal address phase. Once a deliberately noncompliant transfer is placed on the interface, subordinate behavior must follow the implementation’s robustness policy; the protocol does not define a magical blocked pipeline stage.
+* The visual should therefore distinguish protocol violation detection from DUT recovery behavior.
+
+Completeness Audit:
+
+* Missing general alignment equation:
+
+  `(HADDR & ((1 << HSIZE) - 1)) == 0`
+
+* Missing all HSIZE encodings and interface-width legality.
+
+* Missing big-endian or configurable-endianness comparison.
+
+* Missing read-data lane treatment.
+
+* Missing wider data buses such as 64-bit examples.
+
+* Missing interaction between HSIZE and wrap/increment calculations.
+
+* Missing wait-state behavior for narrow write data.
+
+* Missing stimulus for every address offset and transfer size.
+
+* Missing coverage:
+
+  * `HSIZE × address low bits`.
+  * `HSIZE × bus width`.
+  * Read/write × active byte lane.
+  * Legal/illegal alignment.
+  * Endianness configuration.
+
+* Missing assertions:
+
+  * Natural alignment.
+  * HSIZE not greater than bus width.
+  * Active data lanes correspond to accepted address and HSIZE.
+  * Stalled write data remains stable.
+
+Visuals & Animations Required:
+
+* Extend the lane visual to selectable:
+
+  * 32-bit and 64-bit buses.
+  * Little-endian and big-endian configurations.
+  * Read and write transfers.
+* Add a bit-level byte-lane diagram rather than only hexadecimal HWDATA values.
+* Highlight active lanes and gray out inactive/don’t-care lanes.
+* Add wait states and show that the write-data phase belongs to the earlier accepted address.
+* For illegal alignment, display:
+
+  * “Protocol violation detected.”
+  * “DUT behavior after illegal stimulus is implementation/test-plan dependent.”
+* Do not invent a protocol-defined `BLOCK` data phase.
+
+Action Items for Coding Model:
+
+1. Add the complete HSIZE table and generalized alignment formula.
+2. Replace “8-bit master” and “smart master” wording with protocol-neutral narrow-transfer terminology.
+3. Rework the illegal-alignment visual so it reports a violation without inventing defined recovery behavior.
+
+---
+
+## [15_address_data_phase — Address Phase and Data Phase]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The core two-phase explanation is directionally correct.
+* The address phase is accepted on a rising `HCLK` edge where `HREADY` is high. If the prior data phase is stalled, the next address/control values remain pending and held until an accepting edge.
+* Saying the address phase lasts one “un-stalled” clock cycle is acceptable only when followed immediately by the pending-versus-accepted explanation.
+* The data phase begins after the corresponding address phase is accepted and lasts until completion.
+* Write data, read data, and response behavior are directionally correct, but the lesson omits write-data stability during waits.
+* “While the slave is busy handling the Data Phase, the bus is free” is technically wrong. The bus is not free:
+
+  * The current transfer occupies the data/response phase.
+  * The address/control resources can simultaneously carry the next transfer.
+* The correct concept is **parallel use of separate phase resources**, not an unoccupied bus.
+* `HREADY` stalls both the current data-phase completion and acceptance of the overlapping next address phase.
+* The current visual is useful because it explicitly labels address and data ownership, but it contains only zero-wait writes and cannot demonstrate the central stall behavior.
+
+Completeness Audit:
+
+* Missing the distinction between:
+
+  * Address visible.
+  * Address pending.
+  * Address accepted.
+* Missing `HSEL` and decoder timing.
+* Missing data-phase owner versus current selected address target.
+* Missing `HREADYOUT` and global `HREADY`.
+* Missing read examples.
+* Missing mixed read/write examples where current address `HWRITE` differs from the stored direction of the current data phase.
+* Missing zero-wait versus multi-wait comparison.
+* Missing pipeline fill, steady state, stall, restart, and drain.
+* Missing monitor architecture:
+
+  * Capture accepted address/control.
+  * Queue one pending phase context.
+  * Associate current data/response with prior context.
+* Missing SVA:
+
+  * Address/control stable while a valid address is pending.
+  * Write data stable while its data phase is stalled.
+  * Data completion has a previously accepted address.
+* Missing coverage for pipeline occupancy and phase overlap.
+
+Visuals & Animations Required:
+
+* Replace “bus is free” with a two-lane resource diagram:
+
+  * Address/control lane.
+  * Data/response lane.
+* Add a pipeline animation with:
+
+  * Fill.
+  * One transfer per cycle steady state.
+  * Three-cycle wait.
+  * Restart.
+  * Drain.
+* Include mixed read/write transfers so ownership mistakes become visible.
+* Add selected-target and response-source labels.
+* Add a monitor overlay showing the stored phase record used to associate data with the prior address.
+
+Action Items for Coding Model:
+
+1. Correct the “bus is free” statement and explain concurrent resource usage.
+2. Define visible, pending, and accepted address phases.
+3. Extend `wf-ahb-pipelined-sequence` with waits, reads, mixed directions, and monitor-state overlays.
+
+---
+
+## [16_wait_states_hready — Wait States and HREADY]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The core domino-effect explanation is accurate: a stalled data phase prevents the overlapping next address phase from being accepted.
+* The wait-heavy waveform correctly holds:
+
+  * `HTRANS`.
+  * `HADDR`.
+  * The applicable `HWDATA`.
+* It also correctly accepts the held address on the same edge that completes the prior data phase.
+* Strict signal ownership should say the active subordinate drives `HREADYOUT`; the interconnect generates/routes global `HREADY`.
+* “Freeze Address Phase N+1 exactly as it is” is correct when N+1 is a pending valid `NONSEQ` or `SEQ` transfer. The text should not become a blanket rule for all `IDLE`, `BUSY`, or first-ERROR-cycle situations.
+* The subordinate-side explanation is good: a newly decoded subordinate must not consume the visible address until `HREADY` indicates that the prior data phase has completed.
+* The waveform uses `D1/D2/D3` in the phase-owner row but `D0/D1/D2/D3` for payload names. This off-by-one naming is educationally confusing even though the timing itself is consistent.
+* There is no protocol-defined universal maximum number of wait states. Any bounded service requirement is a product/interconnect contract, not a base AHB rule.
+
+Completeness Audit:
+
+* Missing explicit zero-wait comparison.
+* Missing read wait-state behavior.
+* Missing response behavior during normal waits.
+* Missing two-cycle `ERROR` after preceding waits.
+* Missing reset during a prolonged wait.
+* Missing target-to-target transition where the next address decodes to a different subordinate.
+* Missing liveness discussion:
+
+  * AHB permits unbounded waiting at the protocol level.
+  * The project should define a timeout or bounded-service contract where required.
+* Missing assertions:
+
+  * Pending valid address/control stable.
+  * Stalled write data stable.
+  * Predictor does not advance while waited.
+  * Address accepted only with `HREADY`.
+* Missing coverage:
+
+  * Wait-count buckets.
+  * Zero versus nonzero waits.
+  * Wait position within burst.
+  * Target transition.
+  * Read/write.
+  * Response.
+
+Visuals & Animations Required:
+
+* Add a side-by-side zero-wait and multi-wait view of the same INCR4 burst.
+* Add `HSEL_A`, `HSEL_B`, `HREADYOUT_A`, `HREADYOUT_B`, and muxed `HREADY`.
+* Show the next address selecting Slave B while Slave A’s data phase is stalled, and demonstrate why Slave B cannot accept it yet.
+* Add a read case with changing `HRDATA` during waits and final valid data at completion.
+* Add wait-state sliders and a configurable liveness timeout overlay.
+* Rename payloads and data-phase owners consistently.
+
+Action Items for Coding Model:
+
+1. Qualify the freeze rule to pending valid address phases and document protocol exceptions.
+2. Add subordinate `HREADYOUT` and response-mux behavior.
+3. Expand the wait-state waveform with read, cross-target, error, and configurable-liveness scenarios.
+
+---
+
+## [17_multi_cycle_examples — Multi-Cycle Worked Examples]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* The written eight-cycle phase progression matches the wait-heavy visual.
+* The narrative correctly explains that the held second address is accepted on the edge where the first data phase completes.
+* The same is true for the fourth address after the second wait interval.
+* The visual is specifically an `INCR4` **write** burst, but Cycle 3 says the subordinate provides `HRDATA` “if reading” or samples `HWDATA` “if writing.” A worked example should choose one direction and remain concrete.
+* The phase-owner labels and payload labels use inconsistent numbering:
+
+  * Data phase `D1` carries payload `D0`.
+  * Data phase `D2` carries payload `D1`.
+* Cycle 8 calls `IDLE` “Address Phase 5.” It is clearer to call it an idle address/control cycle; there is no fifth valid transfer.
+* The worked example never states `HBURST`, `HSIZE`, `HWRITE`, or expected data values in the written breakdown, even though these are necessary to reconstruct the complete transaction.
+* There is no `HRESP` discussion despite the waveform including it.
+
+Completeness Audit:
+
+* Only one scenario is worked:
+
+  * Fixed incrementing write burst.
+  * Two wait intervals.
+  * No errors.
+* Missing worked examples for:
+
+  * Read burst with waits.
+  * Back-to-back read/write.
+  * BUSY inside a fixed burst.
+  * Undefined `INCR` ending before 1KB.
+  * WRAP4 with waits across the wrap event.
+  * Two-cycle `ERROR`.
+  * Reset during a wait.
+* Missing “first violating edge” debugging exercises.
+* Missing scoreboard reconstruction:
+
+  * Accepted address/control queue.
+  * Current data owner.
+  * Expected address.
+  * Accepted beat count.
+* Missing learner questions and exercises.
+* Missing functional coverage prompts and SVA mapping for each example.
+
+Visuals & Animations Required:
+
+* Retain the current example but add a state panel showing:
+
+  * Active burst.
+  * Accepted beat count.
+  * Pending address.
+  * Current data owner.
+  * Expected next address.
+* Add at least three more worked waveforms:
+
+  1. `WRAP4` word burst with two wait states inserted at the wrap point.
+  2. Read burst ending in a two-cycle `ERROR`.
+  3. Undefined `INCR` terminated before crossing `0x400`, followed by a new `NONSEQ`.
+* Add a “Find the first violation” mode where one signal advances early.
+* Add cycle questions requiring learners to identify:
+
+  * Which address owns current data.
+  * Whether a beat was accepted.
+  * Expected next address.
+  * Current coverage bin.
+  * Which SVA should fire.
+
+Action Items for Coding Model:
+
+1. Make the existing worked example direction-specific and normalize transfer/payload numbering.
+2. Add WRAP, ERROR, 1KB-boundary, BUSY, and read examples.
+3. Add monitor-state, coverage-bin, and first-failing-assertion overlays.
+
+---
+
+# Batch-Wide Priority Findings
+
+## 1. The 1KB AHB boundary rule is missing from the core burst curriculum
+
+The rule appears later in the site and in the existing assertion library, but not where burst progression is first taught. It should be introduced in Lesson 07 and exercised deeply in Lessons 12 and 13.
+
+## 2. The site needs a precise definition of an accepted address phase
+
+The following phrase should become standard throughout these lessons:
+
+> A valid AHB address phase is accepted on a rising HCLK edge when HREADY is HIGH. If HREADY is LOW, a pending valid address/control phase normally remains stable until an accepting edge.
+
+The word “normally” matters because a naive stability rule will produce false failures for IDLE/BUSY behavior and the first cycle of an AHB-Lite/AHB5 two-cycle ERROR response.
+
+## 3. HREADY and HREADYOUT must be separated
+
+Subordinate design lessons should show individual `HREADYOUT` signals and the interconnect-generated global `HREADY`. This is essential when one subordinate owns the data phase while a different subordinate is decoded by the pending address phase.
+
+## 4. Every multi-cycle visual needs explicit ownership and acceptance metadata
+
+Each waveform should include:
+
+* Address-phase owner.
+* Data-phase owner.
+* Pending versus accepted address.
+* Accepted-beat counter.
+* Current expected address.
+* Selected subordinate.
+* Response source.
+
+## 5. Core lessons need executable DV content
+
+At minimum, this batch should teach or link to these properties:
+
+* Pending valid address/control stability.
+* Stalled write-data stability.
+* HTRANS transition legality.
+* Fixed burst accepted-beat count.
+* Increment/wrap address progression.
+* Natural alignment.
+* No 1KB crossing.
+* IDLE/BUSY zero-wait `OKAY`.
+* Two-cycle `ERROR`.
+
+The primary functional coverage cross should be:
+
+`HBURST × HSIZE × HWRITE × start-address offset × wait-count bucket × BUSY presence × HRESP`
+
+## 6. Visual reuse is possible, but the current visuals need deeper modes
+
+The current waveforms already establish useful zero-wait phase ownership. The most valuable implementation work is not creating unrelated new diagrams; it is adding selectable waits, errors, BUSY cycles, boundary conditions, illegal mutations, accepted-edge markers, and checker state to the existing components.

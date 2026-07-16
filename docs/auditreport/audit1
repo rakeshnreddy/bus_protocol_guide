@@ -1,0 +1,509 @@
+# Task 1 — Foundations and AHB Overview Audit
+
+## Foundations
+
+### [01_bus_mental_models — Bus Mental Models]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* “A bus is simply a shared communication link” is too narrow and conflicts with the lesson’s later inclusion of point-to-point and switched fabrics. Separate the concepts of an interface, protocol, shared bus, and interconnect fabric.
+* The statement that a burst uses “a single address phase followed by multiple data beats” is AXI-like, but incorrect as a universal bus definition. AHB supplies an address/control phase for every burst beat: `NONSEQ` for the first beat and `SEQ` for following beats.
+* “Every protocol separates its wires into three logical groups” is an unsafe universalization. AXI has independent address, data, and response channels; AHB has pipelined address/control and data phases; clock and reset should not simply be classified as transaction sideband signals.
+* The crossbar explanation should state that parallel transfers are possible only when routes and target resources do not conflict. The current visual does make this distinction, but the prose does not.
+
+Completeness Audit:
+
+* Missing Design perspective: address decoding, request arbitration, response multiplexing, buffering, ordering, target contention, and default-slave behavior.
+* Missing DV scenarios: simultaneous requests to the same target, one-hot/zero-hot slave selection, response routed to the wrong initiator, starvation, dropped requests, duplicated completions, and illegal overlapping address regions.
+* Missing stimulus guidance: generate distinct-target concurrency, same-target contention, long target stalls, decode misses, and arbitration handover.
+* Missing coverage: topology type, number of active initiators, same/different target, arbitration result, stall duration, response type, and fairness outcome.
+* The exercise only asks which topology has the highest concurrency. It does not test route contention, ordering, or response ownership.
+
+Visuals & Animations Required:
+
+* Add a dynamic comparison with:
+
+  * Shared bus: two masters request simultaneously and one waits.
+  * Crossbar, different targets: both transfers proceed concurrently.
+  * Crossbar, same target: one route is arbitrated and the other stalls.
+* Animate command flow toward the selected target and response flow back to the correct source.
+* Add cycle counters for request latency and completed transfers to distinguish latency from throughput.
+* Add an illegal-decode mode showing two `HSEL` signals active and explain the resulting response-mux ambiguity.
+
+Action Items for Coding Model:
+
+1. Rewrite the transfer and burst definitions with separate AHB and AXI examples.
+2. Add a “Design obligations / DV obligations” subsection covering decode, arbitration, routing, ordering, and fairness.
+3. Extend `tp-bus-architectures` with selectable distinct-target, same-target, and decode-error scenarios.
+
+---
+
+### [02_signal_thinking — Signal Thinking]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* “Bus protocols are almost entirely synchronous” and “almost all modern protocols sample on the rising edge” are too broad. State specifically that AHB and AXI are synchronous, rising-edge AMBA interfaces.
+* `CLK` is not a generic AMBA signal name. AHB uses `HCLK`; AXI uses `ACLK`.
+* “What the signal does between clock edges generally does not matter” is technically dangerous. Mid-cycle behavior affects setup/hold timing, combinational loops, glitches, power, CDC behavior, and the value present at the next sampling edge.
+* A setup/hold violation can cause metastability in a receiving register, but a signal being logically between 0 and 1 is not the only failure mode. Simulation may show a deterministic value or `X` while silicon behavior remains analog and uncertain.
+* The current waveform stores only per-cycle values and cannot actually depict setup time, hold time, or a transition close to an edge.
+
+Completeness Audit:
+
+* Missing signal ownership: which block drives, samples, or observes each signal.
+* Missing distinction between protocol timing rules and implementation timing constraints.
+* Missing four-state simulation concepts: `0`, `1`, `X`, `Z`, unknown control detection, and reset-X propagation.
+* Missing DV race avoidance: clocking blocks, sampled values, nonblocking assignments, and monitor sampling at the protocol edge.
+* Missing CDC distinction: synchronous protocol behavior is valid only within the interface clock domain.
+* Missing assertions such as “known control at an accepting edge,” “payload stable while stalled,” and “reset release aligned with the interface clock.”
+
+Visuals & Animations Required:
+
+* Replace the cycle-only drawing with a zoomed timing window around a rising edge showing setup interval, active edge, and hold interval.
+* Provide three selectable cases:
+
+  * Legal transition safely after an edge.
+  * Setup violation immediately before an edge.
+  * Hold violation immediately after an edge.
+* Show an `X` result in simulation while explaining that metastability is an analog silicon phenomenon.
+* Add an asynchronous-reset assertion example and synchronous-release example without implying that all active-low resets universally follow the same release rule.
+
+Action Items for Coding Model:
+
+1. Restrict all clocking claims to AHB/AXI and distinguish protocol sampling from STA requirements.
+2. Add a four-state and DV sampling subsection with one SVA and one monitor example.
+3. Upgrade `wf-signal-sampling` to support sub-cycle markers rather than one value per cycle.
+
+---
+
+### [03_timing_diagrams — Timing Diagrams]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* The statement that a receiver sees a request on one edge, computes a response, and the sender sees it only on the following edge describes one possible registered implementation—not a universal protocol rule.
+* AHB response information can be produced during the data phase and sampled on its completion edge. AXI channel latency depends on implementation and inserted register stages.
+* Pipelining does not automatically mean “multiple in-flight transactions.” AHB overlaps the address phase of one transfer with the data phase of the previous transfer, but does not provide AXI-style outstanding transaction IDs.
+* The lesson conflates pipelined phase overlap, outstanding requests, and out-of-order completion. These must be introduced as separate concepts.
+* The waveform uses generic `CMD` and `DATA` rows and therefore does not teach which transfer owns each phase.
+
+Completeness Audit:
+
+* Missing distinction between latency, throughput, pipelining depth, and outstanding transaction count.
+* Missing AHB phase ownership: address/control for transfer N+1 while data/response belongs to transfer N.
+* Missing bubbles, back-to-back transfers, pipeline fill/drain, wait-state propagation, and error completion.
+* Missing DV monitor rule: create a transaction only when a valid address phase is accepted; associate later data and response with that accepted phase.
+* Missing scoreboard discussion for ordered AHB versus ID-based AXI tracking.
+* The exercise incorrectly implies that an AHB slave must necessarily register the next address internally while finishing previous data; exact buffering is implementation-specific.
+
+Visuals & Animations Required:
+
+* Add an AHB zero-wait waveform with explicit rows:
+
+  * Address-phase owner.
+  * Data-phase owner.
+  * `HADDR`, `HTRANS`, `HWRITE`, `HWDATA/HRDATA`, `HREADY`, and `HRESP`.
+* Add a second waveform where `HREADY` is low for three cycles and show pipeline advancement stopping.
+* Add selectable overlays marking “sampled/accepted here” and “belongs to previous transfer.”
+* Add a separate AXI illustration showing independent channel handshakes so learners do not infer that AHB phase overlap equals AXI outstanding behavior.
+
+Action Items for Coding Model:
+
+1. Rewrite the sampled-response and pipelining sections to avoid fixed implementation latency.
+2. Introduce separate definitions for pipelining, outstanding transactions, ordering, and out-of-order completion.
+3. Replace the generic pipeline waveform with an ownership-annotated AHB waveform plus a contrasting AXI channel example.
+
+---
+
+### [04_handshakes_flow_control — Handshakes and Flow Control]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* `READY` means that the destination can accept a transfer on an edge where `VALID` is also asserted—not specifically “on the next clock edge.”
+* The source is not always the master. On an AXI read-data channel, the subordinate is the source and the manager is the destination.
+* Holding `VALID` until handshake and holding payload stable while `VALID && !READY` are AXI ready/valid rules. They must not be described as a strict rule in “almost all protocols.”
+* AHB request/grant is an arbitration mechanism, not endpoint flow control. It determines bus ownership; AHB transfer backpressure is communicated through `HREADY`.
+* Request/grant and ready/valid therefore do not have the same core purpose. One controls resource ownership; the other controls transfer acceptance.
+* The current ready/valid waveform correctly demonstrates payload stability during a stall, but there is no AHB `HREADY` comparison.
+
+Completeness Audit:
+
+* Missing all legal ready/valid orderings:
+
+  * `READY` before `VALID`.
+  * `VALID` before `READY`.
+  * Both asserted together.
+  * Continuous back-to-back transfers.
+* Missing deadlock rule: a source must not wait for `READY` before asserting `VALID`.
+* Missing payload-stability scope: payload may change between completed transfers, including when `VALID` stays high and a new beat is presented after every handshake.
+* Missing destination behavior and optional `READY` deassertion.
+* Missing AXI channel independence and prohibited combinational input-to-output paths.
+* Missing AHB wait-state behavior, where address/control and relevant data-phase information are held while the pipeline cannot advance.
+* Missing coverage and assertions for handshake latency, prolonged stalls, consecutive transfers, and illegal withdrawal/change.
+
+Visuals & Animations Required:
+
+* Expand the ready/valid waveform into four selectable legal timing cases and two illegal cases.
+* Highlight every accepting edge where `VALID && READY`.
+* Show payload stability only across stalled cycles, then demonstrate legal payload advancement after a handshake.
+* Add a separate AHB waveform with `HREADY` low for three cycles. Do not label `HBUSREQ/HGRANT` as backpressure.
+* Add a small architecture diagram separating arbitration, transfer acceptance, and buffering.
+
+Action Items for Coding Model:
+
+1. Split the lesson into “AXI ready/valid,” “AHB HREADY,” and “bus arbitration.”
+2. Add SVA templates for persistent `VALID`, stalled-payload stability, and handshake counting.
+3. Extend the interaction to compare legal ordering permutations and intentional protocol violations.
+
+---
+
+### [05_transaction_structure — Transaction Structure]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* “A transaction consists of an address phase followed by a data phase” is not sufficiently general for AXI writes, which use independent write-address, write-data, and write-response channels.
+* “One address phase followed by multiple data beats” describes AXI bursts, not AHB bursts. AHB supplies address/control for every beat.
+* AHB is ordered at an individual interface, but a multi-layer AHB matrix can allow independent transfers on different manager/subordinate paths. “The bus stalls” is too broad as a system-level statement.
+* AXI out-of-order completion is constrained by IDs and ordering rules. Responses do not freely bypass earlier transactions in all circumstances.
+* Every transaction is not assigned a unique ID. IDs identify ordering domains and can be reused subject to protocol and implementation limits.
+* Exclusive accesses do not tell other agents “do not touch this address.” An exclusive monitor detects interference and the exclusive write can fail. A locked sequence and an exclusive sequence are different mechanisms.
+* `SLVERR` and `DECERR` are AXI responses. AHB uses `HRESP` with `OKAY` or `ERROR` in AHB-Lite/AHB5.
+* The linked timeline depicts a generic AXI-like ID-based transaction but is presented inside a protocol-neutral foundations lesson.
+
+Completeness Audit:
+
+* Missing protocol-specific transaction definitions for AHB read/write, AXI read, and AXI write.
+* Missing beat, burst, response, completion, outstanding, and ordering-domain distinctions.
+* Missing configurable outstanding limits, transaction-ID width, same-ID ordering, and backpressure on response channels.
+* Missing burst-boundary, alignment, maximum-length, and illegal-encoding tests.
+* Missing exclusive success/failure, interfering access, monitor eviction, and reset-between-exclusive-pair scenarios.
+* Missing scoreboard models:
+
+  * FIFO/phase-based tracking for AHB.
+  * Per-ID queues and ordering checks for AXI.
+* The exercise tests only the benefit of out-of-order completion and does not test its legal constraints.
+
+Visuals & Animations Required:
+
+* Replace the single generic timeline with tabs for:
+
+  * AHB burst: address/control on every beat.
+  * AXI read burst: one AR handshake followed by multiple R beats.
+  * AXI write burst: independent AW and W followed by B.
+* Add same-ID and different-ID completion lanes showing where reordering is permitted or forbidden.
+* Add an exclusive-access animation with:
+
+  * Successful exclusive read/write.
+  * Interfering access.
+  * Failed exclusive write without treating the failure as a bus error.
+* Show configured outstanding-depth counters and a blocked request when the limit is reached.
+
+Action Items for Coding Model:
+
+1. Rewrite the lesson around separate AHB and AXI transaction structures.
+2. Correct ID, ordering, exclusive, locked, and response terminology.
+3. Replace `tl-burst-transfer` with protocol-selectable timelines and legal-ordering annotations.
+
+---
+
+### [06_senior_dv_mindset — Senior DV Verification Mindset]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* “100 outstanding reads” is not a protocol-independent senior-DV scenario. Outstanding depth must be constrained to the DUT’s advertised configuration; exceeding it belongs in a separate negative-test plan.
+* Randomizing unaligned accesses and page-boundary crossings without separating legal and illegal stimulus can cause the generator itself to violate the protocol.
+* “Until your coverage metric hits 100%, your job is not done” is incorrect verification signoff guidance. Raw 100% may be impossible or meaningless because of unreachable bins, illegal bins, exclusions, waivers, configuration-dependent features, and inadequate coverage models.
+* Coverage is evidence, not proof of correctness. Signoff also requires assertions, scoreboards, bug closure, code coverage analysis, formal results where applicable, and review of exclusions.
+* “Constrained Random Testing (CRT)” should use the more common terminology constrained-random verification or constrained-random stimulus.
+* The existing checklist is primarily AXI ready/valid-oriented and does not represent a complete protocol signoff mindset.
+
+Completeness Audit:
+
+* Missing verification architecture: sequencer, driver, monitor, protocol checker, reference model, scoreboard, coverage collector, and reset/error agents.
+* Missing separation of legal stimulus, robustness testing, and deliberate protocol-violation injection.
+* Missing test-plan traceability from specification requirement to stimulus, checker, coverage, and signoff evidence.
+* Missing assertion categories: safety, ordering, stability, response timing, mutual exclusion, and configured liveness.
+* Missing functional coverage methodology: meaningful bins, crosses, illegal/ignore bins, coverage review, and waiver justification.
+* Missing formal verification, bounded-liveness assumptions, fairness assumptions, and deadlock analysis.
+* Missing reset interruption, partial transaction, timeout, starvation, error recovery, and maximum-resource scenarios.
+* The reflection exercise asks why randomization matters but does not assess whether generated transactions are legal, checked, or covered.
+
+Visuals & Animations Required:
+
+* Add a complete UVM-style DV environment diagram showing stimulus and independent checking paths.
+* Add a transaction lifecycle animation from sequence item through driver, accepted bus phase, monitor reconstruction, prediction, scoreboard comparison, and coverage sampling.
+* Add a wait-for graph illustrating deadlock versus a progress timeline illustrating livelock/starvation.
+* Add a coverage-closure dashboard distinguishing planned bins, covered bins, unreachable/waived bins, assertion status, and open bugs.
+* Add an outstanding-transaction tracker with configurable limits and per-target/per-ID occupancy.
+
+Action Items for Coding Model:
+
+1. Replace the “100% coverage” paragraph with an evidence-based signoff methodology.
+2. Expand the checklist into stimulus, checking, coverage, formal, reset, error, performance, and configuration categories.
+3. Add a `topo-dv-environment` visual and a coverage-closure interaction to this foundations lesson.
+
+---
+
+## AHB Lessons
+
+### [01_ahb_overview — AHB Overview]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* Describing AHB as connecting “early Cortex CPUs” is historically imprecise. The 1999 AMBA 2 introduction is better associated with ARM7/ARM9-era systems; Cortex-branded processors came later.
+* “AHB sits in the middle” and AXI is “heavyweight” are useful informal comparisons but not specification classifications.
+* AXI does not unconditionally provide arbitrary out-of-order completion. It provides multiple outstanding transactions and ID-based ordering capabilities subject to defined constraints.
+* “AHB is fundamentally a shared bus” is true for original AHB but misleading for a course that subsequently defines “AHB” as AHB-Lite/AHB5. Modern AHB-Lite interfaces are single-manager links, commonly connected through a multi-layer matrix.
+* The address phase should not be described as becoming multi-cycle. AHB wait states extend the data phase and prevent pipeline advancement; address/control for the pending transfer remain held until the relevant accepting edge.
+* The topology is useful for routing, but it cannot teach AHB’s defining pipeline timing by itself.
+
+Completeness Audit:
+
+* Missing basic signal grouping:
+
+  * Address/control: `HADDR`, `HTRANS`, `HWRITE`, `HSIZE`, `HBURST`, `HPROT`.
+  * Data: `HWDATA`, `HRDATA`.
+  * Completion: `HREADY`, `HRESP`.
+  * Selection: `HSEL`.
+* Missing explicit statement that AHB has no AXI-style transaction IDs or arbitrary outstanding queues.
+* Missing zero-wait throughput explanation: after pipeline fill, one transfer can complete per cycle.
+* Missing wait-state domino effect and phase ownership.
+* Missing Design obligations: registered control, response muxing, default slave, and correct HREADY routing.
+* Missing DV scenarios: back-to-back read/write, read-after-write, wait-state insertion, error response, reset interruption, and wrong-phase data association.
+* The lesson has no exercise despite being the entry point to the AHB curriculum.
+
+Visuals & Animations Required:
+
+* Retain the current topology, but add selectable read and write paths with explicit signal direction.
+* Add a minimum three-transfer pipeline waveform showing:
+
+  * Address N+1 overlapping data N.
+  * Read versus write data ownership.
+  * Completion on `HREADY`.
+* Add a wait-state toggle that freezes pipeline advancement.
+* Add a “monitor view” overlay that labels which accepted address owns each later data phase.
+
+Action Items for Coding Model:
+
+1. Reframe original shared-bus AHB versus modern AHB-Lite/AHB5 matrix links.
+2. Add the minimum AHB signal set and explain phase ownership and completion.
+3. Add a zero-wait/stalled waveform and a basic transfer-identification exercise.
+
+---
+
+### [02_ahb_variants — AHB Variants & Evolution]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* Do not combine AMBA-generation naming and individual document publication dates as “AMBA 3.0, 2006” or “AMBA 5.0, 2015” without citing the exact revision history. Use formal names such as original AMBA 2 AHB, AHB-Lite, and AMBA 5 AHB.
+* AHB-Lite removes shared-bus request/grant and SPLIT/RETRY behavior from the interface, but locked-transfer semantics such as `HMASTLOCK` still require careful treatment.
+* AHB5 features should be identified as required or optional according to the configured interface. Not every AHB5 endpoint necessarily implements security and exclusive-access extensions.
+* “Single-copy atomicity” is too vague to appear as a standalone feature without defining the relevant memory attributes and implementation obligations.
+* Claims such as “90% of AHB IPs” and “almost never see original AHB” are unsupported and should be replaced with qualitative deployment guidance.
+* The current visual is directionally good and correctly separates AHB-Lite arbitration removal from matrix-level arbitration.
+
+Completeness Audit:
+
+* Missing exact comparison of:
+
+  * Manager count per interface.
+  * Arbitration signals.
+  * Response encodings.
+  * SPLIT/RETRY support.
+  * Locked sequences.
+  * Security attributes.
+  * Exclusive accesses.
+  * Extended `HPROT`.
+  * Optional identity or memory-attribute signals.
+* Missing compatibility model: an AHB5 interconnect can connect endpoints with differing optional capabilities only through defined integration behavior.
+* Missing version-aware protocol-checker configuration.
+* Missing negative tests where an AHB-Lite checker incorrectly accepts SPLIT/RETRY or an AHB5-exclusive response is misinterpreted as `HRESP ERROR`.
+* Missing functional coverage across protocol revision and optional-feature configuration.
+
+Visuals & Animations Required:
+
+* Keep the expandable family comparison but add a precise signal-presence matrix.
+* Add one response waveform per variant:
+
+  * Original AHB `OKAY/ERROR/RETRY/SPLIT`.
+  * AHB-Lite/AHB5 `OKAY/ERROR`.
+* Add an interface-configuration control enabling or disabling security, exclusives, and extended memory attributes.
+* Display generated checker rules and legal coverage bins as configuration changes.
+
+Action Items for Coding Model:
+
+1. Replace informal dates and percentages with revision-specific, sourceable descriptions.
+2. Expand the comparison to include exact response, lock, arbitration, and optional-feature behavior.
+3. Add version-aware waveform and checker-configuration interactions.
+
+---
+
+### [03_ahb_terminology — AHB Terminology Primer]
+
+Status: Needs Expansion
+
+Accuracy Audit:
+
+* “Almost all” AHB signals beginning with `H` is acceptable as a recognition aid, but should not be used as a formal identification rule.
+* The AXI contrast is incorrect: AXI signals do not generally start with `A`. Examples include `WDATA`, `WVALID`, `RDATA`, `RRESP`, `BVALID`, and `BREADY`.
+* Arbiter and decoder are not mandatory standalone roles in every AHB system. A single-manager AHB-Lite link can have no externally visible arbiter, and decode/mux functions are often integrated into a matrix.
+* A correct decoder should normally ensure one selected subordinate or route to a default/error target. “Select exactly one slave” must account for unmapped addresses and default-slave behavior.
+* `HSELx` is conceptual notation, not a required literal naming convention.
+* `_M0` and `_S1` suffixes are implementation conventions and can be ambiguous across vendors. They must not be presented as protocol naming rules.
+
+Completeness Audit:
+
+* Missing core definitions: transfer, beat, burst, address phase, data phase, wait state, completion, response, and accepted phase.
+* Missing distinction between manager-side and subordinate-side `HREADY`, including common `HREADYOUT` integration naming.
+* Missing response mux and data mux ownership.
+* Missing default slave, unmapped access, overlapping decode, and one-hot selection.
+* Missing terminology mapping for original AHB versus AHB-Lite/AHB5.
+* Missing DV checks for selected target, phase ownership, return-path routing, and unknown/unselected response contamination.
+
+Visuals & Animations Required:
+
+* Extend the concept map with clickable signal-direction paths.
+* Add a topology showing manager port, matrix, decoder, subordinate ports, response mux, and default slave.
+* Animate an address phase selecting one target followed by its later data/response phase.
+* Add an illegal-decode mode with overlapping selects and an unselected-target mode with no default response.
+
+Action Items for Coding Model:
+
+1. Correct the AXI naming comparison and label suffixes as vendor conventions.
+2. Add protocol definitions for phases, beats, waits, responses, and accepted transfers.
+3. Expand the terminology topology with default-slave and response-mux behavior.
+
+---
+
+### [04_clock_and_reset — Clock and Reset (HCLK, HRESETn)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* AHB behavior is defined relative to the rising edge of `HCLK`, but that does not make every signal transition at a falling edge or in the middle of a cycle a protocol violation.
+* Normal combinational propagation occurs between sampling edges. The requirement is that signals meet protocol stability and implementation timing requirements at the relevant edge.
+* The current “DV Check” would falsely flag legal RTL and should be removed.
+* Reset values and behaviors are signal-specific. “All control signals usually drive 0” is too broad; `HTRANS=IDLE`, readiness, response, select, and optional signals require separate treatment.
+* The visual inserts a full IDLE cycle after synchronous reset release before the first `NONSEQ`. That can be a safe implementation policy, but it must not be taught as a universal protocol requirement unless the specification requires it for the selected revision.
+* Asynchronous assertion should be depicted between edges. The current per-cycle representation cannot visibly demonstrate that the transition occurred asynchronously.
+
+Completeness Audit:
+
+* Missing minimum reset-observation requirement: reset must remain asserted long enough to be sampled and initialize all interface state.
+* Missing reset during:
+
+  * Idle.
+  * Active zero-wait transfer.
+  * Prolonged wait state.
+  * Burst.
+  * Error response.
+* Missing statement that pending transactions are abandoned and monitors/scoreboards must flush state consistently.
+* Missing manager and subordinate reset-output tables.
+* Missing `X` checks after reset release.
+* Missing assertions with `disable iff (!HRESETn)` and post-reset legal-state checks.
+* Missing clock-gating considerations and the requirement that reset release be observed by the interface clock domain.
+
+Visuals & Animations Required:
+
+* Use a sub-cycle waveform that visibly drops `HRESETn` between two rising edges.
+* Show reset interrupting a stalled transfer and explicitly canceling pipeline state.
+* Provide two restart policies:
+
+  * Earliest protocol-legal transfer.
+  * Conservative implementation with an extra IDLE cycle.
+* Add manager/subordinate output rows including `HTRANS`, `HSEL`, `HREADYOUT`, and `HRESP`.
+* Highlight the first edge on which post-reset controls must be known and legal.
+
+Action Items for Coding Model:
+
+1. Remove the falling-edge/mid-cycle violation rule and replace it with edge-sampling and stability rules.
+2. Add signal-specific reset obligations and scoreboard/monitor reset behavior.
+3. Rebuild `wf-ahb-reset` with sub-cycle reset transitions and an active-transfer interruption case.
+
+---
+
+### [05_address_and_control — Address and Control (HADDR, HWRITE, HPROT)]
+
+Status: Major Revisions
+
+Accuracy Audit:
+
+* `HADDR` is the transfer’s byte address within the system address map; calling it a “physical address” is unnecessarily architecture-specific.
+* Address width should be described as an interface configuration supported by the selected AMBA revision and implementation, rather than “typically 32 but can be 64” without qualification.
+* Natural alignment to `HSIZE` is an important AHB rule and should include exact low-address-bit examples.
+* `HWRITE` consistency across a burst is correct, but the more immediate rule is missing: address and control for a pending transfer must remain stable while pipeline advancement is blocked.
+* The HPROT section lists only semantic dimensions and not bit polarity. Learners need the actual `0/1` interpretation.
+* AHB5’s extended `HPROT` bits are mentioned but not explained.
+* A subordinate is not universally required to implement privilege policy or reject a user access. Whether `HPROT` is checked, ignored, remapped, or converted to `ERROR` is an implementation/security-policy decision.
+* The prose calls only `HADDR`, `HWRITE`, and `HPROT` fundamental, while the linked visual correctly includes `HSIZE`, `HBURST`, `HTRANS`, and `HMASTLOCK`. The lesson text and visual therefore teach different scopes.
+
+Completeness Audit:
+
+* Missing detailed prose for `HSIZE`, `HBURST`, `HTRANS`, and locked/access attributes.
+* Missing AHB5 controls such as `HNONSEC` and exclusive-access attributes where implemented.
+* Missing acceptance rule: address/control correspond to an address phase and advance only according to `HREADY`.
+* Missing stall stability for `HADDR`, `HTRANS`, `HWRITE`, `HSIZE`, `HBURST`, `HPROT`, and applicable optional attributes.
+* Missing burst invariants and legal changes between beats.
+* Missing Design handling for decode, protection checks, and registered phase state.
+* Missing SVA:
+
+  * Address/control stable during stall.
+  * Natural alignment.
+  * Known controls on valid transfers.
+  * Burst attributes consistent.
+  * First valid burst transfer is `NONSEQ`.
+* Missing functional coverage:
+
+  * `HWRITE × HSIZE × HBURST`.
+  * Alignment boundary.
+  * `HPROT` combinations.
+  * Wait-state count.
+  * Response.
+  * Target region.
+* No lesson exercise exists to test signal sampling or illegal mid-stall changes.
+
+Visuals & Animations Required:
+
+* Retain the signal explorer, but add a synchronized waveform pane.
+* Let the learner select a signal and highlight:
+
+  * Its address-phase value.
+  * The accepting edge.
+  * Required stability during `HREADY=0`.
+  * The later data phase owned by that address.
+* Add legal and illegal alignment examples for byte, halfword, word, and wider transfers.
+* Add an interactive policy target that either ignores `HPROT`, permits the access, or returns `ERROR`, explicitly labeling this as implementation-defined behavior.
+* Add an AHB5 mode exposing extended protection/security and exclusive attributes.
+
+Action Items for Coding Model:
+
+1. Expand the prose to match every signal already exposed by `sig-ahb-address-control`.
+2. Add precise sampling, stall-stability, alignment, and burst-consistency rules.
+3. Couple the signal explorer to a legal/illegal address-phase waveform with SVA and coverage watchpoints.
+
+---
+
+# Cross-Batch Implementation Priorities
+
+1. **Correct the protocol-neutral foundations first.** Lessons 01, 03, 04, and 05 currently teach AXI-specific transaction concepts as universal bus behavior. Those misconceptions will contaminate every later AHB lesson.
+2. **Make phase ownership visible.** Every AHB waveform should identify the accepted address-phase owner and the corresponding data-phase owner, particularly through wait states and errors.
+3. **Separate arbitration from flow control.** `HBUSREQ/HGRANT`, AHB `HREADY`, and AXI `VALID/READY` need distinct explanations and visuals.
+4. **Make DV content executable.** Each protocol-rule lesson should have at least one assertion, one negative stimulus scenario, and one meaningful functional-coverage cross.
+5. **Replace raw “100% coverage” messaging.** Teach coverage closure as reviewed evidence with exclusions, waivers, assertions, scoreboards, and bug closure—not a single percentage.
+6. **Add configuration awareness.** Revision, optional AHB5 capabilities, outstanding limits, bus widths, and security policy must be visible inputs to examples, checkers, and coverage.

@@ -1,0 +1,1062 @@
+# Task 6 — AXI Transaction Flow, Ordering, Outstanding Transactions, and Burst Mathematics Audit
+
+## [13_write_transaction_walkthrough — Write Transaction Walkthrough]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The cycle-by-cycle timeline correctly shows:
+
+  * The first W beat accepted before AW.
+  * AW payload held stable while `AWREADY=0`.
+  * W payload held stable while `WREADY=0`.
+  * `WLAST` accepted on the third beat for `AWLEN=2`.
+  * `BVALID` asserted only after both the AW handshake and accepted final W beat.
+  * The transaction retiring only on the B handshake.
+* The lesson should explicitly state that accepting W data before AW requires the subordinate or interconnect to buffer that data and later associate it with the correct write-address transaction.
+* AXI4 does not require a destination to accept W before AW. It can keep `WREADY` low until it has sufficient address context or buffering.
+* The walkthrough contains only one write transaction. It therefore avoids the crucial AXI4 rule that write-data bursts follow write-address transaction order because WID was removed.
+* “Recipients derive later transfer addresses” is directionally correct, but verification must distinguish:
+
+  * Address calculation performed by the subordinate.
+  * Routing state retained by the interconnect.
+  * W-to-AW transaction association.
+* The B response may be offered immediately after both prerequisites are met, but its latency is implementation-dependent.
+
+### Completeness Audit
+
+* Missing AW-first and simultaneous AW/W examples.
+* Missing the case where W is offered before AW but remains backpressured.
+* Missing multiple outstanding writes and AXI4 W-burst ownership.
+* Missing WSTRB legality and byte-lane checks.
+* Missing early/missing/extra WLAST cases.
+* Missing `BVALID` dependency failures.
+* Missing random independent delays on:
+
+  * AWVALID initiation.
+  * AWREADY.
+  * WVALID beats.
+  * WREADY.
+  * BVALID response latency.
+  * BREADY.
+* Missing write scoreboard architecture:
+
+  * Accepted AW queue.
+  * Pre-address W buffer.
+  * Current AXI4 W owner.
+  * Per-ID B-response queues.
+  * Outstanding write count.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-write-channels.json` with selectable:
+
+  * AW before W.
+  * W before AW and accepted.
+  * W before AW and stalled.
+  * AW and W simultaneous.
+  * Long independent AW/W stalls.
+* Add an `AW_QUEUE` row and a `CURRENT_W_OWNER` row.
+* Add buffer occupancy for W beats accepted before AW.
+* Add early-BVALID and WLAST fault injection.
+* Add accepted-edge counters independently for AW, W, and B.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* State that W may be offered before AW, but the destination is not required to accept it.
+* Explain the buffering obligation when early W data is accepted.
+* Add the AXI4 write-data-in-AW-order rule.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add an AW/W/B transaction-association scoreboard.
+* Add stateful BVALID eligibility checking.
+* Randomize all six write-channel VALID/READY timing controls independently.
+* Cover AW-before-W, W-before-AW, simultaneous, and stall permutations.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add transaction-queue and buffer-state overlays to the existing write waveform.
+* Add selectable legal and illegal channel-order scenarios.
+
+---
+
+## [14_read_transaction_walkthrough — Read Transaction Walkthrough]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The AR and R timeline is technically sound.
+* `RVALID` begins only after the AR request has been accepted.
+* The complete R payload is correctly held stable during backpressure:
+
+  * `RID`.
+  * `RDATA`.
+  * `RRESP`.
+  * `RLAST`.
+* The error on the final beat correctly does not shorten the burst.
+* `RLAST` is correctly tied to accepted beat `ARLEN+1`, not merely to elapsed cycles.
+* The lesson should state explicitly that `RVALID` must not depend on `RREADY`.
+* The AHB comparison should say that accepted AHB address phases use HTRANS to identify burst progression. HTRANS is not simply an end marker driven on every elapsed cycle.
+* When optional `RUSER` is implemented, it is also part of the payload that must remain stable under R backpressure.
+
+### Completeness Audit
+
+* Missing RVALID initial-latency randomization.
+* Missing gaps between R beats.
+* Missing multiple outstanding reads.
+* Missing different-ID interleaving.
+* Missing same-ID ordering.
+* Missing RID mismatch.
+* Missing early, missing, and repeated RLAST.
+* Missing narrow and unaligned read-lane treatment.
+* Missing per-beat RRESP coverage.
+* Missing scoreboard behavior when a burst reports errors but continues to its declared final beat.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-read-channels.json` with:
+
+  * Configurable initial R latency.
+  * Inter-beat RVALID gaps.
+  * Random RREADY stalls.
+  * Two outstanding ARIDs.
+  * Legal different-ID interleaving.
+  * Illegal same-ID response reversal.
+  * Early and missing RLAST.
+* Add an accepted-beat count and `EXPECTED_RLAST` row.
+* Add a narrow-read byte-lane overlay.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Add the rule that RVALID must not depend on RREADY.
+* Add optional RUSER to the held R payload.
+* Refine the AHB comparison around accepted HTRANS address phases.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add AR-to-R transaction correlation and accepted-beat tracking.
+* Assert exactly `ARLEN+1` accepted R transfers.
+* Add RID, RLAST, same-ID-order, and response-per-beat checks.
+* Randomize RVALID latency/gaps and RREADY backpressure.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add multi-ID and RLAST-failure modes to the read waveform.
+* Add response and byte-lane inspection per accepted beat.
+
+---
+
+## [15_burst_structure_beat_progression — Burst Structure and Beat Progression]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* `AxLEN+1` beat calculation is correct.
+* `2^AxSIZE` byte calculation is correct.
+* The displayed aligned FIXED and INCR address sequences are correct.
+* The displayed WRAP4 sequence is also correct:
+
+  `0x100C → 0x1000 → 0x1004 → 0x1008`
+* Saying FIXED and WRAP are “limited to 16” is incomplete:
+
+  * FIXED can contain 1–16 beats.
+  * WRAP length must be exactly 2, 4, 8, or 16.
+* The text should distinguish “maximum bytes represented by AxSIZE” from valid byte lanes on an unaligned first transfer.
+* The aligned INCR example is correct, but it does not teach the address formula for unaligned INCR bursts.
+* The 4KB rule applies to every legal burst, although the practical address calculation differs between FIXED, INCR, and WRAP.
+
+### Completeness Audit
+
+* Missing the reserved `AxBURST=2'b11` encoding.
+* Missing exact WRAP lengths.
+* Missing unaligned INCR progression:
+
+  * Beat 1 starts at `AxADDR`.
+  * Later transfer addresses use the aligned boundary and increment.
+* Missing lane masks and WSTRB interaction.
+* Missing address generation for narrow transfers on a wider bus.
+* Missing 4KB checks for unaligned requests.
+* Missing configurable AXI3 versus AXI4 limits.
+* Missing address-predictor pseudocode and SVA.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/timelines/axi_burst_address_progression.json` with:
+
+  * Editable start address.
+  * AxLEN.
+  * AxSIZE.
+  * AxBURST.
+  * Data-bus width.
+* Add unaligned INCR examples.
+* Add byte-lane masks for each beat.
+* Add invalid reserved-burst, WRAP-length, WRAP-alignment, and 4KB-crossing modes.
+* Display:
+
+  `bytes_per_beat = 1 << AxSIZE`
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace generic WRAP “up to 16” wording with exact legal lengths.
+* Clarify AxSIZE versus actual valid byte lanes.
+* Add the reserved AxBURST encoding.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add an address predictor for FIXED, INCR, and WRAP.
+* Assert 4KB legality and WRAP alignment.
+* Cross burst type, size, length, starting offset, and bus width.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Convert the fixed timeline into an interactive address and lane calculator.
+* Add invalid-configuration explanations beside generated addresses.
+
+---
+
+## [16_wlast_and_rlast_meaning — The Meaning of WLAST and RLAST]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AXI3 and AXI4 do not support early burst termination.
+* WLAST and RLAST must agree with the length declared by AWLEN and ARLEN.
+* Accepted beats—not elapsed clock cycles—must be counted.
+* Calling a LAST mismatch a **“fatal”** protocol violation is unnecessarily prescriptive. It is a protocol violation, but recovery, error reporting, and system impact are implementation-dependent.
+* The recommended property is imprecisely worded. WLAST can be asserted while the final beat is stalled:
+
+  * `WVALID=1`.
+  * `WREADY=0`.
+  * `WLAST=1`.
+* The correct check is evaluated on every accepted data beat:
+
+  * Accepted non-final beat → LAST must be low.
+  * Accepted final declared beat → LAST must be high.
+* A separate stability property must ensure LAST does not change while its beat is stalled.
+* W-before-AW makes write-length checking more complex. A checker may need to temporarily buffer accepted W beat state until the corresponding AWLEN is available.
+* AXI3 adds WID-based data association; AXI4 uses AW transaction order.
+
+### Completeness Audit
+
+* Missing missing-LAST-only and extra-beat-only examples.
+* Missing LAST held high through backpressure.
+* Missing RLAST failure waveform.
+* Missing W-before-AW checker behavior.
+* Missing multiple outstanding write bursts.
+* Missing AXI3 WID-aware WLAST tracking.
+* Missing errors on non-final R beats while RLAST remains correctly positioned.
+* Missing formal properties proving exact beat count.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-debug-wlast.json` with:
+
+  * Early WLAST.
+  * Missing WLAST.
+  * Extra W beat.
+  * Final WLAST stalled for several cycles.
+  * Correct WLAST.
+* Add equivalent RLAST scenarios.
+* Add accepted-beat and elapsed-cycle counters.
+* Add an AWLEN/ARLEN versus observed count comparison panel.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace “fatal protocol violation” with protocol violation plus implementation-dependent recovery.
+* Rewrite the LAST rule around accepted beats.
+* Add LAST stability during backpressure.
+* Add AXI3 WID versus AXI4 AW-order context.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add exact-count WLAST and RLAST assertions.
+* Add extra-beat and missing-beat detection.
+* Build a W-before-AW-capable write-data checker.
+* Add coverage for LAST position × stall length × response.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add RLAST and stalled-final-beat modes.
+* Add a first-failing-accepted-edge debug interaction.
+
+---
+
+## [17_ids_and_transaction_matching — IDs and Transaction Matching]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* AWID/BID and ARID/RID correlation is directionally correct.
+* “The slave mirrors the exact ID” applies to the ID accepted at that local subordinate interface. An interconnect can widen, remap, or privately retain source identity and must restore the originating interface’s ID on the response path.
+* RID does not by itself “close out” a read transaction. A read retires only when the accepted R beat also has RLAST asserted.
+* BID retires one write only when `BVALID && BREADY` occurs.
+* IDs are not required to be unique across all outstanding transactions. The same ID can be reused and creates a per-ID issue-order queue.
+* The lesson omits WID completely:
+
+  * AXI3 includes WID and can support write-data interleaving.
+  * AXI4 removes WID.
+  * AXI4 write-data bursts follow write-address transaction order.
+* IDs define ordering and response-correlation streams, not globally unique transaction numbers.
+* The crossbar visual correctly demonstrates two managers legally using the same local ID and the fabric preserving source context.
+
+### Completeness Audit
+
+* Missing WID and AXI3 write interleaving.
+* Missing same-ID reuse.
+* Missing per-ID FIFO behavior.
+* Missing read beat interleaving across different RIDs.
+* Missing BID/RID with no outstanding request.
+* Missing duplicate or unknown response IDs.
+* Missing ID-width conversion checks.
+* Missing ID truncation and remapping collisions.
+* Missing AXI4-Lite behavior when IDs are absent.
+* Missing transaction scoreboarding that combines ID, issue order, beat index, and destination context.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-ids-correlation.json` with:
+
+  * Same-ID writes.
+  * Different-ID writes.
+  * AXI3 WID-interleaved data.
+  * AXI4 non-interleaved data.
+  * Unknown BID.
+* Add a per-ID queue visual:
+
+  * ID 0: A → C.
+  * ID 1: B.
+* Extend `content/visuals/tp-axi-crossbar.json` with selectable ID widening, remapping, and collision faults.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct read retirement to require accepted RLAST.
+* Add AXI3 WID semantics and AXI4 WID removal.
+* State that IDs can be reused and are local ordering/correlation identifiers.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Build per-ID issue-order queues for reads and writes.
+* Add BID/RID existence, duplication, and width-conversion checks.
+* Add AXI3 WID-aware and AXI4 AW-order-aware write scoreboards.
+* Cover ID reuse, outstanding count per ID, and response reordering.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build an AXI3-versus-AXI4 write-data association visual.
+* Add live per-ID request and response queues.
+
+---
+
+## [18_outstanding_transactions — Outstanding Transactions]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The address-handshake-to-final-response bookkeeping boundaries are correct.
+* A read retires on accepted RLAST.
+* A write retires on an accepted B response.
+* The same ID can legally be reused while an earlier transaction with that ID remains outstanding.
+* Outstanding depth is not equal to the number of distinct ID values.
+* The AHB comparison should be qualified to one AHB interface path.
+* A target cannot simply “fetch requests in whatever order is most efficient” without preserving:
+
+  * Same-ID response order.
+  * Burst beat order.
+  * Memory and attribute ordering constraints.
+* For writes, W data can be accepted before AW. This creates data-buffer occupancy even before the transaction enters the accepted-AW outstanding table.
+* Separate read and write outstanding limits can exist.
+* Per-ID limits can also differ from global outstanding limits.
+
+### Completeness Audit
+
+* Missing separate counters for:
+
+  * Accepted outstanding reads.
+  * Accepted outstanding writes.
+  * Pre-address W data.
+  * Outstanding transactions per ID.
+* Missing BREADY/RREADY backpressure causing retirement blockage.
+* Missing maximum-depth behavior under held address VALID.
+* Missing response with no allocated entry.
+* Missing duplicate retirement.
+* Missing reset/flush behavior with outstanding traffic.
+* Missing scoreboard overflow and underflow checks.
+* Missing coverage of depth transitions from 0 to maximum and maximum back to 0.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/timelines/axi_outstanding_window.json` with:
+
+  * Configurable maximum depth.
+  * Current global depth.
+  * Per-ID depth.
+  * Read/write selector.
+  * B/R backpressure.
+* Add overflow and underflow fault modes.
+* Add W-before-AW buffer occupancy.
+* Add reset while transactions remain active.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Qualify target reordering by ordering and attribute rules.
+* Qualify the AHB comparison to a single interface path.
+* Distinguish accepted-AW outstanding state from early W buffering.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add separate read/write and per-ID counters.
+* Assert no configured-depth overflow and no response underflow.
+* Add exact allocation and retirement conservation.
+* Cover every depth bucket and maximum-depth throttling.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Turn the outstanding timeline into a configurable credit tracker.
+* Add queue and occupancy inspection by ID.
+
+---
+
+## [19_ordering_guarantees — Ordering Guarantees]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* Same-ID read responses and same-ID write responses must preserve their applicable issue order.
+* Different IDs have no relative response-order guarantee.
+* Different-ID read beats can be interleaved where the connected components support interleaving.
+* The lesson must distinguish:
+
+  * Response order at an interface.
+  * Internal target execution order.
+  * Memory visibility and side-effect order.
+* Same numeric IDs on the read and write channels do not create read/write ordering.
+* The explanation that the master would misattribute reversed same-ID responses is useful, but same-ID ordering is a protocol obligation, not merely an implementation convenience.
+* The heading “Different IDs: Total Chaos” should be replaced. Different IDs still obey:
+
+  * Correct RID/BID correlation.
+  * Beat order within each burst.
+  * LAST rules.
+  * Attribute and memory-ordering restrictions.
+* Waiting for a B handshake before issuing a read is a useful minimum sequencing technique, but it is not a universal memory-visibility barrier:
+
+  * Bufferable writes can receive a response before reaching the final destination.
+  * System memory ordering can require barriers, non-bufferable attributes, or additional destination-specific rules.
+* Reusing the same ID does not universally order accesses across unrelated targets or create a read/write barrier.
+
+### Completeness Audit
+
+* Missing same-ID versus different-ID write examples.
+* Missing response order versus side-effect order.
+* Missing cross-target behavior.
+* Missing memory attribute effects.
+* Missing read-data interleaving.
+* Missing AXI3 write-data interleaving and WID.
+* Missing same-ID scoreboard queues.
+* Missing illegal same-ID response reversal.
+* Missing coverage for:
+
+  `direction × same/different ID × same/different target × completion order`
+
+### Visuals & Animations Required
+
+* Create an ordering matrix showing:
+
+  * Read/read same ID.
+  * Read/read different ID.
+  * Write/write same ID.
+  * Write/write different ID.
+  * Read/write same numeric ID.
+* Add response-order versus side-effect-order lanes.
+* Extend `content/visuals/wf-axi-in-order.json` with a deliberate same-ID violation.
+* Add cross-target and bufferable-write scenarios.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace “total chaos” with precise lack-of-relative-order wording.
+* Separate response order from execution and memory visibility.
+* Qualify waiting for B as minimum channel sequencing rather than a universal memory barrier.
+* Add destination and attribute context where ordering relies on it.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add same-ID FIFO-order assertions.
+* Add per-direction and per-target ordering models.
+* Add cross-channel hazard tests with memory-attribute awareness.
+* Cross completion order with IDs, targets, direction, and attributes.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build the ordering matrix and side-effect timeline.
+* Add same-ID failure and different-ID legal-reorder controls.
+
+---
+
+## [20_out_of_order_completion — Out-of-Order Completion]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* Different IDs permit responses to complete in a different order.
+* The target is permitted, but not required, to reorder.
+* “Out-of-order completion” is preferable to “out-of-order execution.” AXI does not prescribe the target’s internal execution architecture.
+* The example correctly returns B’s complete burst before A’s complete burst.
+* AXI also permits read-data interleaving between different IDs when supported; this is different from whole-transaction completion reordering.
+* Beat order inside each individual burst remains fixed.
+* Same-ID response order must remain intact.
+* Write behavior differs from read behavior:
+
+  * B responses can reorder across IDs.
+  * AXI4 W data cannot interleave and follows AW order.
+  * AXI3 can use WID for supported write-data interleaving.
+* The exact performance improvement is implementation- and workload-dependent.
+
+### Completeness Audit
+
+* Missing beat-level read interleaving.
+* Missing write-response reordering.
+* Missing AXI3 versus AXI4 write-data behavior.
+* Missing same-ID failure cases.
+* Missing scoreboard corruption example where a monitor keys only by arrival order.
+* Missing target that accepts multiple requests but always responds in order.
+* Missing response backpressure during reordered completion.
+* Missing reorder-depth coverage.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-out-of-order.json` with:
+
+  * Whole-burst reorder.
+  * Different-ID beat interleaving.
+  * RREADY stalls.
+  * Same-ID illegal reorder.
+* Add an equivalent B-response view.
+* Add scoreboard destinations and show data corruption under a FIFO-only scoreboard.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Use “response completion” rather than internal execution where appropriate.
+* Add AXI4 W-order and AXI3 WID distinctions.
+* State that each burst’s own beat order remains fixed.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Build ID-aware reorder-capable scoreboards.
+* Add data-integrity checking independent of response arrival order.
+* Cover reorder depth, ID combinations, interleaving, and backpressure.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add beat-interleaving and write-response views.
+* Add a correct versus incorrect scoreboard animation.
+
+---
+
+## [21_backpressure_behavior — Backpressure Behavior]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* AXI backpressure is local to each channel rather than controlled by one global HREADY.
+* A W stall does not inherently block AW, AR, R, or B.
+* Internal resource limits can still couple channel readiness.
+* “The master cannot send any more write data” should be stated as:
+
+  * No additional W transfer can be accepted.
+  * The current offered beat must remain asserted and stable.
+* The circular READY-policy example is a legitimate system-level liveness failure.
+* The shown signals do not necessarily contain an AXI safety violation because both sources correctly hold VALID and payload.
+* A direct combinational interface-input-to-interface-output dependency would separately violate AXI’s no-combinational-path requirement.
+* A bounded timeout is a product or integration contract, not a universal AXI maximum-latency rule.
+
+### Completeness Audit
+
+* Missing random backpressure on every READY signal.
+* Missing random source gaps on every VALID signal.
+* Missing bursty and correlated stalls.
+* Missing queue occupancy and credit exhaustion.
+* Missing reset under backpressure.
+* Missing B and R response starvation.
+* Missing fairness and progress assumptions.
+* The associated deadlock exercise incorrectly treats one specific dependency cycle as purely a protocol-VALID rule problem; it needs integration-policy context.
+
+### Visuals & Animations Required
+
+* Extend `content/visuals/wf-axi-deadlock.json` with a visible dependency graph.
+* Add randomized READY sequences on all five channels.
+* Add queue occupancy and blocked-resource rows.
+* Add:
+
+  * Safety violation.
+  * Liveness failure.
+  * Combinational-loop failure.
+  * Configured-timeout failure.
+* Show each as a separate classification.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Replace “cannot send more data” with precise transfer and stability wording.
+* Rewrite `ex-axi-deadlock` to distinguish AXI safety, combinational-path, and integration-liveness failures.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add independent random READY and VALID delays.
+* Add stability assertions plus assumption-gated progress properties.
+* Cover stall length, channel combination, occupancy, and recovery.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add randomized backpressure controls.
+* Add dependency and queue-occupancy overlays.
+
+---
+
+## [22_throughput_reasoning_bottlenecks — Throughput Reasoning and Bug Gallery]
+
+Status: Needs Expansion
+
+### Accuracy Audit
+
+* The AHB-versus-AXI comparison correctly demonstrates channel isolation rather than a universal performance guarantee.
+* Outstanding depth is correctly separated from ID count.
+* B-response latency can exhaust write tracking resources.
+* The address-only scoreboard warning is valid. A write scoreboard needs:
+
+  * An accepted AW transaction object.
+  * Correct W-burst association.
+  * Per-ID issue order.
+  * BID correlation.
+* Keying only by ID is also insufficient because an ID can be reused.
+* Waiting for the B handshake before issuing a dependent operation removes overlap at the manager interface, but is not always a complete memory-visibility solution for bufferable writes or system-level ordering.
+* A write-read race is not solved merely by matching numeric AWID and ARID.
+* “The interconnect or slave might reorder different-ID writes” must be kept distinct from AXI4 W-data ordering. W bursts still follow AW order even when B responses later reorder.
+
+### Completeness Audit
+
+* Missing quantitative metrics:
+
+  * Address throughput.
+  * Data throughput.
+  * Response throughput.
+  * Outstanding occupancy.
+  * Average stall length.
+  * Bytes per cycle.
+* Missing read-path bottlenecks.
+* Missing same-ID queue head blocking.
+* Missing interconnect arbitration and target acceptance limits.
+* Missing W-before-AW buffering.
+* Missing explicit data-corruption scoreboard case.
+* Missing system-memory-ordering caveats.
+* Missing performance coverage and configurable service bounds.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/wf-axi-throughput.json` with:
+
+  * AW/W/B and AR/R utilization counters.
+  * Outstanding-depth graph.
+  * Same-ID head-of-line blocking.
+  * Different-ID service opportunity.
+  * B and R backpressure.
+* Add correct and flawed scoreboard panels.
+* Add configurable manager, interconnect, and subordinate limits.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Qualify B-handshake sequencing as interface-level sequencing, not a universal memory barrier.
+* Distinguish B-response reorder from AXI4 W-data order.
+* Expand scoreboard wording to include W association and repeated same-ID transactions.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add end-to-end data-integrity scoreboards.
+* Add per-channel utilization and outstanding-depth coverage.
+* Add performance-contract checks separately from protocol assertions.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Add configurable bottleneck and scoreboard modes.
+* Display channel utilization, queues, and completion order dynamically.
+
+---
+
+## [23_burst_types — Burst Types: INCR, FIXED, and WRAP]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* FIXED, INCR, and WRAP encodings are correct.
+* The INCR address calculation is imprecise. The increment is not the numeric AxSIZE field; it is:
+
+  `bytes_per_beat = 1 << AxSIZE`
+* The WRAP block-size formula is wrong:
+
+  Current:
+
+  `(AxSIZE bytes) × (AxLEN + 1)`
+
+  Correct:
+
+  `(1 << AxSIZE) × (AxLEN + 1)`
+* WRAP lengths are correctly listed as 2, 4, 8, or 16.
+* The WRAP start address must be aligned to the transfer size, not necessarily to the entire wrap span.
+* FIXED bursts are not “almost exclusively” FIFOs; device windows and repeated-address access models can also use them.
+* AXI4 FIXED bursts are limited to 16 beats.
+* The reserved `AxBURST=2'b11` value is missing.
+* The 4KB boundary rule is missing from this dedicated burst-type lesson.
+
+### Completeness Audit
+
+* Missing generated-address examples for every burst type.
+* Missing unaligned FIXED and INCR behavior.
+* Missing WRAP2, WRAP8, and WRAP16.
+* Missing invalid WRAP length and alignment.
+* Missing 4KB legality.
+* Missing AXI3/AXI4 burst-length differences.
+* Missing write-strobe lane behavior.
+* No linked visual or exercise exists.
+
+### Visuals & Animations Required
+
+* Add `tl-axi-burst-address-progression` to the lesson.
+* Expand it with WRAP2/4/8/16 and editable controls.
+* Add a reserved AxBURST scenario.
+* Add start-address, transfer-size, wrap-base, and boundary calculations.
+* Add a FIXED FIFO interaction showing the address repeats while data changes.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct both INCR and WRAP formulas.
+* Add FIXED length, reserved encoding, and 4KB rules.
+* Remove the “almost exclusively FIFO” claim.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add burst-type constraints and address-progression assertions.
+* Add WRAP length/alignment and 4KB illegal bins.
+* Cover burst type × length × size × offset.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Link and expand the existing burst-address timeline.
+* Add editable calculation and invalid-pattern modes.
+
+---
+
+## [24_address_alignment — Address Alignment]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* AXI permits unaligned starting addresses for INCR and FIXED bursts.
+* WRAP starting addresses must be aligned to the transfer size.
+* Calling general alignment only “strongly recommended” is too vague. The lesson must explicitly separate:
+
+  * Legal unaligned INCR/FIXED starts.
+  * Mandatory WRAP alignment.
+  * Implementation-supported transaction sizes.
+* For a 4-byte transfer beginning at `0x1` on a 32-bit data bus, the first transfer can qualify lanes 1–3 with `WSTRB=4'b1110`. AxSIZE still declares a maximum four-byte transfer.
+* “Place data as if the address were aligned” is misleading. The source must place each addressed byte in the correct lane derived from address and bus width.
+* In an unaligned INCR burst, later transfer addresses use the aligned transfer boundary. This is address-generation behavior, not a subordinate arbitrarily “adjusting” the manager’s request.
+* FIXED unaligned transfers remain at the same unaligned transfer address and use the corresponding lane pattern.
+* Reads have no RSTRB; the master must use address and ARSIZE to identify requested lanes.
+* Returning SLVERR for an unsupported unaligned access is an implementation behavior, not the universal AXI definition of unaligned traffic.
+
+### Completeness Audit
+
+* Missing formulas for lower and upper byte lanes.
+* Missing narrow-transfer lane tables.
+* Missing 64-, 128-, and wider-bus examples.
+* Missing read-lane behavior.
+* Missing endianness configuration.
+* Missing WSTRB legality:
+
+  * No strobe outside the transfer’s legal byte lanes.
+  * Sparse strobes only where permitted by the transaction.
+* Missing unaligned multi-beat examples.
+* Missing sub-word constrained-random generation.
+* Missing alignment and lane SVA.
+* No linked visual or exercise exists.
+
+### Visuals & Animations Required
+
+* Create `content/visuals/waveforms/axi_unaligned_byte_lanes.json`.
+* Include:
+
+  * 32-/64-/128-bit data buses.
+  * Byte, halfword, word, and doubleword sizes.
+  * Aligned and unaligned INCR.
+  * Unaligned FIXED.
+  * Read and write views.
+* Highlight valid byte lanes and WSTRB.
+* Display the aligned transfer address and next generated address.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Rewrite the unaligned lane-placement explanation.
+* Replace “slave automatically adjusts” with derived AXI address progression.
+* Separate legal unaligned traffic from unsupported-target behavior.
+* Add read-lane semantics.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add WSTRB legal-mask assertions.
+* Add AxSIZE-versus-bus-width constraints.
+* Add constrained-random aligned and unaligned sub-word transfers.
+* Cross size, offset, bus width, direction, and strobe pattern.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build the interactive lane and address visual.
+* Add legal-mask and fault-injection modes.
+
+---
+
+## [25_4kb_boundary_rule — The 4KB Boundary Rule]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* The central rule is correct: one AXI burst must not cross a 4KB boundary.
+* The provided aligned example is correct:
+
+  * `0x0FF8`.
+  * Four beats.
+  * Four bytes per beat.
+  * Beat addresses `0x0FF8`, `0x0FFC`, `0x1000`, `0x1004`.
+* The highest transferred byte is `0x1007`; the end-exclusive address is `0x1008`.
+* The rationale based on operating-system page faults and potentially non-contiguous virtual pages is misleading. AXI operates on the system addresses presented to the interface; virtual-memory translation and page faults normally occur before this point.
+* The primary protocol reason is to prevent one burst from crossing an interconnect decode boundary and requiring routing to more than one subordinate.
+* The 4KB calculation must account for unaligned starts. Blindly using:
+
+  `start + beats × bytes`
+
+  can overestimate the first partial transfer.
+* A robust checker must calculate the byte lanes or final generated transfer address according to FIXED, INCR, or WRAP semantics.
+* The exercise’s crossing conclusion is correct, but its address explanation should state:
+
+  * Final beat start: `0x100C`.
+  * Final byte: `0x100F`.
+  * End-exclusive address: `0x1010`.
+
+### Completeness Audit
+
+* Missing exact check formulas.
+* Missing unaligned INCR examples near the boundary.
+* Missing FIXED and WRAP analysis.
+* Missing maximum-width transfers near 4KB.
+* Missing legal burst ending at `0xFFF`.
+* Missing illegal burst whose first crossing occurs on the final beat.
+* Missing manager split-generation logic.
+* Missing subordinate/interconnect checker behavior.
+* The existing visual is a static summary rather than a waveform or address calculator.
+
+### Visuals & Animations Required
+
+* Upgrade `content/visuals/wf-axi-4kb-boundary.json` into an interactive calculator.
+* Inputs:
+
+  * AxADDR.
+  * AxLEN.
+  * AxSIZE.
+  * AxBURST.
+  * Bus width.
+* Outputs:
+
+  * Generated beat addresses.
+  * Byte-lane range per beat.
+  * First crossing beat.
+  * Highest transferred byte.
+  * Legal split point.
+* Add aligned and unaligned examples.
+* Add a 4KB region map showing that one request must retain one route.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Remove the OS page-fault rationale.
+* Replace it with subordinate decode and routing rationale.
+* Add exact final-byte calculations.
+* Correct the exercise terminology around final beat, final byte, and end-exclusive address.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add burst-aware 4KB assertions.
+* Add manager constraints that split requests before the boundary.
+* Cover distance-to-boundary × size × length × type × alignment.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Rebuild the visual as an address/lane calculator.
+* Add route-boundary and automatic-split animation.
+
+---
+
+## [26_legal_illegal_patterns — Legal and Illegal Transaction Patterns]
+
+Status: Major Revisions
+
+### Accuracy Audit
+
+* The source VALID dependency rules are correct.
+* W-before-AW is legal to offer, but the lesson should state that the destination is not obligated to accept W early.
+* The BVALID rule is incomplete and incorrectly based on WLAST assertion alone.
+
+  Correct AXI4 prerequisite:
+
+  * AW handshake completed.
+  * Final W beat completed with `WVALID && WREADY && WLAST`.
+* The RVALID rule must refer to an accepted AR handshake, not merely ARVALID assertion.
+* WRAP6 and oversized AxSIZE examples are correctly illegal.
+* Early WLAST is correctly illegal.
+* All-zero WSTRB is protocol-legal for an ordinary write beat, but presenting it as the generic “correct way to pad a burst you cannot fill” is dangerous:
+
+  * All declared beats must still transfer.
+  * WLAST must remain correctly positioned.
+  * Device or FIFO side-effect behavior must be understood.
+  * It must not be generalized to reads.
+* Same-ID B-response reversal is illegal.
+* Different-ID B-response reversal is permitted.
+* Read and write channels have no ordering solely because their numeric IDs match.
+* The lesson omits the AXI4 prohibition on write-data interleaving and the AXI3 WID distinction.
+
+### Completeness Audit
+
+* Missing payload-stability violations.
+* Missing early BVALID before AW.
+* Missing early BVALID before final W acceptance.
+* Missing RVALID with unknown RID.
+* Missing early/missing LAST.
+* Missing extra W/R beats.
+* Missing reserved AxBURST.
+* Missing WRAP misalignment.
+* Missing illegal WSTRB masks.
+* Missing 4KB calculations for unaligned bursts.
+* Missing same-ID read ordering.
+* Missing AXI3 WID and AXI4 W-order examples.
+* Missing outstanding overflow and unknown response IDs.
+* No linked visual or exercise exists.
+
+### Visuals & Animations Required
+
+* Create `content/visuals/waveforms/axi_legal_illegal_patterns.json`.
+* Group scenarios by:
+
+  * Handshake.
+  * Cross-channel dependency.
+  * LAST.
+  * Burst mathematics.
+  * IDs and ordering.
+  * Outstanding tracking.
+  * WSTRB.
+* Add first-violating-edge selection.
+* Add AXI3/AXI4 mode.
+* Show expected checker or SVA for each violation.
+
+### Implementation Action Items
+
+**P0 (Protocol Corrections):**
+
+* Correct BVALID prerequisites.
+* Replace ARVALID wording with accepted AR handshake.
+* Qualify all-zero WSTRB padding.
+* Add AXI3 WID and AXI4 write-data-order rules.
+* State that early W offering does not require early acceptance.
+
+**P1 (DV/Assertion Upgrades):**
+
+* Add a consolidated protocol-checker map.
+* Add legal/illegal coverpoints and negative-test classification.
+* Add transaction correlation, LAST, WSTRB, ordering, outstanding, and 4KB properties.
+
+**P2 (Visual/Interaction Enhancements):**
+
+* Build the legal/illegal pattern visualizer.
+* Add revision filters, first-failure selection, and checker explanations.
+
+---
+
+# Batch-Wide Priority Findings
+
+## P0 — Immediate Protocol Corrections
+
+1. Add AXI3 WID and AXI4’s removal of write-data interleaving to Lessons 17, 20, and 26.
+2. Correct RID retirement: a read closes only on an accepted RLAST beat.
+3. Replace the WRAP block-size formula with:
+
+   `wrap_bytes = (1 << AxSIZE) × (AxLEN + 1)`
+4. State exact WRAP lengths: 2, 4, 8, or 16.
+5. Rewrite unaligned transfer and byte-lane behavior in Lesson 24.
+6. Remove the virtual-memory/page-fault rationale from the 4KB lesson.
+7. Correct BVALID eligibility in Lesson 26.
+8. Separate response ordering from internal execution and memory visibility.
+9. Qualify “wait for B” as interface-level sequencing rather than a universal memory barrier.
+10. Rewrite the deadlock exercise to distinguish protocol safety from integration liveness.
+
+## P1 — Required DV Infrastructure
+
+The verification environment needs:
+
+* An accepted AW queue in transaction order.
+* A W-data association model supporting W-before-AW.
+* AXI3 WID-aware and AXI4 AW-order-aware modes.
+* Per-ID write-response queues.
+* Per-ID read-request queues.
+* Per-transaction accepted-beat counters.
+* Separate read/write outstanding counters.
+* Per-ID outstanding counters.
+* ID remapping and restoration checking.
+* End-to-end data scoreboards independent of response arrival order.
+* Burst address and byte-lane predictors.
+* WSTRB legality checking.
+* 4KB boundary checking.
+* Same-ID ordering properties.
+* Different-ID reorder coverage.
+* Outstanding-depth and backpressure coverage.
+
+## P2 — Shared Visual Priorities
+
+1. Convert the burst progression timeline into a configurable FIXED/INCR/WRAP calculator.
+2. Build a byte-lane and unaligned-transfer visual.
+3. Rebuild the 4KB visual as an address/lane and split calculator.
+4. Add AXI3 WID versus AXI4 write-order animation.
+5. Add live per-ID scoreboard queues.
+6. Add correct-versus-corrupt out-of-order scoreboard behavior.
+7. Build a consolidated legal/illegal pattern visualizer.
