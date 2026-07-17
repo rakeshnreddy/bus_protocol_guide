@@ -4,7 +4,7 @@ Last updated: 2026-07-18
 
 ## Current directive
 
-Finish AHB and AXI visual and interactive learning to a high educational standard. The historical R1-R6 program for audits1-6 passed, but overall closure is reopened for the six Task 7 rows in `docs/AUDIT_REMEDIATION_TRACKER.md`. Task 7 implementation is in progress; do not claim comprehensive completion or begin APB until those rows pass their full gates.
+AHB and AXI visual and interactive learning is complete for audits1-6 and the six Task 7 closure findings in `docs/AUDIT_REMEDIATION_TRACKER.md`. Preserve the completed system and do not begin APB unless the product directive changes.
 
 ## Phase V0 — Visual recovery
 
@@ -737,7 +737,7 @@ Browser verification covered AXI lessons 01–26 plus `/visuals`, `/dev/visuals`
 
 ## Audit-remediation closure status
 
-R1-R6 are historically complete for audits1-6. Five Task 7 content/runtime packages now pass their complete local automated and live-browser gates; only the published-main CI run remains open. Preserve the AHB/AXI visual system and do not begin APB.
+R1-R6 and all six Task 7 packages are complete. The final tracker has 102/102 terminal rows, the verified history is published to both the topic branch and `main`, and the GitHub CI gate passes. Preserve the AHB/AXI visual system and do not begin APB.
 
 ## Audit-remediation evidence after R4
 
@@ -811,7 +811,7 @@ Final R6 phase gate:
 
 Final browser verification rendered all 88 lessons at 1440 × 1000 and exactly 375 × 812, for 176 lesson checks, and rendered eight shared/reference routes at both viewports, for 16 more checks. The matrix found no missing/blank content, page overflow, reduced-motion violation, undersized tested control, console warning or page error. Light/dark/system themes, production search, topology pointer/Enter/Space selection and pressed state, 44 px connector hit areas and mobile internal scrolling passed. Ten representative axe WCAG A/AA scans reported zero serious or critical violations after active sidebar-order and Visuals-filter contrast were corrected.
 
-All 96 audit-remediation tracker rows now have terminal evidence-backed dispositions: 95 Implemented and one Superseded by spec-validated correction. There are zero blocked items and no APB curriculum additions.
+The historical audits1-6 program closed 96 rows: 95 Implemented and one Superseded by spec-validated correction. Task 7 extends final closure to 102/102 terminal rows: 101 Implemented and one Superseded, with zero blocked items and no APB curriculum additions.
 
 ## Task 7 follow-up evidence
 
@@ -830,4 +830,6 @@ Current local gate:
 - Search chunk: 27.63 kB
 - Largest chunk: 404.47 kB, below 500 kB
 
-Live changed-route browser verification passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812. TSTRB content, formal dynamic-AWLEN feedback, debug values and the new bridge topology rendered without missing/blank state, console warnings/errors or page overflow. Pointer/Enter/Space, pressed state, 44 px topology-edge hit areas, mobile internal scrolling, light/dark/system themes and reduced motion passed. The new GitHub Actions workflow remains the sole open gate until this verified work is published.
+Live changed-route browser verification passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812. TSTRB content, formal dynamic-AWLEN feedback, debug values and the new bridge topology rendered without missing/blank state, console warnings/errors or page overflow. Pointer/Enter/Space, pressed state, 44 px topology-edge hit areas, mobile internal scrolling, light/dark/system themes and reduced motion passed.
+
+GitHub Actions run [29617021398](https://github.com/rakeshnreddy/bus_protocol_guide/actions/runs/29617021398) independently repeated locked installation, all 646 tests and the production build on `main` in 1m2s. Every step passed and the job reported zero annotations.
