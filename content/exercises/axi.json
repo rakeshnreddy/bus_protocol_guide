@@ -23,12 +23,12 @@
       "False. AW and W handshake independently. A master can assert `WVALID` before, during, or after asserting `AWVALID`, while transaction-level dependencies still apply."
     ],
     "correctOptionIndex": 1,
-    "expectedTakeaway": "Correct! AW and W use independent VALID/READY handshakes, so accepted write data can precede the accepted write address. The slave still has to correlate both histories before producing the write response."
+    "expectedTakeaway": "Correct! AW and W use independent VALID/READY handshakes, so a source can offer W before AW. The destination may withhold WREADY; if it accepts early data, it must buffer and associate it. AXI4 BVALID still waits for accepted AW and accepted final W."
   },
   {
     "id": "ex-axi-ordering",
     "title": "Legal Completion Orders",
-    "prompt": "A master issues three read requests in this order: Request A (ID: 0), Request B (ID: 1), Request C (ID: 0). Which of the following is a completely LEGAL order for the slave to return the data?",
+    "prompt": "A master issues three reads to the same destination and ordering domain in this order: Request A (ID: 0), Request B (ID: 1), Request C (ID: 0). Which listed response order is legal?",
     "type": "multiple-choice",
     "options": [
       "B, C, A",
@@ -37,7 +37,7 @@
       "C, B, A"
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! Transactions with the SAME ID must complete in order. Because A and C both have ID: 0, A must complete before C. B has a different ID, so it can complete anywhere (before A, between A and C, or after C). A, B, C is legal."
+    "expectedTakeaway": "Correct! Within this stated destination and ordering domain, A must complete before C because they share ID 0. B has a different ID and no relative response-order guarantee, so A, B, C is legal. Different-ID reordering is permitted, not required."
   },
   {
     "id": "ex-axi-deadlock",

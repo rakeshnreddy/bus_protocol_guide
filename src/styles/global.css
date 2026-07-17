@@ -458,7 +458,7 @@ pre {
   min-width: 26px;
   padding: 0.1rem 0.36rem;
   border-radius: 999px;
-  color: var(--ink-soft);
+  color: var(--ink-muted);
   background: var(--surface-subtle);
   font-family: var(--font-mono);
   font-size: 0.66rem;
@@ -503,6 +503,11 @@ pre {
   color: var(--ink-soft);
   font-family: var(--font-mono);
   font-size: 0.67rem;
+}
+
+.lesson-nav-link.active .lesson-nav-order {
+  color: var(--brand-ink);
+  font-weight: 750;
 }
 
 .reference-section > summary {

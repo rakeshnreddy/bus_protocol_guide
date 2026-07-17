@@ -17,6 +17,8 @@ checklistIds: []
 
 In AHB, the size of a transfer (`HSIZE`) and the physical width of the data bus are distinct concepts. A system might have a 32-bit physical `HWDATA` bus, but a master can still issue an 8-bit (`HSIZE` = Byte) transfer. 
 
+All encodings are defined: `000` 1 byte, `001` 2 bytes, `010` 4 bytes, `011` 8 bytes, `100` 16 bytes, `101` 32 bytes, `110` 64 bytes, and `111` 128 bytes. An encoding is legal on an interface only when that transfer size does not exceed the configured data-bus width.
+
 ## The Golden Rule of Alignment
 
 **All transfers must be aligned to the address boundary of the transfer size.**
@@ -28,7 +30,7 @@ In AHB, the size of a transfer (`HSIZE`) and the physical width of the data bus 
 
 ## Driving the Right Byte Lanes
 
-When an 8-bit master writes a byte to a 32-bit slave, which of the 32 wires on `HWDATA` actually carry the byte? The AHB protocol dictates that data must be driven on the **natural byte lanes** dictated by the address.
+When a manager issues a byte-sized transfer on a wider interface, which `HWDATA` lanes carry the byte? The active lanes follow the address, transfer size, data width, and endianness.
 
 For a 32-bit (4-byte) bus in a little-endian system:
 - A Byte write to `0x00` is driven on `HWDATA[7:0]`
@@ -40,8 +42,10 @@ For a Halfword (2-byte) write:
 - A Halfword write to `0x00` is driven on `HWDATA[15:0]`
 - A Halfword write to `0x02` is driven on `HWDATA[31:16]`
 
-A smart master will often just replicate its 8-bit payload across *all* byte lanes (e.g., if writing `0xFF`, it drives `0xFFFFFFFF` on the 32-bit bus). The slave is responsible for looking at `HADDR[1:0]` and `HSIZE` to decide which specific bytes to sample and write into memory.
+The mappings above are specifically a **32-bit little-endian example**. Only the active byte lanes are meaningful for the transfer; inactive lanes are not part of the payload. Replicating a byte across inactive lanes can be an implementation choice, but AHB does not require it. The subordinate uses the accepted address/size context for the current data phase to select the active lanes.
 
 The waveform below keeps address and data ownership separate: each `HWDATA` value belongs to the address accepted one cycle earlier. Select the examples to connect alignment, lane selection, and the misaligned halfword violation.
 
 ![Aligned byte, halfword, and word transfers mapped onto natural lanes of a 32-bit AHB write-data bus](visual:wf-ahb-hsize-byte-lanes)
+
+A misaligned or over-width transfer is deliberate invalid stimulus. A checker should flag the first accepting edge. The selected protocol does not define a universal “BLOCK the data phase” recovery sequence for such illegal manager behavior; downstream behavior is outside the legal protocol contract and must be handled by the verification plan rather than invented as a protocol rule.

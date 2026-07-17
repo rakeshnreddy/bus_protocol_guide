@@ -2,13 +2,27 @@
   "id": "cm-ahb-burst-resp",
   "type": "coverage-map",
   "title": "AHB Burst Type vs Response Coverage",
+  "description": "Select the declared interface revision before interpreting response legality. ERROR bins retain first/middle/final accepted-beat counts; RETRY and SPLIT are distinct original-AHB responses and are illegal on AHB-Lite/AHB5.",
+  "configurations": [
+    {
+      "id": "lite-ahb5",
+      "label": "AHB-Lite / AHB5",
+      "description": "One-bit HRESP permits OKAY and ERROR only; RETRY and SPLIT rows are configuration-derived illegal bins.",
+      "illegalRows": ["RETRY", "SPLIT"]
+    },
+    {
+      "id": "original-ahb",
+      "label": "Original AMBA 2 AHB",
+      "description": "RETRY and SPLIT are legal response categories. RETRY does not use HSPLITx; SPLIT eligibility is restored by HSPLITx. Zero hits are coverage holes, not illegal bins."
+    }
+  ],
   "xAxis": {
     "label": "Burst Type (HBURST)",
     "buckets": ["SINGLE", "INCR", "WRAP4", "INCR4", "WRAP8", "INCR8", "WRAP16", "INCR16"]
   },
   "yAxis": {
     "label": "Response (HRESP)",
-    "buckets": ["OKAY", "ERROR", "SPLIT / RETRY"]
+    "buckets": ["OKAY", "ERROR", "RETRY", "SPLIT"]
   },
   "bins": [
     { "x": "SINGLE", "y": "OKAY", "hits": 1500, "illegal": false, "tooltip": "Standard successful single transfer." },
@@ -20,22 +34,31 @@
     { "x": "WRAP16", "y": "OKAY", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: No tests generated a 16-beat wrapping burst that completed successfully." },
     { "x": "INCR16", "y": "OKAY", "hits": 45, "illegal": false, "tooltip": "Successful 16-beat incrementing burst." },
     
-    { "x": "SINGLE", "y": "ERROR", "hits": 120, "illegal": false, "tooltip": "Single transfer resulting in an ERROR (e.g., unmapped address)." },
-    { "x": "INCR", "y": "ERROR", "hits": 60, "illegal": false, "tooltip": "Unspecified length burst receiving an ERROR." },
-    { "x": "WRAP4", "y": "ERROR", "hits": 15, "illegal": false, "tooltip": "4-beat wrapping burst receiving an ERROR." },
-    { "x": "INCR4", "y": "ERROR", "hits": 20, "illegal": false, "tooltip": "4-beat incrementing burst receiving an ERROR." },
-    { "x": "WRAP8", "y": "ERROR", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: Missing test for a WRAP8 burst hitting an unmapped or protected region." },
-    { "x": "INCR8", "y": "ERROR", "hits": 5, "illegal": false, "tooltip": "8-beat incrementing burst receiving an ERROR." },
-    { "x": "WRAP16", "y": "ERROR", "hits": 0, "illegal": false, "tooltip": "Coverage Hole: Missing test for a WRAP16 burst hitting an ERROR." },
-    { "x": "INCR16", "y": "ERROR", "hits": 2, "illegal": false, "tooltip": "16-beat incrementing burst receiving an ERROR." },
+    { "x": "SINGLE", "y": "ERROR", "hits": 120, "illegal": false, "errorBeatHits": { "first": 120, "middle": 0, "final": 0 }, "tooltip": "Single transfer resulting in ERROR; only the first/final accepted beat exists." },
+    { "x": "INCR", "y": "ERROR", "hits": 60, "illegal": false, "errorBeatHits": { "first": 12, "middle": 36, "final": 12 }, "tooltip": "Undefined-length INCR errors crossed with accepted error-beat position." },
+    { "x": "WRAP4", "y": "ERROR", "hits": 15, "illegal": false, "errorBeatHits": { "first": 4, "middle": 8, "final": 3 }, "tooltip": "WRAP4 ERROR samples retain the failing accepted-beat index." },
+    { "x": "INCR4", "y": "ERROR", "hits": 20, "illegal": false, "errorBeatHits": { "first": 5, "middle": 10, "final": 5 }, "tooltip": "INCR4 ERROR samples retain the failing accepted-beat index." },
+    { "x": "WRAP8", "y": "ERROR", "hits": 0, "illegal": false, "errorBeatHits": { "first": 0, "middle": 0, "final": 0 }, "tooltip": "Missing WRAP8 ERROR coverage at every accepted-beat position." },
+    { "x": "INCR8", "y": "ERROR", "hits": 5, "illegal": false, "errorBeatHits": { "first": 1, "middle": 3, "final": 1 }, "tooltip": "INCR8 ERROR samples retain the failing accepted-beat index." },
+    { "x": "WRAP16", "y": "ERROR", "hits": 0, "illegal": false, "errorBeatHits": { "first": 0, "middle": 0, "final": 0 }, "tooltip": "Missing WRAP16 ERROR coverage at every accepted-beat position." },
+    { "x": "INCR16", "y": "ERROR", "hits": 2, "illegal": false, "errorBeatHits": { "first": 0, "middle": 2, "final": 0 }, "tooltip": "INCR16 has only middle-beat ERROR samples; first and final remain holes." },
 
-    { "x": "SINGLE", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]. HRESP is a 1-bit signal (OKAY/ERROR) only." },
-    { "x": "INCR", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]. HRESP is a 1-bit signal (OKAY/ERROR) only." },
-    { "x": "WRAP4", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
-    { "x": "INCR4", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
-    { "x": "WRAP8", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
-    { "x": "INCR8", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
-    { "x": "WRAP16", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." },
-    { "x": "INCR16", "y": "SPLIT / RETRY", "hits": 0, "illegal": true, "tooltip": "Illegal: SPLIT and RETRY responses were removed in [glossary:AHB-Lite] and [glossary:AHB5]." }
+    { "x": "SINGLE", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY requests a later reattempt and does not use HSPLITx." },
+    { "x": "INCR", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY requests a later reattempt and does not use HSPLITx." },
+    { "x": "WRAP4", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+    { "x": "INCR4", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+    { "x": "WRAP8", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+    { "x": "INCR8", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+    { "x": "WRAP16", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+    { "x": "INCR16", "y": "RETRY", "hits": 0, "illegal": false, "tooltip": "Original AHB RETRY is legal; zero indicates a coverage hole." },
+
+    { "x": "SINGLE", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT removes the master from eligibility until HSPLITx permits retry." },
+    { "x": "INCR", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT removes the master from eligibility until HSPLITx permits retry." },
+    { "x": "WRAP4", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." },
+    { "x": "INCR4", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." },
+    { "x": "WRAP8", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." },
+    { "x": "INCR8", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." },
+    { "x": "WRAP16", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." },
+    { "x": "INCR16", "y": "SPLIT", "hits": 0, "illegal": false, "tooltip": "Original AHB SPLIT is legal; zero indicates a coverage hole." }
   ]
 }

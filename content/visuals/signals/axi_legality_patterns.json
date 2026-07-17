@@ -27,6 +27,28 @@
       "verificationNote": "Track AW acceptance and final-W acceptance independently, then allow exactly one B response for the transaction."
     },
     {
+      "name": "Early W policy",
+      "expansion": "Offer is independent; acceptance is optional",
+      "role": "control",
+      "group": "Handshake and response dependencies",
+      "description": "A master can offer W before AW. A slave may withhold WREADY until it has context or storage; if it accepts early W, it must buffer and later associate the data. AXI4 W bursts follow AW order.",
+      "direction": "WVALID and payload are master-driven; WREADY is slave-driven",
+      "sampled": "Only WVALID && WREADY on a rising ACLK edge accepts an early beat",
+      "values": ["LEGAL: early W held", "LEGAL: early W accepted and buffered", "ILLEGAL: association lost"],
+      "verificationNote": "Model pre-AW W capacity separately from the accepted-AW queue, then join them using AXI3 WID or AXI4 AW order as configured."
+    },
+    {
+      "name": "Interface timing",
+      "expansion": "One ACLK and no combinational input-to-output path",
+      "role": "control",
+      "group": "Handshake and response dependencies",
+      "description": "All transfers are sampled on rising ACLK edges. Master and slave interfaces must have no combinational paths between input and output signals.",
+      "direction": "Applies at both master and slave interface boundaries",
+      "sampled": "Structural implementation rule plus edge-based channel behavior",
+      "values": ["One ACLK per interface", "Registered dependency state", "No input→output combinational path"],
+      "verificationNote": "Use structural review for combinational paths and temporal assertions for channel persistence; neither alone proves configured liveness."
+    },
+    {
       "name": "Burst bounds",
       "expansion": "Length, size, wrap, and 4 KB checks",
       "role": "data",

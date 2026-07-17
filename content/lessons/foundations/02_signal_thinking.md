@@ -16,24 +16,28 @@ Once you understand what a bus is, you must understand how to look at its wires.
 
 ## Clocks and Edges
 
-Bus protocols are almost entirely **synchronous**. This means all actions are synchronized to a master clock signal (`CLK` or `ACLK`).
-A clock toggles continuously between LOW (0) and HIGH (1). The moment it transitions from LOW to HIGH is the **Rising Edge**. Almost all modern protocols sample data exactly on the rising edge of the clock.
+The AMBA interfaces taught here are synchronous rising-edge interfaces within one interface clock domain: AHB uses `HCLK`, and memory-mapped AXI uses `ACLK`. A clock toggles between LOW (0) and HIGH (1); the LOW-to-HIGH transition is the **rising edge** at which protocol transfers are recognized. This is a statement about these interfaces, not a rule for every communication protocol.
 
 ## Active-High vs Active-Low
 
 By default, we assume a signal is **Active-High**: if the wire is HIGH (1), the signal is asserted (true). If it is LOW (0), the signal is de-asserted (false).
 
-However, some signals (like Resets) are traditionally **[glossary:Active-Low]**. This means a LOW (0) voltage means "YES, RESET IS HAPPENING!" and a HIGH (1) voltage means "NO, DO NOT RESET."
-Active-low signals are usually denoted with an `n` suffix (e.g., `RESETn` or `ARESETn`) or a `_b` suffix (e.g., `RST_B`).
+However, some signals (like resets) are **[glossary:Active-Low]**. This means LOW (0) is the asserted state and HIGH (1) is the deasserted state. Active-low signals are often denoted with an `n` suffix, including AHB `HRESETn` and AXI `ARESETn`; project-local `_b` suffixes are also common conventions.
 
 ## Sampling and the Valid Window
 
-When a chip reads a wire on a clock edge, that wire must have a stable voltage. It cannot be halfway between 0 and 1! 
+When a receiving register samples a wire on a clock edge, that wire must satisfy the implementation's input timing constraints.
 
 To guarantee this, the signal must be stable for a tiny amount of time *before* the clock edge (the **Setup Time**) and remain stable for a tiny amount of time *after* the clock edge (the **Hold Time**).
 
 ![wf-signal-sampling](visual:wf-signal-sampling)
 
-The period during which the signal is stable and trusted is called the **[glossary:Valid Window]**. If a signal changes *during* the setup or hold time, the receiving register might capture garbage (a condition known as metastability). 
+The period during which the signal is stable and trusted is called the **[glossary:Valid Window]**. A setup or hold violation can drive the receiving register into physical **metastability**, an analog state whose resolution time and final value are uncertain. RTL simulation does not model that analog behavior faithfully: it might show a deterministic 0/1 or propagate an `X`, depending on the model. Treat an `X` as simulation evidence of unknown state, not as a picture of an analog voltage.
 
-As a DV engineer, you must always look at the waveform *at the clock edge* to know what value the hardware actually saw. What the signal does in between clock edges generally does not matter to synchronous logic.
+As a DV engineer, identify the protocol sampling edge, but do not ignore behavior between edges. Mid-cycle propagation determines the value that reaches the next edge; glitches can be consumed by unsafe latches or clock gates; combinational feedback can prevent timing closure; and a signal crossing into another clock domain needs a CDC structure rather than ordinary same-clock sampling assumptions.
+
+## Four-State Simulation and Race-Free Sampling
+
+RTL signals can hold `0`, `1`, unknown `X`, or high-impedance `Z`. Controls that participate in an accepted transfer should be known at the accepting edge, and reset-X propagation should be checked explicitly. A monitor should sample through a clocking block or an equivalent race-free observation region, after nonblocking assignments settle, rather than racing the DUT in the active event region.
+
+For AXI, a useful parameterized safety template is `VALID && !READY |=> VALID && $stable(payload)`. A separate known-control check can use `!$isunknown({VALID, READY, payload_control})` at an accepting edge. Reset-release checks must be written for the selected interface and implementation contract; an active-low name alone does not define a universal release policy.

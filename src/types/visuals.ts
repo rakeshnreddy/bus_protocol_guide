@@ -153,6 +153,18 @@ export interface CoverageMapData {
     hits: number;
     illegal: boolean;
     tooltip?: string;
+    errorBeatHits?: {
+      first: number;
+      middle: number;
+      final: number;
+    };
+  }[];
+  configurations?: {
+    id: string;
+    label: string;
+    description?: string;
+    /** Rows that are illegal only in this declared protocol configuration. */
+    illegalRows?: string[];
   }[];
 }
 
@@ -188,5 +200,75 @@ export interface SpecRuleExplorerData {
   defaultProtocol?: 'ahb' | 'axi' | 'foundations';
 }
 
+export type CheckerValue = string | number | boolean | string[];
+
+export interface BurstCalculatorConfig {
+  kind: 'burst-address';
+  protocol: 'axi' | 'ahb';
+  boundaryBytes: 1024 | 4096;
+  initial: {
+    startAddress: string;
+    burst: 'FIXED' | 'INCR' | 'WRAP';
+    bytesPerBeat: number;
+    beats: number;
+    busBytes: number;
+    strobe?: string;
+  };
+  burstOptions: ('FIXED' | 'INCR' | 'WRAP')[];
+  bytesPerBeatOptions: number[];
+  beatOptions: number[];
+  busBytesOptions: number[];
+}
+
+export interface CheckerModelData {
+  id: string;
+  type: 'checker-model';
+  title: string;
+  description: string;
+  learnerQuestion: string;
+  protocolScope: string;
+  calculator?: BurstCalculatorConfig;
+  configurations?: {
+    id: string;
+    label: string;
+    description: string;
+  }[];
+  scenarios: {
+    id: string;
+    label: string;
+    mode: 'legal' | 'negative' | 'policy';
+    configurationId?: string;
+    description: string;
+    steps: {
+      id: string;
+      label: string;
+      event: string;
+      state: Record<string, CheckerValue>;
+      checks: {
+        id: string;
+        label: string;
+        field: string;
+        operator: 'eq' | 'neq' | 'lte' | 'gte' | 'includes' | 'not-includes' | 'length-eq';
+        expected: CheckerValue;
+        requirementType: 'protocol' | 'recommendation' | 'product-contract' | 'system-policy';
+        evidence: string;
+      }[];
+    }[];
+  }[];
+  traceability: {
+    requirement: string;
+    stimulus: string;
+    checker: string;
+    coverage: string;
+    evidence: string;
+    owner: string;
+    configuration: string;
+    status: 'Pass' | 'Open' | 'Waived';
+    lastRegression: string;
+    waiver?: string;
+    reviewer: string;
+  }[];
+}
+
 // A union type of all possible visual data configurations
-export type VisualData = WaveformVisualData | TransactionTimelineData | TopologyData | SignalExplorerData | CoverageMapData | FormalPropertyData | SpecRuleExplorerData;
+export type VisualData = WaveformVisualData | TransactionTimelineData | TopologyData | SignalExplorerData | CoverageMapData | FormalPropertyData | SpecRuleExplorerData | CheckerModelData;

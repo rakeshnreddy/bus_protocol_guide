@@ -27,7 +27,7 @@ A crossbar is a network of switches that can provide concurrent routes. Requests
 
 In the topology above, the illustrated implementation lets Master 0 use Slave 0 while Master 1 uses Slave 1. This concurrency is a crossbar capability, not a requirement that every AXI interconnect expose the same topology or bandwidth.
 
-Because AXI channels are independent, the crossbar is even more powerful. Master 0 could be sending a Write Address to Slave 0, while Slave 0 is sending Read Data back to Master 1. The AW, W, B, AR, and R networks inside the crossbar operate completely independently of one another.
+Because AXI channels are independently flow-controlled, the crossbar is even more powerful. Master 0 could be sending a Write Address to Slave 0 while Slave 0 sends Read Data back to Master 1. The AW, W, B, AR, and R networks can make concurrent progress, but the fabric must still enforce AW/write-data association, accepted AW plus final accepted W before B, accepted AR before R, response ordering, and its configured resource limits.
 
 ## Interconnect Roles
 

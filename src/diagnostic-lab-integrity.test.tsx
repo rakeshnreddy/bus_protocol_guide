@@ -111,8 +111,8 @@ describe('Phase V4 diagnostic lab integrity', () => {
     const errorExercise = getExerciseById('ex-ahb-review-error');
     const boundedExercise = getExerciseById('ex-ahb-bounded-liveness');
     expect(errorExercise?.expectedTakeaway).toMatch(/permits.*cancel.*does not require/i);
-    expect(boundedExercise?.expectedTakeaway).toMatch(/product or integration liveness failure/i);
-    expect(boundedExercise?.expectedTakeaway).toMatch(/not by itself a universal AHB safety violation/i);
+    expect(boundedExercise?.expectedTakeaway).toMatch(/configured service-contract result/i);
+    expect(boundedExercise?.expectedTakeaway).toMatch(/not by itself a universal AHB protocol-safety violation/i);
   });
 
   it('encodes the reviewed AXI4 response, stability, progress, and per-ID claims', () => {

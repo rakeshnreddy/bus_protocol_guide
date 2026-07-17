@@ -11,7 +11,8 @@
     { "name": "HSIZE", "type": "sideband", "color": "#2563eb", "values": ["BYTE", "BYTE", "HALF", "WORD", "HALF", "—"] },
     { "name": "ADDR CHECK", "type": "sideband", "color": "#0f766e", "values": ["VALID", "VALID", "VALID", "VALID", "MISALIGNED", "—"] },
     { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "000000A5", "0000A500", "BEEF0000", "DEADBEEF", "—"] },
-    { "name": "DATA LANES", "type": "sideband", "color": "#047857", "values": ["—", "[7:0]", "[15:8]", "[31:16]", "[31:0]", "BLOCK"] },
+    { "name": "DATA LANES", "type": "sideband", "color": "#047857", "values": ["—", "[7:0]", "[15:8]", "[31:16]", "[31:0]", "invalid stimulus"] },
+    { "name": "CONFIGURED WIDTH", "type": "sideband", "color": "#2563eb", "values": ["32-bit", "32-bit", "32-bit", "32-bit", "32-bit", "32-bit"] },
     { "name": "HREADY", "type": "control", "color": "#047857", "values": ["1", "1", "1", "1", "1", "1"] }
   ],
   "annotations": [
@@ -20,7 +21,7 @@
     { "cycle": 3, "message": "The byte for 0x01 is shifted onto HWDATA[15:8]. The simultaneous HALFWORD address 0x02 is aligned and will use lanes [31:16]." },
     { "cycle": 4, "message": "The halfword for 0x02 occupies HWDATA[31:16]. The simultaneous WORD at 0x04 is aligned and will use all four byte lanes." },
     { "cycle": 5, "message": "The word for 0x04 uses HWDATA[31:0]. The new HALFWORD address 0x01 is illegal because address bit 0 is set." },
-    { "cycle": 6, "message": "A protocol monitor must report the misaligned transfer; a compliant master must not generate a data phase for it." }
+    { "cycle": 6, "message": "A legal-traffic generator must not emit the misaligned transfer. In an intentional negative test, the monitor reports it and the implementation's downstream response/recovery is checked only against the documented design policy; AHB defines no synthetic BLOCK data phase." }
   ],
   "violations": [
     { "cycle": 5, "message": "Halfword transfer at 0x01 is not aligned to a two-byte boundary." }

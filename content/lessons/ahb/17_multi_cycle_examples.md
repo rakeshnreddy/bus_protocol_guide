@@ -17,7 +17,7 @@ checklistIds: []
 
 To truly master AHB, you must be able to look at a waveform and mentally divide it into Address Phases and Data Phases, even when `HREADY` is bouncing up and down.
 
-Let's do a worked example using the "Wait-State Heavy Burst" waveform we saw earlier.
+Let's do a worked example using the "Wait-State Heavy Burst" waveform: an `INCR4` **write** with `HBURST=INCR4`, `HSIZE=010` (4 bytes), `HWRITE=1`, and `HRESP=OKAY` throughout.
 
 The cycle selector is the worked-example navigator. Match its phase-owner label and annotation to each written breakdown below before moving to the next cycle.
 
@@ -26,32 +26,32 @@ The cycle selector is the worked-example navigator. Match its phase-owner label 
 ## Cycle-by-Cycle Breakdown
 
 ### Cycle 1
-- **Address Phase 1:** Master drives `HTRANS=NONSEQ`, `HADDR=0x50`. The burst begins.
+- **Address beat 1:** Manager drives `HTRANS=NONSEQ`, `HADDR=0x50`, `HBURST=INCR4`, `HSIZE=010`, and `HWRITE=1`. The burst begins.
 
 ### Cycle 2
-- **Data Phase 1:** Slave drives `HREADY=0`. The data is not ready.
-- **Address Phase 2:** Master drives `HTRANS=SEQ`, `HADDR=0x54`. Because `HREADY` is `0`, this address phase is *stalled*. The master must hold these values into the next cycle.
+- **Data phase for address 0x50:** The active subordinate's `HREADYOUT` produces global `HREADY=0`; write payload `W0` is not accepted.
+- **Address beat 2:** `HTRANS=SEQ`, `HADDR=0x54` is visible but pending and must be retained.
 
 ### Cycle 3
-- **Data Phase 1 (cont):** Slave drives `HREADY=1`. It provides `HRDATA` (if reading) or samples `HWDATA` (if writing). The Data Phase for `0x50` is finally complete.
-- **Address Phase 2 (cont):** Master continues holding `HTRANS=SEQ`, `HADDR=0x54`. Because `HREADY=1` at the end of this cycle, the slave successfully samples Address Phase 2.
+- **Data phase for address 0x50 (continued):** Global `HREADY=1`, `HRESP=OKAY`; the subordinate samples `W0` and completes beat 1.
+- **Address beat 2 (continued):** The retained `0x54` context is accepted on the same edge.
 
 ### Cycle 4
-- **Data Phase 2:** Slave drives `HREADY=1` immediately. The Data Phase for `0x54` completes in a single cycle.
-- **Address Phase 3:** Master drives `HTRANS=SEQ`, `HADDR=0x58`. Slave samples it successfully.
+- **Data phase for address 0x54:** `W1`, `HREADY=1`, `HRESP=OKAY`; beat 2 completes.
+- **Address beat 3:** `HTRANS=SEQ`, `HADDR=0x58` is accepted.
 
 ### Cycle 5
-- **Data Phase 3:** Slave drives `HREADY=0`. Data Phase 3 is stalled.
-- **Address Phase 4:** Master drives `HTRANS=SEQ`, `HADDR=0x5C`. Address Phase 4 is stalled and must be held.
+- **Data phase for address 0x58:** `W2` is stalled by `HREADY=0`.
+- **Address beat 4:** `HTRANS=SEQ`, `HADDR=0x5C` is visible but pending.
 
 ### Cycle 6
-- **Data Phase 3 (cont):** Slave drives `HREADY=0`. Data Phase 3 is still stalled.
-- **Address Phase 4 (cont):** Master continues holding `0x5C`.
+- **Data phase for address 0x58 (continued):** `W2` remains stable with `HREADY=0`.
+- **Address beat 4 (continued):** The manager retains the complete `0x5C` context.
 
 ### Cycle 7
-- **Data Phase 3 (cont):** Slave drives `HREADY=1`. Data Phase 3 finally completes.
-- **Address Phase 4 (cont):** Master continues holding `0x5C`. It is successfully sampled.
+- **Data phase for address 0x58 (continued):** `W2` completes with `HREADY=1`, `HRESP=OKAY`.
+- **Address beat 4 (continued):** The retained `0x5C` context is accepted.
 
 ### Cycle 8
-- **Data Phase 4:** Slave drives `HREADY=1`. Data Phase 4 completes.
-- **Address Phase 5 (Next Transfer):** Master drives `HTRANS=IDLE`. The burst is over.
+- **Data phase for address 0x5C:** `W3` completes with `HREADY=1`, `HRESP=OKAY`.
+- **Idle address/control cycle:** The manager drives `HTRANS=IDLE`; there is no fifth burst beat.

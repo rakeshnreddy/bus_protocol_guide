@@ -39,7 +39,7 @@ The side-by-side timeline answers: **how could AXI3 identify an interleaved beat
 ## 2. Expanded Burst Lengths
 
 **In AXI3:** The `AxLEN` signal was 4 bits wide. The maximum burst length was 16 beats.
-**In AXI4:** The `AxLEN` signal was expanded to 8 bits. The maximum burst length for INCR bursts is now 256 beats. (WRAP bursts are still limited to 16 beats).
+**In AXI4:** The `AxLEN` signal was expanded to 8 bits. INCR bursts permit 1–256 beats, FIXED bursts permit 1–16 beats, and WRAP bursts permit exactly 2, 4, 8, or 16 beats.
 *Why?* To support highly efficient bulk data transfers (like DMA engines moving large blocks of video memory).
 
 ## 3. Removal of Locked Accesses

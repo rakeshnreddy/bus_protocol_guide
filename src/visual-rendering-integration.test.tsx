@@ -126,6 +126,17 @@ const axiBatchFourChangedVisualIds = [
   'sig-axi-senior-recap',
 ] as const;
 
+const auditCheckerModelIds = [
+  'model-foundation-dv',
+  'model-ahb-core-checker',
+  'model-ahb-system-checker',
+  'model-ahb-dv-rigor',
+  'model-axi-write-checker',
+  'model-axi-read-checker',
+  'model-axi-burst-checker',
+  'model-signoff-traceability',
+] as const;
+
 function renderProductionVisual(id: string) {
   const visual = getVisualById(id);
   if (!visual) throw new Error(`Missing production visual '${id}'`);
@@ -175,6 +186,10 @@ describe('production visual rendering', () => {
   });
 
   it.each(axiBatchFourChangedVisualIds)('renders AXI Batch 4 changed visual %s', id => {
+    renderProductionVisual(id);
+  });
+
+  it.each(auditCheckerModelIds)('renders audit checker model %s through the production renderer', id => {
     renderProductionVisual(id);
   });
 
@@ -269,7 +284,7 @@ describe('production visual rendering', () => {
     act(() => responseLane.focus());
     await user.keyboard('{Enter}');
     expect(responseLane).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText(/after accepting the write address and the final write-data beat/i))
+    expect(screen.getByText(/after accepted AW plus accepted final W/i))
       .toBeInTheDocument();
   });
 

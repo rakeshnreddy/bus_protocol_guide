@@ -2,34 +2,51 @@
   "id": "tl-ahb-exclusive",
   "type": "timeline",
   "title": "AHB5 Exclusive Success and Failure",
-  "description": "Compare two conditional read-modify-write attempts: the bus remains available in both, but only an unchanged monitored location permits the exclusive write to update memory.",
-  "labels": ["Exclusive_Transfers property", "Monitor identity", "Conditional write", "No bus lock"],
+  "description": "For the optional AHB5 Exclusive_Transfers property, compare monitor establishment, successful and failed conditional writes, unsupported-location behavior, and reset-cleared state. Exclusive access never reserves the bus.",
+  "labels": ["Optional Exclusive_Transfers", "HMASTER identity", "Matching address attributes", "HEXOKAY only with HREADY", "No bus lock"],
   "transactions": [
     {
       "id": "exclusive-success",
       "label": "Successful attempt",
       "phases": [
-        { "id": "success-read", "name": "Exclusive read", "startCycle": 1, "endCycle": 2, "description": "HEXCL=1 and HTRANS=NONSEQ. The monitor records the address, attributes, and unique HMASTER identity." },
+        { "id": "success-read", "name": "Read HMASTER=3", "startCycle": 1, "endCycle": 2, "description": "HEXCL=1 and HTRANS=NONSEQ. On completion, HREADY=1 with HEXOKAY=1 reports that the supported target established monitor state for HMASTER=3, address/location, HSIZE, HPROT, HBURST, and HNONSEC when present." },
         { "id": "success-open-bus", "name": "Bus remains free", "startCycle": 2, "endCycle": 4, "description": "The initiating master performs local work; no global ownership lock is held." },
-        { "id": "success-write", "name": "Exclusive write", "startCycle": 4, "endCycle": 5, "description": "The matching exclusive write reaches a location that has remained unchanged." },
-        { "id": "success-result", "name": "HEXOKAY=1", "startCycle": 5, "endCycle": 6, "description": "The monitor reports success and the write updates memory." }
+        { "id": "success-write", "name": "Matching write", "startCycle": 4, "endCycle": 5, "description": "HMASTER=3 issues a matching exclusive write with the same required address-phase attributes to a monitored location that has remained unchanged." },
+        { "id": "success-result", "name": "HEXOKAY=1", "startCycle": 5, "endCycle": 6, "description": "With HRESP=OKAY and HREADY=1, the monitor reports exclusive success and the write updates memory. HEXOKAY cannot be asserted with HRESP=ERROR." }
       ]
     },
     {
       "id": "exclusive-failure",
       "label": "Failed attempt",
       "phases": [
-        { "id": "failure-read", "name": "Exclusive read", "startCycle": 1, "endCycle": 2, "description": "A second attempt establishes its own monitor state." },
+        { "id": "failure-read", "name": "Read HMASTER=7", "startCycle": 1, "endCycle": 2, "description": "A supported exclusive read completes with HEXOKAY=1 and establishes independent state for HMASTER=7." },
         { "id": "failure-open-bus", "name": "Bus remains free", "startCycle": 2, "endCycle": 4, "description": "Other traffic is allowed because this is not a locked sequence." },
-        { "id": "failure-write", "name": "Exclusive write", "startCycle": 4, "endCycle": 5, "description": "The master attempts the matching conditional write after interference." },
-        { "id": "failure-result", "name": "HEXOKAY=0", "startCycle": 5, "endCycle": 6, "description": "The monitor reports failure and memory is not updated. This conditional failure is distinct from HRESP ERROR." }
+        { "id": "failure-write", "name": "Matching write after interference", "startCycle": 4, "endCycle": 5, "description": "HMASTER=7 attempts a matching conditional write after another master changed the monitored location." },
+        { "id": "failure-result", "name": "HRESP=OKAY · HEXOKAY=0", "startCycle": 5, "endCycle": 6, "description": "The monitor reports exclusive failure and memory is not updated. Conditional failure can return HRESP=OKAY with HEXOKAY=0 and is not a lock failure." }
       ]
     },
     {
       "id": "interfering-master",
       "label": "Other master",
       "phases": [
-        { "id": "interfering-write", "name": "Writes monitored location", "startCycle": 3, "endCycle": 4, "description": "A write changes the location observed by the failed attempt, invalidating its monitor condition." }
+        { "id": "interfering-write", "name": "Writes monitored location", "startCycle": 3, "endCycle": 4, "description": "A different master writes the location tracked for HMASTER=7, invalidating that monitor condition. The monitor's tracked-location/granule policy must cover all writes that can interfere; it is not safely modeled as an unrelated exact-address shortcut." }
+      ]
+    },
+    {
+      "id": "unsupported-location",
+      "label": "Unsupported location",
+      "phases": [
+        { "id": "unsupported-read", "name": "Exclusive read", "startCycle": 1, "endCycle": 2, "description": "The master attempts an exclusive read to a target that does not support exclusive sequences." },
+        { "id": "unsupported-result", "name": "HEXOKAY=0", "startCycle": 2, "endCycle": 3, "description": "The read completion deasserts HEXOKAY, so no monitor state is established and software must not rely on a following exclusive write succeeding." }
+      ]
+    },
+    {
+      "id": "monitor-lifecycle",
+      "label": "Monitor lifecycle",
+      "phases": [
+        { "id": "monitor-reset", "name": "Reset clears state", "startCycle": 1, "endCycle": 2, "description": "HRESETn LOW clears implementation monitor state; a pre-reset read cannot authorize a post-reset write." },
+        { "id": "monitor-established", "name": "Read establishes", "startCycle": 2, "endCycle": 3, "description": "A supported exclusive read with HEXOKAY=1 establishes state for its HMASTER identity and matching attributes." },
+        { "id": "monitor-invalidated", "name": "Interference invalidates", "startCycle": 3, "endCycle": 4, "description": "An observed interfering write invalidates the affected tracked location before the conditional write." }
       ]
     }
   ]

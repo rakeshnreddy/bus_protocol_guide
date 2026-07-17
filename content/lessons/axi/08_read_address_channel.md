@@ -21,24 +21,24 @@ Structurally, the AR channel closely parallels the AW (Write Address) channel. T
 
 ## Handshake Signals
 
-*   **`ARVALID`** (Master -> Slave): HIGH when a valid read address and control signals are on the bus.
+*   **`ARVALID`** (Master -> Slave): HIGH when a valid read address and control signals are on the bus. Its assertion must not depend on `ARREADY`; once asserted, it and the entire AR payload remain stable until acceptance.
 *   **`ARREADY`** (Slave -> Master): HIGH when the slave is ready to accept a new read address.
 
 ## Core Address Signals
 
-*   **`ARADDR`** (Read Address): The starting memory address for the read burst.
-*   **`ARLEN`** (Read Burst Length): Number of beats in the burst - 1 (`INCR` supports up to 256 beats in AXI4; `FIXED` and `WRAP` remain limited to 16).
+*   **`ARADDR`** (Read Address): The byte address of the first transfer in the read burst.
+*   **`ARLEN`** (Read Burst Length): Number of beats in the burst minus 1. In AXI4, `INCR` permits 1–256 beats, `FIXED` permits 1–16, and `WRAP` permits exactly 2, 4, 8, or 16.
 *   **`ARSIZE`** (Read Burst Size): Number of bytes transferred in each data beat.
-*   **`ARBURST`** (Read Burst Type): FIXED, INCR, or WRAP.
-*   **`ARID`** (Read Address ID): The identification tag for the read transaction.
+*   **`ARBURST`** (Read Burst Type): FIXED, INCR, or WRAP. INCR can start unaligned; WRAP must start `2^ARSIZE` aligned, and every burst stays within one 4 KB region.
+*   **`ARID`** (Read Address ID): Selects an ordering/correlation stream at this interface; it can be reused for queued requests.
 
 ## Sideband and Attribute Signals
 
-Just like the write side, the AR channel carries sidebands: `ARLOCK`, `ARCACHE`, `ARPROT`, `ARQOS`, and `ARREGION`.
+Just like the write side, the AR channel carries sidebands: `ARLOCK`, `ARCACHE`, `ARPROT`, `ARQOS`, `ARREGION`, and optional `ARUSER`. In AXI4, `ARLOCK` distinguishes Normal and Exclusive accesses; it does not guarantee that a later exclusive write succeeds.
 
 Open the AR entries below and compare them directly with AW. Pay particular attention to the accepting edge, stall stability, RID correlation, and the exact `RLAST` count implied by `ARLEN`.
 
 ![Interactive AXI4 AR and AW address-channel comparison with direction and verification notes](visual:sig-axi-address-channels)
 
 **Why the symmetry?** 
-Because reads and writes have completely independent physical channels, a master can issue a read to Address X while simultaneously issuing a write to Address Y. The interconnect requires identical control information to route and authorize both transactions independently.
+Because read and write requests use independently handshaken channel bundles, a master can issue a read to Address X while simultaneously issuing a write to Address Y. The interconnect routes and authorizes each request separately, while still enforcing any configured ordering, resource, or system-level dependency.

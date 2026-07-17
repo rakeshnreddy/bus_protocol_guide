@@ -39,6 +39,13 @@ A complex 4-bit signal that tells the system interconnect and downstream caches 
 (Introduced in AXI4). A 4-bit signal that provides a high-level decode region.
 *   If a single slave interface represents multiple logical regions, the interconnect can pass `AxREGION` to distinguish up to 16 regions, even when addresses overlap. The system still defines the region mapping and address decode.
 
+## 5. AxLOCK and AxUSER
+
+*   **`AxLOCK`:** In AXI4, selects Normal or Exclusive access. Exclusives use protocol-defined monitoring and response behavior; they do not turn a request into a mandatory global lock.
+*   **`AxUSER`:** Optional user-defined metadata can appear on request, data, and response channels. Its meaning is a system contract, but when present it is part of the channel payload and must remain stable during backpressure.
+
+`AxCACHE[0]` indicates Bufferable, `AxCACHE[1]` indicates Modifiable, and the upper bits are allocation hints. “Bufferable” can permit a response before the transaction reaches its final destination, but it never removes the AXI4 prerequisite that this interface must first accept AW and the final W transfer. Cache, QoS, region, protection, and user-field interpretation beyond the protocol encodings is configured system policy.
+
 Open each attribute below to separate the protocol-defined bits from system-level policy. Every attribute travels with AW or AR and must remain stable while that address channel is stalled.
 
 ![Interactive AXI4 AxPROT, AxCACHE, AxQOS, and AxREGION guide with policy boundaries](visual:sig-axi-sideband-attributes)

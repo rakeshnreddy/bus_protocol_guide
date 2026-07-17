@@ -24,16 +24,16 @@ For example:
 - **`HADDR`**: The AHB Address bus
 - **`HWDATA`**: The AHB Write Data bus
 
-*Contrast this with APB (where signals start with `P`, like `PADDR`) and AXI (where signals start with `A`, like `AWADDR`).*
+*Contrast this with AXI's channel-specific prefixes: `AW`, `W`, `B`, `AR`, and `R`. Only the address-channel names begin with `A`; examples include `AWADDR`, `WDATA`, `BRESP`, `ARADDR`, and `RDATA`.*
 
 ## Master vs Slave vs Arbiter vs Decoder
 
-In any AHB system, there are four conceptual roles:
+An AHB system can contain these conceptual roles, but its physical blocks depend on topology:
 
 1. **Master:** The initiator. A master starts a transfer by providing address and control information. (Examples: CPU, DMA controller).
 2. **Slave:** The responder. A slave waits for a master to talk to it, and then either accepts written data or provides read data. (Examples: SRAM, Flash memory, peripheral registers).
-3. **Arbiter:** If multiple masters share the same wires (rare today, but conceptually important), the arbiter decides who gets to talk.
-4. **Decoder:** Because the address bus is shared, the decoder looks at the `HADDR` driven by the master and uses a memory map to select exactly one slave. It asserts a signal called `HSELx` (Select) to tell that specific slave it is being addressed.
+3. **Arbiter:** Original shared-bus AHB exposes arbitration at the protocol interface. An AHB-Lite/AHB5 matrix can arbitrate internally when routes contend; a point-to-point interface needs no standalone arbiter.
+4. **Decoder:** Address-map decode selects the routed subordinate for a valid transfer. The decode can be distributed or integrated rather than one central block. A mapped transfer normally selects one intended subordinate; an unmapped transfer must route to a defined default/error subordinate or equivalent error path, not disappear.
 
 The concept map connects these roles to the transaction words used throughout the course. Follow the highlighted path, then inspect **Beat**, **Burst**, **Wait State**, and **Response** to see how they relate.
 
@@ -43,8 +43,8 @@ The concept map connects these roles to the transaction words used throughout th
 
 In modern SoC design, masters and slaves are connected via a **Bus Matrix** (a crossbar switch). 
 
-When you look at the interface of a Bus Matrix, you will often see signal names appended with `M` or `S`, or specific indices:
+When you look at one project or vendor's Bus Matrix, you might see signal names appended with `M` or `S`, or specific indices:
 - `HADDR_M0`: The address bus coming *from* Master 0 into the matrix.
 - `HADDR_S1`: The address bus going *out* to Slave 1 from the matrix.
 
-Understanding these naming conventions is critical for debugging, because a bug might exist on the Master-to-Matrix link, inside the Matrix itself, or on the Matrix-to-Slave link!
+These suffixes are RTL naming conventions, not AHB protocol signal names. Confirm the local convention before using `_M0` or `_S1` to infer direction. A bug might exist on the manager-to-matrix link, inside the matrix, or on the matrix-to-subordinate link.

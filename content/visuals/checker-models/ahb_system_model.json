@@ -1,0 +1,85 @@
+{
+  "id": "model-ahb-system-checker",
+  "type": "checker-model",
+  "title": "AHB System Ownership and Conservation Model",
+  "description": "Execute arbitration/decode/response routing, bridge conservation, lock, exclusive, and security checkpoints without presenting one system policy as mandatory protocol behavior.",
+  "learnerQuestion": "How do address owner, accepted target, data/response owner, bridge capacity, and policy state remain attributable?",
+  "protocolScope": "Original AHB + AMBA 5 AHB",
+  "configurations": [
+    { "id": "matrix-ahb5", "label": "AHB5 matrix path", "description": "One manager per layer with accepted target retimed into response ownership." },
+    { "id": "shared-ahb2", "label": "Original shared AHB", "description": "Arbitrated ownership with HLOCKx/HMASTLOCK and RETRY/SPLIT revision behavior." }
+  ],
+  "scenarios": [
+    {
+      "id": "arbitration-and-matrix-policy",
+      "label": "Arbitration and matrix resources",
+      "mode": "policy",
+      "configurationId": "matrix-ahb5",
+      "description": "Ownership changes only at the accepted handover boundary; concurrency and fairness depend on configured arbitration and matrix resources.",
+      "steps": [
+        { "id": "stalled-handover", "label": "Stalled handover", "event": "Future grant changes while HREADY=0", "state": { "addressOwner": "M0", "dataResponseOwner": "M0 transfer", "futureGrant": "M1", "ownershipChanged": false, "policy": "fixed priority example" }, "checks": [
+          { "id": "no-early-owner", "label": "Grant is not active ownership", "field": "ownershipChanged", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "The active manager remains M0 until the protocol handover boundary." }
+        ] },
+        { "id": "different-target", "label": "Different targets", "event": "M0→S0 and M1→S1 on separate matrix layers", "state": { "activeLayers": 2, "completedTransfers": 2, "sameTargetConflict": false, "utilization": "2 completions / layer-cycle" }, "checks": [
+          { "id": "parallel", "label": "Separate layers may progress", "field": "completedTransfers", "operator": "eq", "expected": 2, "requirementType": "system-policy", "evidence": "Matrix concurrency follows the implemented layers and target ports." }
+        ] },
+        { "id": "fairness-contract", "label": "Configured fairness", "event": "Eligible M1 request waits behind higher-priority traffic", "state": { "waitCycles": 6, "configuredBound": 8, "protocolMaximum": "none", "assumptionsMet": true }, "checks": [
+          { "id": "bound", "label": "Configured fairness bound", "field": "waitCycles", "operator": "lte", "expected": 8, "requirementType": "product-contract", "evidence": "AHB does not mandate this policy or bound; the assertion is gated by the product contract and environment assumptions." }
+        ] }
+      ]
+    },
+    {
+      "id": "route-owner",
+      "label": "Retimed decode and response owner",
+      "mode": "legal",
+      "configurationId": "matrix-ahb5",
+      "description": "The next visible address can select SRAM while the current response still belongs to the accepted UART transfer.",
+      "steps": [
+        { "id": "accept-uart", "label": "Accept UART", "event": "HSEL_UART && HREADY && HTRANS[1]", "state": { "addressOwner": "manager 0", "acceptedTarget": "UART", "dataResponseOwner": "previous target", "selectedTargets": ["UART"], "decodeHits": 1 }, "checks": [
+          { "id": "one-decode", "label": "Exactly one accepted decode", "field": "decodeHits", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "Accepted target selection is captured for the next data/response phase." }
+        ] },
+        { "id": "return-uart", "label": "Return UART", "event": "Visible address selects SRAM; active response returns UART HREADYOUT/HRESP/HRDATA", "state": { "addressOwner": "manager 0", "acceptedTarget": "SRAM pending", "dataResponseOwner": "UART", "selectedTargets": ["SRAM"], "responseRoute": "UART→manager 0" }, "checks": [
+          { "id": "response-owner", "label": "Response follows retimed owner", "field": "dataResponseOwner", "operator": "eq", "expected": "UART", "requirementType": "protocol", "evidence": "The return mux uses accepted prior selection, not the current visible address decode." }
+        ] }
+      ]
+    },
+    {
+      "id": "bridge-conservation",
+      "label": "Unbuffered bridge conservation",
+      "mode": "policy",
+      "configurationId": "matrix-ahb5",
+      "description": "A bridge with one configured entry cannot accept a second AHB transfer until its downstream Setup/Access operation and upstream response retire the first.",
+      "steps": [
+        { "id": "allocate", "label": "Allocate bridge", "event": "Accepted AHB transfer enters bridge", "state": { "acceptedUpstream": 1, "completedDownstream": 0, "bridgeOccupancy": 1, "bridgeDepth": 1, "upstreamReady": false }, "checks": [
+          { "id": "capacity", "label": "Bridge depth respected", "field": "bridgeOccupancy", "operator": "lte", "expected": 1, "requirementType": "product-contract", "evidence": "The unbuffered configuration backpressures rather than overwriting transaction state." }
+        ] },
+        { "id": "retire", "label": "Retire bridge", "event": "Downstream ACCESS completes and upstream data/response completes", "state": { "acceptedUpstream": 1, "completedDownstream": 1, "bridgeOccupancy": 0, "bridgeDepth": 1, "upstreamReady": true }, "checks": [
+          { "id": "conserve", "label": "One-in/one-out conservation", "field": "completedDownstream", "operator": "eq", "expected": 1, "requirementType": "product-contract", "evidence": "No accepted transfer is lost or duplicated across the configured bridge." }
+        ] }
+      ]
+    },
+    {
+      "id": "advanced-policy",
+      "label": "Lock, exclusive, and security state",
+      "mode": "legal",
+      "configurationId": "shared-ahb2",
+      "description": "Distinct retained state proves resource ownership, monitored exclusivity, and configured access enforcement are not interchangeable.",
+      "steps": [
+        { "id": "lock", "label": "Lock ownership", "event": "HLOCKx request becomes accepted HMASTLOCK ownership", "state": { "lockOwner": "manager 2", "futureGrant": "manager 1 pending", "exclusiveMonitor": [], "securityDecision": "not evaluated" }, "checks": [
+          { "id": "retain", "label": "Active lock owner retained", "field": "lockOwner", "operator": "eq", "expected": "manager 2", "requirementType": "protocol", "evidence": "A future grant does not prematurely transfer the active locked resource." }
+        ] },
+        { "id": "exclusive", "label": "Exclusive interference", "event": "Matching exclusive read then interfering write", "state": { "lockOwner": "none", "exclusiveMonitor": [], "exclusiveWriteResult": "OKAY + HEXOKAY=0 + no update", "securityDecision": "not evaluated" }, "checks": [
+          { "id": "exclusive-fail", "label": "Failed exclusive has no side effect", "field": "exclusiveWriteResult", "operator": "eq", "expected": "OKAY + HEXOKAY=0 + no update", "requirementType": "protocol", "evidence": "Monitor invalidation produces exclusive failure, not a lock or HRESP error." }
+        ] },
+        { "id": "security", "label": "Security denial", "event": "HNONSEC access denied by configured firewall", "state": { "lockOwner": "none", "exclusiveMonitor": [], "securityDecision": "deny", "secureReadLeak": false, "secureWriteSideEffect": false }, "checks": [
+          { "id": "no-leak", "label": "Denied read leaks no secure data", "field": "secureReadLeak", "operator": "eq", "expected": false, "requirementType": "system-policy", "evidence": "The configured enforcement point returns no protected payload." },
+          { "id": "no-write", "label": "Denied write has no secure side effect", "field": "secureWriteSideEffect", "operator": "eq", "expected": false, "requirementType": "system-policy", "evidence": "Security policy is verified end-to-end rather than assumed at one topology block." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AHB-SYS response-owner conservation", "stimulus": "Back-to-back targets with prior wait", "checker": "Accepted HSEL retime + return route", "coverage": "prior target × current target × response", "evidence": "artifact://ahb/system/route", "owner": "Fabric DV", "configuration": "matrix-ahb5", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Interconnect architect" },
+    { "requirement": "AHB-SYS no leak/no side effect", "stimulus": "Secure/non-secure allow and deny", "checker": "End-to-end data and state observer", "coverage": "policy region × HNONSEC × read/write", "evidence": "artifact://ahb/system/security", "owner": "Security DV", "configuration": "configured firewall", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Security owner" }
+  ]
+}

@@ -1,27 +1,28 @@
 {
   "id": "wf-handshake-backpressure",
   "type": "waveform",
-  "title": "Ready/Valid Handshake and Backpressure",
+  "title": "AXI R-Channel VALID/READY Backpressure",
+  "description": "The subordinate is the R-channel source: after asserting RVALID it holds RVALID and the complete R payload stable until a rising edge accepts the beat with RVALID and RREADY HIGH.",
   "data": {
     "totalCycles": 6,
     "signals": [
       {
-        "name": "CLK",
+        "name": "ACLK",
         "type": "clock",
         "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
       },
       {
-        "name": "VALID",
+        "name": "RVALID",
         "type": "control",
         "values": ["LOW", "HIGH", "HIGH", "HIGH", "LOW", "LOW"]
       },
       {
-        "name": "READY",
+        "name": "RREADY",
         "type": "control",
         "values": ["HIGH", "LOW", "LOW", "HIGH", "HIGH", "LOW"]
       },
       {
-        "name": "DATA",
+        "name": "RDATA / RID / RRESP / RLAST",
         "type": "data",
         "color": "blue",
         "values": ["-", "D1", "D1", "D1", "-", "-"]
@@ -30,15 +31,15 @@
     "annotations": [
       {
         "cycle": 1,
-        "message": "Master asserts VALID, but READY is LOW. The transfer stalls (backpressure)."
+        "message": "The subordinate asserts RVALID without waiting for RREADY. Because RREADY is LOW, no read beat is accepted."
       },
       {
         "cycle": 2,
-        "message": "Stall continues. The master must hold DATA and VALID steady."
+        "message": "The stall continues. The subordinate holds RVALID and the complete R payload stable."
       },
       {
         "cycle": 3,
-        "message": "Slave asserts READY. At the next clock edge, the handshake completes."
+        "message": "RVALID and RREADY are both HIGH at this rising edge, so the read-data beat is accepted now."
       }
     ]
   }

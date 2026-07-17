@@ -40,12 +40,18 @@ Select Cycle 3 in the waveform to inspect the exact wrap decision and the aligne
 
 ## Calculating the Wrap Boundary
 
-The **[glossary:Wrap Boundary]** is perfectly aligned to the total size of the burst in bytes.
-- Total bytes = (Number of beats) * (Bytes per beat)
+For an accepted beat at `current_address`:
+
+- `byte_increment = 1 << HSIZE`
+- `wrap_span = number_of_beats * byte_increment`
+- `wrap_base = floor(start_address / wrap_span) * wrap_span`
+- `next_address = wrap_base + ((current_address - wrap_base + byte_increment) mod wrap_span)`
+
+The start address must align to `byte_increment`, but it does not have to equal `wrap_base`—that is what permits a critical-word-first sequence.
 
 **Example:** A `WRAP4` burst where `HSIZE` is Word (4 bytes).
 - Total bytes = 4 * 4 = 16 bytes.
 - Therefore, the wrap boundary is aligned to 16 bytes (`0x10`).
 - The 16-byte aligned regions are: `0x00 - 0x0F`, `0x10 - 0x1F`, `0x20 - 0x2F`, `0x30 - 0x3F`.
 
-If the start address is `0x38`, we are inside the `0x30 - 0x3F` boundary. The address will increment normally until it hits `0x3F`, and then wrap back down to `0x30`.
+If the start address is `0x38`, we are inside the `0x30 - 0x3F` region. The next-beat calculation advances `0x38 -> 0x3C`; the following calculated address reaches the upper limit `0x40`, so modulo progression produces `0x30`. The transfer does not increment byte-by-byte until `0x3F`. The whole wrapping burst must also remain within one 1KB address region.

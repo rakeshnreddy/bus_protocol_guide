@@ -36,6 +36,14 @@ describe('Visual Loaders', () => {
     expect(data?.title).toBeDefined();
   });
 
+  it('should discover executable checker models as a production visual type', () => {
+    const data = getVisualById('model-axi-write-checker');
+    expect(data?.type).toBe('checker-model');
+    if (data?.type !== 'checker-model') throw new Error('Expected checker model');
+    expect(data.scenarios.map(scenario => scenario.id)).toContain('axi4-w-first');
+    expect(data.traceability.every(row => Boolean(row.owner && row.configuration && row.reviewer))).toBe(true);
+  });
+
   it('should discover legacy root-level visual files', () => {
     expect(getVisualById('wf-ahb-reset')?.type).toBe('waveform');
     expect(getVisualById('tl-ahb-exclusive')?.type).toBe('timeline');
@@ -52,7 +60,7 @@ describe('Visual Loaders', () => {
     expect(nestedWaveform?.type).toBe('waveform');
     if (nestedWaveform?.type !== 'waveform') throw new Error('Expected waveform');
     expect(nestedWaveform.cycleCount).toBe(6);
-    expect(nestedWaveform.signals.find(signal => signal.name === 'VALID')?.values).toEqual(['0', '1', '1', '1', '0', '0']);
+    expect(nestedWaveform.signals.find(signal => signal.name === 'RVALID')?.values).toEqual(['0', '1', '1', '1', '0', '0']);
 
     const halfCycleWaveform = getVisualById('wf-ahb-wait-state');
     expect(halfCycleWaveform?.type).toBe('waveform');
@@ -183,9 +191,35 @@ describe('Visual Loaders', () => {
     ]));
   });
 
+  it('isolates malformed checker models before production rendering', () => {
+    const result = buildVisualRegistry({
+      '../../content/visuals/checker-models/broken.json': {
+        id: 'broken-checker', type: 'checker-model', title: 'Broken', scenarios: [], traceability: [],
+      },
+      '../../content/visuals/checker-models/valid.json': {
+        id: 'valid-checker', type: 'checker-model', title: 'Valid', description: 'Valid model',
+        learnerQuestion: 'What is accepted?', protocolScope: 'Test scope',
+        scenarios: [{ id: 'one', label: 'One', mode: 'legal', description: 'One scenario', steps: [{
+          id: 'step', label: 'Step', event: 'accept', state: { accepted: true }, checks: [{
+            id: 'check', label: 'Accepted', field: 'accepted', operator: 'eq', expected: true,
+            requirementType: 'protocol', evidence: 'Accepted edge',
+          }],
+        }] }],
+        traceability: [{ requirement: 'REQ', stimulus: 'accept', checker: 'check', coverage: 'hit',
+          evidence: 'artifact://valid', owner: 'DV', configuration: 'test', status: 'Pass',
+          lastRegression: '2026-07-17', reviewer: 'Lead' }],
+      },
+    });
+
+    expect(result.registry.has('broken-checker')).toBe(false);
+    expect(result.registry.get('valid-checker')?.type).toBe('checker-model');
+    expect(result.issues).toContainEqual(expect.objectContaining({ kind: 'malformed-file', id: 'broken-checker' }));
+  });
+
   it('should report a clean production registry with recovered root-level files', () => {
     const report = getVisualRegistryReport();
-    expect(report.totalVisuals).toBeGreaterThanOrEqual(50);
+    expect(report.totalVisuals).toBe(87);
+    expect(report.countByType['checker-model']).toBe(8);
     expect(report.rootLevelVisualsRecovered).toBe(35);
     expect(report.duplicateIds).toEqual([]);
     expect(report.malformedFiles).toEqual([]);

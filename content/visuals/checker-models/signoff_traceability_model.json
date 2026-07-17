@@ -1,0 +1,63 @@
+{
+  "id": "model-signoff-traceability",
+  "type": "checker-model",
+  "title": "Requirement-to-Evidence Signoff Model",
+  "description": "Execute closure decisions using owned artifacts, configuration tags, last-regression evidence, zero-hit remediation, and independently reviewed waivers.",
+  "learnerQuestion": "What makes a checklist item auditable evidence rather than an unsupported check mark?",
+  "protocolScope": "AHB + AXI signoff lifecycle",
+  "configurations": [
+    { "id": "nightly", "label": "Nightly legal regression", "description": "Protocol-clean traffic, assertions, coverage, and evidence publication." },
+    { "id": "waiver-review", "label": "Waiver review", "description": "A justified unreachable or out-of-scope item requires owner and independent reviewer." }
+  ],
+  "scenarios": [
+    {
+      "id": "close-requirement",
+      "label": "Close with correlated evidence",
+      "mode": "legal",
+      "configurationId": "nightly",
+      "description": "A requirement closes only when its stimulus, checker, coverage, and immutable result artifact agree for the selected configuration.",
+      "steps": [
+        { "id": "collect", "label": "Collect", "event": "Nightly regression publishes checker and coverage artifacts", "state": { "requirementId": "AXI-W-RESP-001", "artifactUri": "artifact://nightly/axi-w-resp-001", "checkerPass": true, "coverageHits": 42, "owner": "AXI write DV", "configuration": "AXI4 depth2", "lastRegression": "2026-07-17", "reviewer": "protocol lead", "status": "candidate" }, "checks": [
+          { "id": "checker", "label": "Checker passed", "field": "checkerPass", "operator": "eq", "expected": true, "requirementType": "product-contract", "evidence": "The result is linked to the same configuration as the requirement." },
+          { "id": "coverage", "label": "Required scenario hit", "field": "coverageHits", "operator": "gte", "expected": 1, "requirementType": "product-contract", "evidence": "Coverage records that the prerequisite and backpressure scenarios actually executed." }
+        ] },
+        { "id": "review", "label": "Review", "event": "Independent reviewer accepts evidence package", "state": { "artifactUri": "artifact://nightly/axi-w-resp-001", "owner": "AXI write DV", "configuration": "AXI4 depth2", "lastRegression": "2026-07-17", "reviewer": "protocol lead", "status": "closed", "waiver": "none" }, "checks": [
+          { "id": "closed", "label": "Evidence-backed terminal status", "field": "status", "operator": "eq", "expected": "closed", "requirementType": "product-contract", "evidence": "Owner, configuration, artifact URI, regression date, and reviewer are retained together." }
+        ] }
+      ]
+    },
+    {
+      "id": "zero-hit",
+      "label": "Zero-hit bin remediation",
+      "mode": "policy",
+      "configurationId": "nightly",
+      "description": "A legal zero-hit bin maps to a concrete test scenario; it is not converted to ignore merely to improve the percentage.",
+      "steps": [
+        { "id": "hole", "label": "Detect hole", "event": "Legal WRAP × backpressure × final ERROR bin has zero hits", "state": { "binClass": "legal", "coverageHits": 0, "mappedTest": "TEST-WRAP-ERR-FINAL", "testStatus": "queued", "waiver": "none" }, "checks": [
+          { "id": "map", "label": "Zero-hit bin has scenario", "field": "mappedTest", "operator": "eq", "expected": "TEST-WRAP-ERR-FINAL", "requirementType": "product-contract", "evidence": "The closure plan names stimulus rather than hiding a reachable legal hole." },
+          { "id": "class", "label": "Legal bin remains legal", "field": "binClass", "operator": "eq", "expected": "legal", "requirementType": "protocol", "evidence": "Configuration-derived legality cannot be changed for a desired metric." }
+        ] },
+        { "id": "rerun", "label": "Rerun", "event": "Mapped test hits the bin and checker passes", "state": { "binClass": "legal", "coverageHits": 3, "mappedTest": "TEST-WRAP-ERR-FINAL", "testStatus": "pass", "checkerPass": true }, "checks": [
+          { "id": "hit", "label": "Coverage hole closed", "field": "coverageHits", "operator": "gte", "expected": 1, "requirementType": "product-contract", "evidence": "Closure includes checker correlation, not a hit count alone." },
+          { "id": "pass", "label": "Checker correlates with hit", "field": "checkerPass", "operator": "eq", "expected": true, "requirementType": "product-contract", "evidence": "The test did not reach the bin by violating another obligation." }
+        ] }
+      ]
+    },
+    {
+      "id": "bad-waiver",
+      "label": "Unreviewed waiver rejection",
+      "mode": "negative",
+      "configurationId": "waiver-review",
+      "description": "A waiver without a rationale, owner, configuration, and independent reviewer is not terminal evidence.",
+      "steps": [
+        { "id": "reject", "label": "Reject waiver", "event": "Owner marks a zero-hit legal bin waived without review", "state": { "waiverRationale": "", "owner": "coverage owner", "configuration": "", "reviewer": "", "waiverAccepted": false }, "checks": [
+          { "id": "not-accept", "label": "Incomplete waiver cannot close", "field": "waiverAccepted", "operator": "eq", "expected": true, "requirementType": "product-contract", "evidence": "The signoff model flags missing configuration, rationale, and reviewer." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "SIGNOFF evidence lifecycle", "stimulus": "nightly legal + negative campaigns", "checker": "requirement/result correlation", "coverage": "required scenarios + checker pass", "evidence": "artifact://signoff/index", "owner": "Signoff owner", "configuration": "all declared protocol configs", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Independent signoff reviewer" },
+    { "requirement": "SIGNOFF waiver governance", "stimulus": "unreachable-bin justification", "checker": "owner/config/rationale/reviewer completeness", "coverage": "waiver reason × configuration", "evidence": "artifact://signoff/waivers", "owner": "Coverage owner", "configuration": "waiver-review", "status": "Pass", "lastRegression": "2026-07-17", "waiver": "Only independently reviewed, configuration-scoped exclusions", "reviewer": "Program lead" }
+  ]
+}

@@ -21,10 +21,10 @@ If your constrained-random testbench runs for 10 hours, how do you prove it actu
 
 ## Core Coverage Dimensions
 
-To claim an AHB master or slave is fully verified, your coverage model (typically written in SystemVerilog Covergroups) must cross the following dimensions:
+For the selected configuration, a coverage model typically crosses the following supported dimensions:
 
 ### 1. Transfer Attributes (Cross Coverage)
-You must observe every legal combination of:
+Plan every supported legal combination of:
 - **`HBURST`** (SINGLE, INCR, WRAP4, INCR4, WRAP8, INCR8, WRAP16, INCR16)
 - **`HSIZE`** (8-bit, 16-bit, 32-bit, 64-bit...)
 - **`HWRITE`** (Read, Write)
@@ -61,5 +61,7 @@ The grid below shows a typical 2D cross-coverage space interactively—crossing 
 ![Interactive coverage grid crossing AHB burst types with OKAY, ERROR, and version-specific illegal response bins](visual:cm-ahb-burst-resp)
 
 *Caption: A 2D coverage map slicing Burst Types against Responses. Notice that SPLIT and RETRY are structurally illegal in modern AHB versions.*
+
+Generate legal, illegal, and ignore bins from configuration. `SPLIT` and `RETRY` are legal response bins only in original AHB mode; they are illegal for AHB-Lite/AHB5. Unsupported sizes and optional-property combinations are ignored or illegal according to the verification plan rather than counted as holes. Coverage proves that a scenario was sampled, not that the DUT result was correct, so every closure claim correlates the hit with passing assertions and scoreboard evidence.
 
 Use the exercise below to turn the visible zero-hit legal bins into targeted tests.

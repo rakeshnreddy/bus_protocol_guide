@@ -16,7 +16,7 @@ checklistIds: []
 ---
 
 If there is one signal you must understand perfectly to debug AHB, it is **[glossary:HTRANS]**. 
-`HTRANS` is a 2-bit signal driven by the master. It tells the slave exactly what state the current transfer is in.
+`HTRANS` is a 2-bit signal driven by the manager. It describes the **currently visible address phase**. The simultaneous data/response phase belongs to an address accepted earlier.
 
 ## The Four States of HTRANS
 
@@ -27,7 +27,7 @@ The master does not want to transfer any data.
 
 ### 01: [glossary:BUSY]
 The master is in the middle of a burst, but it needs a pause to prepare the next data item.
-- **Rule:** It acts like an `IDLE` cycle (no data is transferred), but it tells the arbiter and the slave, "Don't disconnect me, I'm still working on this burst!"
+- **Rule:** It causes no data transfer but preserves the manager's burst context so a later `SEQ` can continue. `BUSY` does not itself guarantee arbitration ownership; original-AHB ownership follows its arbitration and lock rules.
 - **Usage:** Rarely used in modern designs because it blocks the bus without doing useful work. Many modern AHB-Lite masters never generate `BUSY` cycles.
 
 ### 10: [glossary:NONSEQ] (Non-Sequential)
@@ -36,7 +36,7 @@ The master is starting a brand new transfer, or the first beat of a new burst.
 
 ### 11: [glossary:SEQ] (Sequential)
 The master is continuing an existing burst.
-- **Meaning:** The address on `HADDR` is sequentially related to the previous address in the burst (e.g., Address + 4). 
+- **Meaning:** The address on `HADDR` follows the burst progression from the previous accepted beat: the byte increment is `1 << HSIZE`, with the wrap formula applied for a wrapping burst.
 - **Optimization:** Slaves love `SEQ` cycles because they can predict the address and pre-fetch data from memory, making the transfer incredibly fast.
 
 Compare the legal and buggy sequences below. The key question is whether a `SEQ` beat still has an active burst context: `BUSY` preserves that context, while `IDLE` ends it.
@@ -50,3 +50,7 @@ Let's look at a waveform showing the most basic transaction: a single `NONSEQ` r
 ![Single NONSEQ read followed by an IDLE address phase and returning read data](visual:wf-ahb-simple-transfer)
 
 Notice that the master asserts `HTRANS = NONSEQ` along with a valid address. Once the slave acknowledges it, the master immediately returns `HTRANS` to `IDLE` on the next clock cycle, while the slave provides the requested data. (We will discuss this pipelining effect more deeply in the Data and Response lesson).
+
+## Acceptance and Burst Termination
+
+Only `NONSEQ` or `SEQ` with global `HREADY` HIGH on a rising edge accepts a beat. Visible wait cycles and `BUSY` cycles do not increment the accepted-beat count. A fixed-length burst must complete its declared accepted beats, with any permitted `BUSY` pause followed by `SEQ`. An undefined-length `INCR` can end with `IDLE` or begin unrelated work with `NONSEQ`; it must end and restart before a 1KB boundary.

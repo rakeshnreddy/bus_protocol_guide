@@ -17,14 +17,15 @@ checklistIds: []
 
 Simulation relies on checkers to automatically flag when a design violates the protocol. These are usually written in SystemVerilog Assertions (SVA) inside an interface monitor.
 
-If any of these assertions fire during a test, the test must immediately fail, and the designer must fix the RTL.
+An assertion failure is a triage event. It can indicate DUT behavior, illegal stimulus, a checker defect, an invalid formal assumption, an unsupported revision/property configuration, or an intentional negative test. The regression result follows the test's expected outcome; do not automatically assign every failure to RTL.
 
 ## Critical Master Assertions
 
 1. **Wait State Stability:** If a valid `NONSEQ` or `SEQ` transfer is pending while `HREADY` is 0, the master holds its address/control until completion. Write data for a stalled write data phase also remains stable. IDLE, BUSY, and the first ERROR cycle have defined exceptions, so the property needs transfer context.
 2. **Burst Legality (HTRANS):** A burst starts with `NONSEQ`, and continuing data beats use `SEQ`; `BUSY` can defer a continuing beat. A fixed-length burst cannot end with `BUSY`, but an undefined-length `INCR` burst may terminate after `BUSY` with `IDLE` or `NONSEQ`.
 3. **Burst Address Progression:** For each accepted `SEQ` beat in an incrementing burst, predict `HADDR` from the previous accepted beat plus the byte size specified by `HSIZE`. Do not advance the predictor on a wait state, `BUSY`, or `IDLE`.
-4. **Wrap Boundary Enforcement:** For a `WRAP` burst, when the address reaches the calculated wrap boundary, the next `SEQ` address MUST wrap back to the lower boundary limit.
+4. **Wrap Boundary Enforcement:** For a `WRAP` burst, calculate the next beat as `wrap_base + ((current - wrap_base + (1 << HSIZE)) mod wrap_span)`. Wrapping occurs when the calculated next beat reaches the upper wrap limit; it is not triggered by the current address merely being near the last byte.
+5. **Write-Data Stability:** Capture the accepted address phase's `HWRITE` into data-phase context. If that saved direction is write and global `HREADY` is LOW, require `HWDATA` stable. The currently visible `HWRITE` can belong to the next address and must not select the property.
 
 ## Critical Slave Assertions
 

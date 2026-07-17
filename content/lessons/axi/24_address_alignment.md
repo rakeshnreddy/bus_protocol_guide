@@ -47,4 +47,6 @@ Use the snapshots below to answer: **which byte lanes belong to the unaligned fi
 
 In an unaligned INCR burst, only the *first* transfer uses the unaligned start. The subsequent transfer address is derived from the aligned address plus `2^AxSIZE`; the slave computes these beat addresses from the accepted burst controls because AXI transmits only the start address.
 
-Unaligned transfers add byte-lane and strobe cases to design and verification. A component's documented interface restrictions still matter, so a verification environment should check the configured support rather than assume every target accepts every possible legal transfer shape. Aligned accesses remain the clearest choice when the requester can use them.
+For each write beat, asserted `WSTRB` bits must stay within the legal byte-lane mask derived from `AxADDR`, `AxSIZE`, the bus width, and the burst progression. Sparse subsets—including all-zero strobes—can be legal, but a strobe outside that beat's lane mask is not. Reads have no `RSTRB`; the receiver scores only the requested lanes and treats inactive lanes as outside the transfer.
+
+Unaligned transfers add byte-lane and strobe cases to design and verification. A component can document a narrower supported transaction subset and use handshaking, conversion, or error behavior as specified by its interface contract; AXI legality does not require every endpoint to implement every optional capability. A monitor must distinguish protocol-illegal stimulus from a legal request that the configured target does not support.

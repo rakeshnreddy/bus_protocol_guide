@@ -11,12 +11,12 @@
       "BUSY"
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! Every beat after the first beat (NONSEQ) in a burst must be a SEQ transfer to indicate it is part of the same burst. IDLE or NONSEQ would indicate a break in the burst."
+    "expectedTakeaway": "Correct for this uninterrupted fixed-length INCR4 scenario: the fourth accepted valid beat is SEQ. Wait cycles do not consume beats, and a legal BUSY insertion would preserve burst context without itself becoming a beat."
   },
   {
     "id": "ex-ahb-htrans-violation",
     "title": "HTRANS Protocol Violation",
-    "prompt": "If a master drives HTRANS=SEQ and the slave responds with HREADY=0, what is the master allowed to drive on HTRANS in the next cycle?",
+    "prompt": "During an ordinary HRESP=OKAY wait, a valid SEQ address phase is pending with HREADY=0. No IDLE, BUSY, or first-ERROR-cycle exception applies. What must the master drive on HTRANS in the next cycle?",
     "type": "multiple-choice",
     "options": [
       "IDLE",
@@ -25,7 +25,7 @@
       "NONSEQ"
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! If HREADY=0, the master MUST NOT change the control signals. It must continue to drive SEQ until HREADY goes high."
+    "expectedTakeaway": "Correct in this pending-valid context: the master holds SEQ and the complete address/control payload until an edge with HREADY=1 accepts it. A checker must model the separate legal rules for IDLE, BUSY, and cancellation in the first ERROR cycle rather than applying this as a blanket low-HREADY rule."
   },
   {
     "id": "ex-ahb-wrap-boundary",
@@ -53,7 +53,7 @@
       "Only when Master 1 asserts HGRANT1=0."
     ],
     "correctOptionIndex": 2,
-    "expectedTakeaway": "Correct! HGRANT only indicates permission. A master cannot actually drive the address bus until the current transfer finishes, which is signaled by HREADY=1."
+    "expectedTakeaway": "Correct! HGRANT is permission for future ownership. Active ownership and the next address owner change only at a legal HREADY-high handover boundary; the simultaneous data/response owner can still belong to Master 1's earlier accepted transfer."
   },
   {
     "id": "ex-ahb-coverage",

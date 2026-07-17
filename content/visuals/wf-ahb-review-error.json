@@ -6,8 +6,9 @@
   "cycleCount": 6,
   "signals": [
     { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
-    { "name": "HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE"] },
-    { "name": "HADDR", "type": "data", "values": ["A", "B", "B", "—", "—", "—"] },
+    { "name": "CANCEL PATH HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "IDLE", "IDLE", "IDLE"] },
+    { "name": "CONTINUE PATH HTRANS", "type": "sideband", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "IDLE", "IDLE"] },
+    { "name": "HADDR (shown cancel path)", "type": "data", "values": ["A", "B", "B", "—", "—", "—"] },
     { "name": "DATA_PHASE", "type": "sideband", "values": ["—", "A", "A", "A", "—", "—"] },
     { "name": "HREADY", "type": "control", "values": ["1", "1", "0", "1", "1", "1"] },
     { "name": "HRESP", "type": "sideband", "values": ["OKAY", "OKAY", "ERROR", "ERROR", "OKAY", "OKAY"] }
@@ -16,7 +17,7 @@
     { "cycle": 1, "message": "Address A is accepted. Its response will be observed later in A's data phase." },
     { "cycle": 2, "message": "The pipeline broadcasts following address B while transfer A occupies the data phase." },
     { "cycle": 3, "message": "ERROR cycle 1: HRESP=ERROR and HREADY=0 extend A for one cycle so the master can react to the already-broadcast B transfer." },
-    { "cycle": 4, "message": "ERROR cycle 2: HRESP remains ERROR and HREADY=1 completes failed transfer A. This example cancels B by driving IDLE; continuing the burst is also permitted by the specification." },
+    { "cycle": 4, "message": "ERROR cycle 2: HRESP remains ERROR and HREADY=1 completes failed transfer A. The cancel path drives IDLE and discards pending B; continuing the burst is also permitted, as shown by the separate path that keeps a legal SEQ transfer." },
     { "cycle": 5, "message": "The bus returns to OKAY. A verifier must attribute both ERROR cycles to data phase A, not to following address B." }
   ]
 }

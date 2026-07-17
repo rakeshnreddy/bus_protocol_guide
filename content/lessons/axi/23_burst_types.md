@@ -29,7 +29,7 @@ In a FIXED burst, the address remains exactly the same for every beat of the tra
 
 In an INCR (Incrementing) burst, the address for each beat is calculated using the transfer size: the aligned progression advances by `2^AxSIZE` bytes.
 
-**Use Case:** This is the standard burst type for normal memory access. If you want to copy a 64-byte chunk of data into RAM, you use an INCR burst. Unlike AHB, where you had to choose between 4, 8, or 16 beat increments, AXI4 allows an INCR burst to be any length from 1 to 256 beats. FIXED and WRAP bursts remain limited to 1–16 beats.
+**Use Case:** This is the standard burst type for normal memory access. AXI4 allows an INCR burst from 1 to 256 beats. FIXED is 1–16 beats; WRAP is more restrictive at exactly 2, 4, 8, or 16.
 
 ## 3. WRAP (0b10)
 
@@ -41,6 +41,8 @@ A WRAP burst behaves like an INCR burst, but with a critical twist: if the incre
 *   The total size of the block being accessed is `(AxSIZE bytes) * (AxLEN + 1)`.
 *   The lower wrap boundary is the start address rounded down to the nearest multiple of the total block size.
 *   The upper wrap boundary is the lower wrap boundary plus the total block size.
+
+Let `B = 2^AxSIZE`, `N = AxLEN+1`, and `A = AxADDR`. FIXED uses `A` for each beat. For INCR, after a possible unaligned first transfer, beat `n` uses `floor(A/B)×B + n×B`. For WRAP, `wrapBytes=N×B`, `lower=floor(A/wrapBytes)×wrapBytes`, and the increment wraps modulo `wrapBytes`. Encoding `AxBURST=0b11` is reserved. AXI3 permits 1–16 transfers for burst types subject to the same exact WRAP lengths; AXI4 extends only INCR to 256. Every burst type obeys the 4 KB boundary rule.
 
 The comparison below answers: **given the same `AxLEN` and `AxSIZE`, which address belongs to each beat for FIXED, INCR, and WRAP?**
 

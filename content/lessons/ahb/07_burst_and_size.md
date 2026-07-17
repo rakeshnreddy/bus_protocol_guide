@@ -26,6 +26,10 @@ While `HTRANS` tells the slave what is happening *right now*, `HBURST` and `HSIZ
   - `001`: Halfword (16 bits)
   - `010`: Word (32 bits)
   - `011`: Doubleword (64 bits)
+  - `100`: 16 bytes (128 bits)
+  - `101`: 32 bytes (256 bits)
+  - `110`: 64 bytes (512 bits)
+  - `111`: 128 bytes (1024 bits)
 - **Constraint:** The value of `HSIZE` must not exceed the physical width of the data bus. If you have a 32-bit `HWDATA` bus, you cannot issue an `HSIZE` of Doubleword!
 - **Alignment Rule:** As mentioned in the Address lesson, the address on `HADDR` must be aligned to `HSIZE`. 
   - If `HSIZE` is Word (4 bytes), `HADDR` must end in `0x0`, `0x4`, `0x8`, or `0xC`.
@@ -47,7 +51,7 @@ Use the explorer to connect every HBURST family to accepted beat count, HSIZE-ba
 
 ### Incrementing vs Wrapping
 
-- **INCR (Incrementing):** The address simply increments by the `HSIZE` for each beat. If `HSIZE` is 4 bytes, the addresses go: `0x00 -> 0x04 -> 0x08 -> 0x0C`.
+- **INCR (Incrementing):** `bytes_per_beat = 1 << HSIZE`, and the address advances by that byte count for each accepted beat. If `HSIZE=010`, the addresses go: `0x00 -> 0x04 -> 0x08 -> 0x0C`.
 - **WRAP (Wrapping):** This is heavily used by CPU cache line fills. If a master requests a WRAP4 burst starting at address `0x04`, the addresses will wrap around at the boundary of the burst size: `0x04 -> 0x08 -> 0x0C -> 0x00`.
 
 These two recovered waveforms use the same four-byte HSIZE but different HBURST rules. Step through the addresses and identify the beat where wrapping changes the otherwise sequential progression.
@@ -57,3 +61,5 @@ These two recovered waveforms use the same four-byte HSIZE but different HBURST 
 ![Four-beat wrapping AHB burst returning to the start of its wrap boundary](visual:wf-ahb-wrap4-burst)
 
 **DV Check:** Just like `HWRITE` and `HSIZE`, the `HBURST` signal must remain perfectly constant for every beat of a burst! Changing `HBURST` mid-burst is a critical protocol violation.
+
+The fixed burst length is counted in **accepted valid beats**: rising edges with `HREADY` HIGH and `HTRANS` equal to `NONSEQ` or `SEQ`. Wait cycles repeat a pending beat and `BUSY` carries no beat, so neither counts toward 4, 8, or 16. Every AHB burst, including undefined-length `INCR`, must remain within one 1KB address region; the manager ends before the boundary and restarts with `NONSEQ` if more data remains.

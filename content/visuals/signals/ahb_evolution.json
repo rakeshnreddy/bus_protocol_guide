@@ -13,10 +13,10 @@
     },
     {
       "name": "Response encoding", "expansion": "Legacy four-state to OKAY/ERROR", "role": "control", "group": "What changed",
-      "description": "Original AHB uses a two-bit response encoding for OKAY, ERROR, RETRY, and SPLIT. AHB-Lite and AHB5 retain only OKAY and ERROR on a one-bit HRESP.",
+      "description": "Original AHB uses a two-bit response encoding for OKAY, ERROR, RETRY, and SPLIT. RETRY requests a later reattempt without HSPLITx; SPLIT also removes the master from eligibility until the slave's HSPLITx indication allows it to retry. AHB-Lite and AHB5 retain only OKAY and ERROR on one-bit HRESP.",
       "direction": "Selected slave → master", "sampled": "With HREADY HIGH for completion; ERROR uses its required two-cycle sequence",
-      "values": ["AHB: OKAY/ERROR/RETRY/SPLIT", "AHB-Lite/AHB5: OKAY/ERROR"],
-      "verificationNote": "Never decode legacy RETRY or SPLIT values on a one-bit AHB-Lite/AHB5 HRESP."
+      "values": ["AHB RETRY: reattempt, no HSPLITx", "AHB SPLIT: blocked until HSPLITx", "AHB-Lite/AHB5: OKAY/ERROR"],
+      "verificationNote": "Keep RETRY and SPLIT state machines separate. Never decode either legacy value on a one-bit AHB-Lite/AHB5 HRESP."
     },
     {
       "name": "Secure_Transfers", "expansion": "Optional AHB5 HNONSEC property", "role": "sideband", "group": "AHB5 additions",
@@ -48,14 +48,14 @@
       "name": "HMASTER", "expansion": "The purpose changed; it was not simply removed", "role": "sideband", "group": "What did not disappear",
       "description": "Original AHB uses arbiter-generated HMASTER for shared-bus identity and SPLIT handling. AHB5 supports HMASTER when Exclusive_Transfers is True so master threads and interconnect ports can form a unique monitor identity.",
       "direction": "Original arbiter or AHB5 master/interconnect → slave/monitor", "sampled": "With address-phase controls",
-      "values": ["Original: shared-bus master number", "AHB5 exclusives: implementation-defined-width identity"],
-      "verificationNote": "Track the source and width of HMASTER for the implemented revision; never assume the original fixed four-bit role."
+      "values": ["Original base: arbiter HMASTER[3:0]", "AHB5 manager signal table: HMASTER[3:0]", "AHB5 §8.3: HMASTER[m:0] width implementation-defined; route identity combined for uniqueness"],
+      "verificationNote": "Track the source, configured width, thread identity, and interconnect-added route identity for the implemented revision."
     },
     {
       "name": "1 KB boundary", "expansion": "Burst restriction exists in both generations", "role": "control", "group": "What did not disappear",
-      "description": "Original AMBA 2 AHB and AHB-Lite/AHB5 all require incrementing bursts not to cross a 1 KB address boundary so a burst cannot cross the minimum decode region.",
+      "description": "Original AMBA 2 AHB and AHB-Lite/AHB5 all require every AHB burst—SINGLE, incrementing, and wrapping—to remain within one 1 KB address region so it cannot cross the minimum decode boundary.",
       "direction": "Master address-generation rule", "sampled": "Checked across every generated burst address", "values": ["Same 1 KB restriction"],
-      "verificationNote": "A version-comparison test must not mark 1 KB crossing as legal for original AHB."
+      "verificationNote": "A version-comparison test must not mark any burst crossing 1 KB as legal for original AHB, AHB-Lite, or AHB5."
     }
   ]
 }

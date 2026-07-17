@@ -2,7 +2,7 @@
   "id": "topo-axi-five-channels",
   "type": "topology",
   "title": "AXI4 Five-Channel Interface",
-  "description": "Follow each independent channel between the master and slave interface; the arrow direction identifies the information source and destination, while READY always returns within that channel.",
+  "description": "Follow each independently handshaken AXI4 channel on one synchronous ACLK interface; arrows identify information sources and READY destinations, while annotations identify the required AR→R and AW+final-W→B dependencies.",
   "regions": [
     { "id": "master-interface", "label": "AXI master interface", "x": 25, "y": 35, "width": 250, "height": 550, "tone": "source" },
     { "id": "channel-lanes", "label": "Independent channel lanes", "x": 305, "y": 35, "width": 390, "height": 550, "tone": "fabric" },
@@ -30,9 +30,9 @@
   "highlightedPath": ["master-aw", "channel-aw", "slave-aw", "master-w", "channel-w", "slave-w", "slave-b", "channel-b", "master-b"],
   "annotations": [
     { "edgeId": "channel-aw", "message": "The master sources AWVALID plus the write address and attributes. The slave returns AWREADY; transfer occurs only on a rising ACLK edge with both HIGH." },
-    { "edgeId": "channel-w", "message": "Write data has its own handshake and can reach an interface before, with, or after the matching write address. AXI4 still requires write data to follow write-address order." },
-    { "edgeId": "channel-b", "message": "The slave sources one write response after accepting the write address and the final write-data beat. The master controls response backpressure with BREADY." },
+    { "edgeId": "channel-w", "message": "The master can offer W before, with, or after AW. The slave may withhold WREADY; if it accepts early W, it buffers and associates it. AXI4 write data follows write-address order." },
+    { "edgeId": "channel-b", "message": "After accepted AW plus accepted final W, the slave can source one response. BVALID must not depend on BREADY and the B payload remains stable while stalled." },
     { "edgeId": "channel-ar", "message": "The master sources the read address and attributes. Read-address flow control is independent of every write channel." },
-    { "edgeId": "channel-r", "message": "The slave returns each read-data beat with RRESP and RID. The master can stall this channel with RREADY without directly stalling the address channels." }
+    { "edgeId": "channel-r", "message": "Only after accepted AR, the slave returns R data with RID and RRESP. RVALID must not depend on RREADY; accepted RLAST retires the read." }
   ]
 }

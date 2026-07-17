@@ -6,7 +6,7 @@
   "regions": [
     { "id": "shared", "label": "1 · Shared bus: one owner at a time", "x": 25, "y": 30, "width": 950, "height": 220, "tone": "fabric" },
     { "id": "p2p", "label": "2 · Point-to-point: one dedicated link", "x": 25, "y": 280, "width": 950, "height": 170, "tone": "source" },
-    { "id": "switched", "label": "3 · Switched crossbar: independent concurrent routes", "x": 25, "y": 480, "width": 950, "height": 270, "tone": "concept" }
+    { "id": "switched", "label": "3 · Switched crossbar: concurrency when resources differ", "x": 25, "y": 480, "width": 950, "height": 270, "tone": "concept" }
   ],
   "nodes": [
     { "id": "shared_m1", "label": "Master 1", "type": "master", "x": 145, "y": 95 },
@@ -39,7 +39,7 @@
   "annotations": [
     { "nodeId": "shared_bus", "message": "All participants share the same transfer resource, so arbitration permits only one master-owned route at a time." },
     { "edgeId": "e-p2p", "message": "The direct link needs no system-level arbitration, but adding every possible master-target pair scales poorly in wires and ports." },
-    { "nodeId": "xbar", "message": "The switch fabric contains multiple internal paths. Master 1 can reach Slave 1 while Master 2 reaches Slave 2, provided the routes do not contend for the same target resource." },
+    { "nodeId": "xbar", "message": "The switch fabric contains multiple internal paths. Master 1 can reach Slave 1 while Master 2 reaches Slave 2, provided the routes do not contend for the same target or another shared resource. Same-target requests still require arbitration, buffering, or backpressure." },
     { "edgeId": "e-xbar-s2", "message": "Route B is independent of route A. Labels and separate geometry make concurrency understandable without relying on color alone." }
   ]
 }

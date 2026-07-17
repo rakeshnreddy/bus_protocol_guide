@@ -280,7 +280,7 @@
         { "key": "meaning", "label": "Accepted evidence" }
       ],
       "rows": [
-        { "id": "c1", "label": "C1", "values": { "aw": "0/0", "w": "1/1/0", "b": "0/0", "meaning": "W beat 0 accepted before AW" } },
+        { "id": "c1", "label": "C1", "values": { "aw": "0/0", "w": "1/1/0", "b": "0/0", "meaning": "W beat 0 accepted into pre-AW buffer" } },
         { "id": "c2", "label": "C2", "values": { "aw": "1/1", "w": "1/1/1", "b": "0/0", "meaning": "AW and final W beat accepted" } },
         { "id": "c3", "label": "C3", "values": { "aw": "0/0", "w": "0/0/0", "b": "1/0", "meaning": "Response valid; not accepted" } },
         { "id": "c4", "label": "C4", "values": { "aw": "0/0", "w": "0/0/0", "b": "1/1", "meaning": "Response accepted" } }
@@ -321,10 +321,10 @@
           { "id": "joined", "label": "Per-write accepted AW state joined with accepted final-W completion" }
         ],
         "correctOptionId": "joined",
-        "explanation": "The response becomes eligible only when both independent channel histories have been correlated for the same write transaction."
+        "explanation": "The receiver needs an accepted-AW queue, pre-AW W buffering when it chooses early acceptance, and accepted-beat state through final W. The response becomes eligible only when both histories have been associated for the same write."
       }
     ],
-    "expectedTakeaway": "Channel independence does not remove transaction dependencies. W data can arrive before AW, but an AXI4 write response must follow an accepted address and the accepted final W transfer.",
+    "expectedTakeaway": "Channel independence does not remove transaction dependencies. A destination can refuse early W; if it accepts W before AW, it buffers and associates it. AXI4 BVALID follows accepted AW and accepted final W and cannot depend on BREADY.",
     "relatedLessons": ["13_write_transaction_walkthrough"]
   },
   {

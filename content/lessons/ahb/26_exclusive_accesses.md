@@ -15,7 +15,7 @@ glossaryTerms: ["Exclusive Access", "Semaphore"]
 checklistIds: []
 ---
 
-Because `HMASTLOCK` destroys system performance by hogging the bus, AHB5 introduced **[glossary:Exclusive Access]** mechanisms using the `HEXCL` and `HEXOKAY` signals. This aligns AHB closely with AXI's exclusive access model.
+AHB5 defines **[glossary:Exclusive Access]** as the optional `Exclusive_Transfers` interface property, using `HEXCL`, `HMASTER`, and `HEXOKAY`. It provides conditional-update semantics without retaining arbitration ownership; it does not delete locking.
 
 ## The Exclusive Monitor
 
@@ -26,14 +26,14 @@ Instead of locking the bus, the system simply "watches" the target address.
 
 To perform a Read-Modify-Write using exclusive accesses:
 
-1. **Exclusive Read:** Master 1 reads the [glossary:Semaphore] address with `HTRANS=NONSEQ`, driving **`HEXCL = 1`**.
-   - The Exclusive Monitor records the master identity, address, and matching transfer attributes.
+1. **Exclusive Read:** Manager 1 reads the [glossary:Semaphore] location with `HTRANS=NONSEQ`, **`HEXCL=1`**, and its configured **`HMASTER`** identity.
+   - `HEXOKAY=1` on the exclusive-read completion reports that the monitor established state. The monitor records identity, monitored location or granule, transfer size, and the matching attributes required by IHI 0033B.b.
 2. **Intermission:** Master 1 does local math (e.g., adding 1 to the read value). 
    - **Crucially, the bus is NOT locked!** Other masters are free to use the bus during this time.
-3. **Exclusive Write:** Master 1 attempts to write the new value back to the address, again driving **`HEXCL = 1`**.
+3. **Exclusive Write:** The same `HMASTER` attempts a matching write with **`HEXCL=1`** and the required address or granule, size, and attributes.
 4. **The Verdict (`HEXOKAY`):**
    - If no other master wrote to that address during the intermission, the Monitor approves the write. The slave asserts **`HEXOKAY = 1`**, and the write succeeds. Master 1 has the semaphore!
-   - If Master 2 *did* write to that address during the intermission, the Monitor rejects Master 1's write. The slave asserts **`HEXOKAY = 0`**. The write is discarded, and Master 1 must start the entire process over from step 1.
+   - If monitor state is absent or invalidated by relevant interference to the monitored granule, the Monitor rejects the write. The write must not update memory and can complete with **`HRESP=OKAY`, `HEXOKAY=0`**; the manager retries the entire sequence if software policy requires it.
 
 Compare the success path with an attempt invalidated by an intervening write. In both cases the bus remains available to other masters.
 

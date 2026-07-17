@@ -132,10 +132,10 @@ describe('AXI Batch 1 protocol-accuracy guards', () => {
   });
 
   it('retains the corrected lesson claims at the teaching boundary', () => {
-    expect(lessonBody(1)).toMatch(/different IDs.*same-ID ordering rules/i);
-    expect(lessonBody(2)).toMatch(/FIXED.*WRAP.*16 beats/i);
-    expect(lessonBody(5)).toMatch(/1–256 beats for `INCR`.*`FIXED` and `WRAP`.*16/i);
-    expect(lessonBody(8)).toMatch(/`INCR` supports up to 256.*`FIXED` and `WRAP`.*16/i);
+    expect(lessonBody(1)).toMatch(/different IDs.*ID- and destination-scoped ordering rules/i);
+    expect(lessonBody(2)).toMatch(/WRAP.*exactly 2, 4, 8, or 16 beats/i);
+    expect(lessonBody(5)).toMatch(/`INCR` permits 1–256 beats.*`FIXED` permits 1–16.*`WRAP` permits exactly 2, 4, 8, or 16/is);
+    expect(lessonBody(8)).toMatch(/`INCR` permits 1–256 beats.*`FIXED` permits 1–16.*`WRAP` permits exactly 2, 4, 8, or 16/is);
     expect(lessonBody(7)).toMatch(/protocol does not define the letter as an abbreviation for .Buffer/i);
     expect(lessonBody(7)).toMatch(/accepted both the AW request and the final W beat/i);
     expect(lessonBody(10)).toMatch(/exact arbitration and starvation policy is implementation-defined/i);

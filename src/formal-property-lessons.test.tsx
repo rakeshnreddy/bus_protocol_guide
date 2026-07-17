@@ -48,15 +48,16 @@ describe('Formal Property Lessons Integration', () => {
       render(<InteractiveExercise exercise={exercise!} />);
 
       // It's a reflection exercise. Check prompt.
-      expect(screen.getByText(/Toggle HREADY to stay low past cycle 4/)).toBeInTheDocument();
+      expect(screen.getByText(/NONSEQ address is accepted in cycle 2/)).toBeInTheDocument();
       
       // Click reveal
       const revealBtn = screen.getByRole('button', { name: /Reveal Answer/i });
       fireEvent.click(revealBtn);
 
       // Verify the takeaway is revealed
-      expect(screen.getByText(/configured bounded-progress property evaluates to FAIL/)).toBeInTheDocument();
-      expect(screen.getByText(/not by itself a universal AHB safety violation/)).toBeInTheDocument();
+      expect(screen.getByText(/fails only when the accepted cycle-2 address sees no completion/i)).toBeInTheDocument();
+      expect(screen.getByText(/cycle-2 HREADY completed the preceding data owner/i)).toBeInTheDocument();
+      expect(screen.getByText(/not by itself a universal AHB protocol-safety violation/)).toBeInTheDocument();
     });
 
     it('AXI WLAST exact match exercise interactions work correctly', () => {

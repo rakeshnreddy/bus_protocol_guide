@@ -1,36 +1,50 @@
 {
   "id": "wf-pipeline-timing",
   "type": "waveform",
-  "title": "Pipelined Timing",
+  "title": "AHB Address and Data Phase Ownership",
+  "description": "AHB address/control for the next transfer can overlap the current transfer's data/response phase; HREADY identifies the edge that completes the current phase and accepts the pending address phase.",
   "data": {
-    "totalCycles": 5,
+    "totalCycles": 6,
     "signals": [
       {
-        "name": "CLK",
+        "name": "HCLK",
         "type": "clock",
-        "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
+        "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
       },
       {
-        "name": "CMD",
+        "name": "HTRANS",
         "type": "data",
         "color": "blue",
-        "values": ["IDLE", "READ A", "READ B", "IDLE", "IDLE"]
+        "values": ["IDLE", "NONSEQ A", "SEQ B", "SEQ C", "SEQ C", "IDLE"]
       },
       {
-        "name": "DATA",
+        "name": "HREADY",
+        "type": "control",
+        "values": ["HIGH", "HIGH", "HIGH", "LOW", "HIGH", "HIGH"]
+      },
+      {
+        "name": "DATA / RESPONSE OWNER",
         "type": "data",
         "color": "green",
-        "values": ["0x0", "0x0", "DATA A", "DATA B", "0x0"]
+        "values": ["—", "—", "A", "B", "B", "C"]
       }
     ],
     "annotations": [
       {
         "cycle": 1,
-        "message": "Command phase for READ A begins."
+        "message": "Transfer A is visible as NONSEQ and is accepted at this rising edge because HREADY is HIGH."
       },
       {
         "cycle": 2,
-        "message": "Pipelining: Command phase for READ B overlaps with Data phase for READ A."
+        "message": "Transfer B's address/control is accepted while transfer A owns the data/response phase."
+      },
+      {
+        "cycle": 3,
+        "message": "Transfer C is visible but pending: HREADY is LOW, so B remains the data/response owner and C is not accepted."
+      },
+      {
+        "cycle": 4,
+        "message": "HREADY is HIGH: B completes and the still-visible transfer C address/control is accepted on this edge."
       }
     ]
   }

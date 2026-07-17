@@ -22,18 +22,18 @@ All signals on this channel begin with the prefix `AW`.
 ## Handshake Signals
 
 Like every AXI channel, the AW channel is governed by a two-way handshake:
-*   **`AWVALID`** (Master -> Slave): The master drives this HIGH when it has placed a valid address and valid control signals on the bus. It must remain HIGH until the slave accepts it.
+*   **`AWVALID`** (Master -> Slave): The master drives this HIGH when it has placed a valid address and valid control signals on the bus. Its assertion must not depend on `AWREADY`, and it must remain HIGH until the slave accepts it.
 *   **`AWREADY`** (Slave -> Master): The slave drives this HIGH when it is ready to accept a new write address. 
 
 The transaction is officially initiated on the rising clock edge where *both* `AWVALID` and `AWREADY` are HIGH.
 
 ## Core Address Signals
 
-*   **`AWADDR`** (Write Address): The starting physical memory address for the write burst. 
-*   **`AWLEN`** (Write Burst Length): Defines how many data beats are in the burst. In AXI4, this is an 8-bit signal allowing 1–256 beats for `INCR`; `FIXED` and `WRAP` remain limited to 16 (`AWLEN` = Number of beats - 1. So `AWLEN=0` means 1 beat).
+*   **`AWADDR`** (Write Address): The byte address of the first transfer in the write burst.
+*   **`AWLEN`** (Write Burst Length): Defines how many data beats are in the burst. In AXI4, `INCR` permits 1–256 beats, `FIXED` permits 1–16, and `WRAP` permits exactly 2, 4, 8, or 16 (`AWLEN = beats - 1`).
 *   **`AWSIZE`** (Write Burst Size): Defines the number of bytes transferred in *each* data beat. Encoded as a power of 2 (e.g., 0b010 = 4 bytes, 0b011 = 8 bytes).
-*   **`AWBURST`** (Write Burst Type): Defines how the address advances during the burst (FIXED, INCR, or WRAP).
-*   **`AWID`** (Write Address ID): An identification tag for the transaction. This is crucial for out-of-order execution, which we will cover deeply later.
+*   **`AWBURST`** (Write Burst Type): Defines how the address advances during the burst (FIXED, INCR, or WRAP). An INCR start can be unaligned; a WRAP start must be `2^AWSIZE` aligned, and every burst must stay in one 4 KB region.
+*   **`AWID`** (Write Address ID): Selects an ordering/correlation stream at this interface. IDs can be reused and are not globally unique transaction numbers.
 
 Use the address-channel explorer to inspect the AW handshake and every core transaction-definition signal. Each entry includes its accepting edge and a verification failure pattern; the AR equivalents are included for direct comparison.
 
@@ -43,7 +43,7 @@ Use the address-channel explorer to inspect the AW handshake and every core tran
 
 The AW channel carries several sideband signals that provide extra context to the interconnect and the slave. We will dedicate an entire lesson to these later, but here is a brief overview:
 
-*   **`AWLOCK`**: Marks an exclusive access in AXI4. AXI3 also encoded locked accesses, which AXI4 removed.
+*   **`AWLOCK`**: Marks a Normal or Exclusive access in AXI4. Exclusive success is conditional and reported by the response; asserting `AWLOCK` does not guarantee success.
 *   **`AWCACHE`**: Defines memory type (cacheable, bufferable, etc.). Crucial for system-level caches.
 *   **`AWPROT`**: Defines access permissions (secure/non-secure, privileged, instruction/data).
 *   **`AWQOS`**: (AXI4 only) Quality of Service identifier that can inform an implementation-defined traffic policy.

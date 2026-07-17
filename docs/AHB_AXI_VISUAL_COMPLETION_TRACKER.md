@@ -1,10 +1,10 @@
 # AHB/AXI Visual Completion Tracker
 
-Last updated: 2026-07-16
+Last updated: 2026-07-17
 
 ## Current directive
 
-Finish AHB and AXI visual and interactive learning to a high educational standard. All four AHB visual batches, all four AXI visual batches, and **Phase V3 — presentation and retention polish** are complete. Future work remains focused on targeted AHB/AXI accuracy maintenance and learner-feedback improvements; do not begin APB.
+Finish AHB and AXI visual and interactive learning to a high educational standard. All four AHB visual batches, all four AXI visual batches, **Phase V3 — presentation and retention polish**, Phase V4 applied-DV practice, and audit-remediation phases R1-R6 are complete. The closed evidence is in `docs/AUDIT_REMEDIATION_TRACKER.md`. Do not begin APB.
 
 ## Phase V0 — Visual recovery
 
@@ -12,7 +12,7 @@ Status: complete.
 
 - The production registry discovers both `content/visuals/*.json` and recursively nested visual JSON files through one non-duplicating glob.
 - All 43 pre-existing assets are recoverable: 35 legacy root-level files and 8 typed-folder files.
-- AHB and AXI completion have expanded the recovered library to 79 production visuals without duplicating a legacy ID.
+- AHB/AXI completion and audit remediation have expanded the recovered library to 87 production visuals without duplicating a legacy ID.
 - Root files prefer an explicit supported `type`; missing types use only the conservative `wf-`, `tl-`, `topo-`, and `sig-` prefix mapping.
 - Malformed files, missing IDs, unsupported types, and duplicate IDs are isolated with source-path diagnostics. The first valid duplicate is preserved rather than overwritten.
 - Current production diagnostics: 0 duplicate IDs, 0 malformed/missing-ID files, and 0 unsupported files.
@@ -29,7 +29,8 @@ Status: complete.
 | Coverage map | 2 |
 | Formal property | 2 |
 | Spec rule explorer | 2 |
-| **Total** | **79** |
+| Checker model | 8 |
+| **Total** | **87** |
 
 ## Phase V1 — AHB Visual Batch 1 (Lessons 01–09)
 
@@ -694,6 +695,120 @@ Results: every route rendered one Applied DV section and one production lab with
 - Search chunk: 27.63 kB minified
 - Largest chunk: 349.98 kB, below the existing 500 kB warning threshold
 
-## Next AHB/AXI work
+## Audit-remediation evidence after R2
 
-The planned AHB/AXI visual-first, presentation, retention, and applied-DV scope is complete. Future work should be targeted maintenance driven by learner feedback or a specific protocol-accuracy finding, not a new audit-only phase. Do not begin APB without an explicit product-directive change.
+The six audit reports were reconciled into the 96-row `docs/AUDIT_REMEDIATION_TRACKER.md`. R1 corrected all six Foundations lessons and their linked architecture, sampling, pipeline, handshake, transaction, exercise, and signoff assets. R2 corrected all 38 AHB lessons and every audit4 critical shared asset.
+
+R2 visual changes include exact reset/restart semantics, complete HSIZE and HPROT/property gates, accepted-beat HTRANS state, HREADYOUT versus global HREADY, data/response ownership, invalid-stimulus disposition, explicit cancel/continue ERROR paths, active lock ownership versus future grant, complete exclusive-monitor lifecycle, configured security enforcement, separate RETRY/SPLIT behavior, revision-selectable response coverage with accepted error-beat detail, and an accepted-phase formal evaluator with reset cancellation. The stale duplicate AHB checklist was removed; the production checklist and AHB rule data now carry configuration/evidence and primary-source provenance.
+
+Latest R2 phase gate:
+
+- Test files: 45
+- Tests: 586 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 383.20 kB
+- Lesson page chunk: 171.84 kB
+- Visual renderer chunk: 237.41 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 383.20 kB, below 500 kB
+
+Browser verification covered all 38 AHB lessons plus `/visuals`, `/dev/visuals`, and `/glossary` at 1440 × 1000 and exactly 375 × 812. The 82 route checks found no missing/blank content, page overflow, console warning, or error. Light/dark/system and reduced-motion states passed; coverage mode switching, formal failure/reset cancellation, search, Enter/Space timeline/topology selection, 44 px controls/connectors, and mobile internal topology scrolling passed.
+
+## Audit-remediation evidence after R3
+
+All 26 audited AXI lessons now use the IHI 0022H channel, association, ordering, burst, lane, and boundary model. Shared AXI visuals expose synchronous ACLK scope, explicit response prerequisites, optional early-W acceptance, complete WUSER/BUSER/RUSER stability bundles, exact WRAP lengths, AxLOCK/AxUSER policy boundaries, and the corrected 4 KB final-byte transition. The consolidated legality explorer adds early-W and no-combinational-path categories without creating a parallel renderer.
+
+Latest R3 phase gate:
+
+- Test files: 45
+- Tests: 602 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 394.36 kB
+- Lesson page chunk: 171.84 kB
+- Visual renderer chunk: 240.68 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 394.36 kB, below 500 kB
+
+Browser verification covered AXI lessons 01–26 plus `/visuals`, `/dev/visuals`, and `/glossary` at 1440 × 1000 and exactly 375 × 812. The 58 route checks found no missing/blank content, page overflow, unlabeled button, console warning, or error. Light/dark/system and reduced-motion states passed; production search, Enter/Space topology and signal-explorer selection, 52 px controls, 44 px connector hit areas, complete USER payload rows, and mobile internal topology scrolling passed.
+
+## Audit-remediation closure status
+
+R1-R6 are complete. Preserve the completed AHB/AXI visual system and do not begin APB without an explicit product-directive change.
+
+## Audit-remediation evidence after R4
+
+R4 added one reusable, typed `checker-model` interaction and eight protocol-specific assets rather than eight unrelated widgets. The assets execute bounded event sequences and expose retained checker state, typed protocol/recommendation/product-contract/system-policy results, intentional negative outcomes, and requirement-to-evidence traceability:
+
+- `model-foundation-dv`
+- `model-ahb-core-checker`
+- `model-ahb-system-checker`
+- `model-ahb-dv-rigor`
+- `model-axi-write-checker`
+- `model-axi-read-checker`
+- `model-axi-burst-checker`
+- `model-signoff-traceability`
+
+The models are integrated into Foundations 06, AHB 16/20/32/35 and AXI 13/18/25/40. They cover legal versus intentional-negative stimulus, visible/pending/accepted AHB state, response routing and bridge conservation, formal assumptions/reset/vacuity/configured bins, AXI3/AXI4 write association, per-ID read queues and ID restoration, burst/lane/LAST/4 KB calculations, and owned/reviewed signoff evidence. The production registry now contains 87 visuals and reports zero duplicate, malformed/missing-ID, or unsupported assets.
+
+Latest R4 phase gate:
+
+- Test files: 46
+- Tests: 621 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 399.81 kB
+- Lesson page chunk: 172.01 kB
+- Visual renderer chunk: 288.59 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 399.81 kB, below 500 kB
+
+Browser verification covered nine changed lesson routes plus `/visuals`, `/dev/visuals`, and `/glossary` at 1440 × 1000 and exactly 375 × 812. Across 24 route checks there was no missing/blank content, page overflow, unlabeled button, console warning, or error. Enter/Space, selected state, intentional failure feedback, 48 px controls, mobile internal trace scrolling, light/dark/system themes, reduced motion and production search passed. Axe reported zero serious or critical WCAG A/AA violations after correcting dark-theme sidebar-count contrast.
+
+## Audit-remediation evidence after R5
+
+R5 completed the remaining scenario breadth without adding visual IDs or a parallel renderer. The checker-model interaction now provides explicit Foundation topology/sampling classifications, AHB BUSY/wait/reset and arbitration/matrix policy states, all required AXI write channel-order permutations, read gaps/backpressure/early-RLAST failure, live queue/counter comparisons, and a typed optional burst calculator.
+
+The live calculator supports AHB INCR/WRAP with HSIZE, bus width, accepted-beat count and the 1 KB rule, plus AXI FIXED/INCR/WRAP, AxSIZE, AxLEN, bus width, unaligned active lanes, first-beat WSTRB subsets, accepted LAST, final byte/end-exclusive and a legal 4 KB split. Registry validation now isolates malformed checker models before rendering.
+
+Latest R5 phase gate:
+
+- Test files: 47
+- Tests: 632 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 399.81 kB
+- Lesson page chunk: 172.01 kB
+- Visual renderer chunk: 312.01 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 399.81 kB, below 500 kB
+
+Browser verification covered seven changed lesson routes plus `/visuals`, `/dev/visuals`, and `/glossary` at 1440 × 1000 and exactly 375 × 812. All 20 route checks passed with zero missing/blank content, page overflow, unlabeled button, console warning, or error. Six write modes, read gaps/backpressure/early-RLAST, both calculators, Enter/Space, 48 px inputs, internal mobile tables, light/dark/system themes, reduced motion and search passed. Axe reported zero serious or critical violations.
+
+## Audit-remediation evidence after R6
+
+R6 re-scanned the complete curriculum rather than limiting closure to lessons 01-26. Cross-curriculum corrections now keep original-AHB locking, RETRY and SPLIT distinct; qualify AXI channel independence with mandatory dependencies and resource/order constraints; teach WRAP as exactly 2, 4, 8 or 16 transfers; and explain the AXI 4 KB rule as a decode/routing invariant rather than virtual-memory page-fault behavior. The glossary, diagnostic lab, checker model and burst reference use the same first/final-byte rule, and the stale AHB burst-reference link now targets `07_burst_and_size`.
+
+The new `src/curriculum-closure.test.tsx` proves all 88 lessons and every declared visual, exercise, checklist, prerequisite, related lesson and glossary term resolve. It also applies corpus-wide regression guards to the retired protocol claims. Existing inline/reference/registry suites continue to prove 87 visuals, unique IDs, supported types, production discovery and rendering, keyboard access, topology geometry and mobile containment.
+
+Final R6 phase gate:
+
+- Test files: 48
+- Tests: 635 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 400.75 kB
+- Lesson page chunk: 172.01 kB
+- Visual renderer chunk: 312.02 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 400.75 kB, below 500 kB
+
+Final browser verification rendered all 88 lessons at 1440 × 1000 and exactly 375 × 812, for 176 lesson checks, and rendered eight shared/reference routes at both viewports, for 16 more checks. The matrix found no missing/blank content, page overflow, reduced-motion violation, undersized tested control, console warning or page error. Light/dark/system themes, production search, topology pointer/Enter/Space selection and pressed state, 44 px connector hit areas and mobile internal scrolling passed. Ten representative axe WCAG A/AA scans reported zero serious or critical violations after active sidebar-order and Visuals-filter contrast were corrected.
+
+All 96 audit-remediation tracker rows now have terminal evidence-backed dispositions: 95 Implemented and one Superseded by spec-validated correction. There are zero blocked items and no APB curriculum additions.

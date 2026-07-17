@@ -32,7 +32,7 @@ export interface Lesson {
  */
 export interface VisualRef {
   id: string;
-  type: 'waveform' | 'timeline' | 'topology' | 'signal-explorer' | 'coverage-map' | 'formal-property' | 'spec-rule-explorer';
+  type: 'waveform' | 'timeline' | 'topology' | 'signal-explorer' | 'coverage-map' | 'formal-property' | 'spec-rule-explorer' | 'checker-model';
   dataFile: string;
 }
 

@@ -24,13 +24,13 @@ checklistIds: []
 
 ## 2. NONSEQ (0b10)
 - **Meaning:** "I am starting a brand new transfer or a new burst."
-- **Slave behavior:** Must latch `HADDR` and begin fetching/storing the data.
+- **Subordinate behavior:** Uses the `HADDR` driven by the manager when the valid address phase is accepted; a predicted next address is checker or optimization state, not a replacement for the protocol input.
 - **When to use:** The first beat of any burst, or any single transfer. 
 
 ## 3. SEQ (0b11)
 - **Meaning:** "I am continuing the burst I already started."
-- **Slave behavior:** Calculates the new address based on the previous address, the `HSIZE`, and the `HBURST` type, and fetches/stores the data.
-- **When to use:** Every beat of a burst *after* the initial `NONSEQ`.
+- **Subordinate behavior:** Accepts the manager-driven `HADDR`; a monitor can independently calculate the expected next address from the previous accepted beat, `HSIZE`, and `HBURST` and compare it.
+- **When to use:** Every accepted beat after the initial `NONSEQ`, with permitted `BUSY` cycles between those beats.
 - **Illegal:** You can NEVER transition directly from `IDLE` to `SEQ`. `SEQ` implies a sequence is ongoing.
 
 ## 4. BUSY (0b01)
@@ -38,12 +38,15 @@ checklistIds: []
 - **Slave behavior:** Must provide a zero-wait-state `OKAY` response and ignore `HADDR`, just like `IDLE`. However, unlike `IDLE`, the slave knows the burst is *paused*, not finished.
 - **When to use:** In the middle of an `INCR` or `WRAP` burst.
 - **Illegal:** You can NEVER use `BUSY` for the very first beat of a burst. The first beat must be `NONSEQ`.
+- **SINGLE rule:** `HBURST=SINGLE` cannot continue with `BUSY`, because the one accepted beat already defines the whole burst.
 
 ## Bug Gallery: Illegal HTRANS Transitions
 
 A very common verification failure occurs when a master tries to change its mind while a slave is holding `HREADY` low. 
 
-**The Golden Rule:** Once a master enters an Address Phase by driving `HTRANS` (to `NONSEQ` or `SEQ`), if the slave drives `HREADY=0`, the master **MUST NOT CHANGE** `HTRANS`, `HADDR`, or `HWRITE` until `HREADY=1`.
+**The valid-pending rule:** Once a manager presents `NONSEQ` or `SEQ` and global `HREADY` is LOW, it retains the complete address/control payload until an accepting edge. Do not turn this into a blanket “nothing can change” rule: IDLE can change to NONSEQ while waited, BUSY has fixed- versus undefined-length transition rules, and the first cycle of the defined ERROR response permits the pending transfer to be cancelled.
+
+An undefined-length `INCR` can legally pause with `BUSY` and then terminate with `IDLE` or start unrelated work with `NONSEQ`. A fixed-length burst must resume from a permitted BUSY with `SEQ` and finish its declared accepted-beat count.
 
 Look at the waveform below. Can you spot the exact cycle the master violates the golden rule?
 

@@ -32,6 +32,8 @@ Because `VALID` and `READY` are driven by two completely independent entities (t
 2.  **READY before VALID:** The destination asserts `READY`, signaling "I am waiting for data." The source has nothing to send yet (`VALID` is LOW). When the source finally asserts `VALID`, the transfer happens immediately on that clock edge.
 3.  **Simultaneous:** Both `VALID` and `READY` go HIGH on the exact same clock edge. The transfer completes immediately.
 
+A source can keep `VALID` HIGH across consecutive transfers. After one accepting edge, it may present a new payload for the next transfer; stability is required only while the currently offered transfer is waiting with `VALID=1 && READY=0`. `READY` can rise or fall according to destination capacity, including before `VALID` appears.
+
 Inspect all three legal scenarios below, then compare them with the final failure. The `TRANSFER` row names only the rising edges where both handshake signals are HIGH.
 
 ![AXI VALID and READY waveform comparing legal timing scenarios, stable backpressure, and an early VALID drop](visual:wf-axi-ready-valid-scenarios)
@@ -50,3 +52,5 @@ However, the reverse is totally legal:
 A slave can sit with `AWREADY` LOW all day, wait to see `AWVALID` go HIGH, take a few cycles to process it, and *then* assert `AWREADY` to complete the transfer.
 
 If both the source and the destination were allowed to wait for the other side to assert their signal first, they could easily enter a circular deadlock where neither side ever moves. AXI prevents this by enforcing that `VALID` must never depend on `READY`.
+
+All interface signals are sampled on the rising edge of `ACLK`, and a master or slave interface must have no combinational path between any input and output signal. That structural rule is separate from handshake persistence: registered logic can still implement a poor liveness policy, so safety assertions and bounded service contracts test different obligations.

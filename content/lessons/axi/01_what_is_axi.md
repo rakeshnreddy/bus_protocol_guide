@@ -25,8 +25,8 @@ If you have completed the AHB track, you already understand how a shared bus wor
 
 AXI replaces that shared transfer pipeline with interface channels that an interconnect can route independently. Two fundamental concepts define its architecture:
 
-1. **Independent Channels:** AXI splits the bus into five completely independent, unidirectional channels. Read addresses, read data, write addresses, write data, and write responses all travel on their own dedicated wires. They do not share a single "data bus" or "address bus."
-2. **Multiple Outstanding Transactions and ID-Based Reordering:** Because the channels are independent, an AXI master can issue multiple read and write requests without waiting for earlier responses. A capable slave or interconnect can return responses for different IDs *out of order*, while still obeying the protocol's same-ID ordering rules.
+1. **Independently handshaken channels:** AXI splits the interface into five unidirectional channels. Read addresses, read data, write addresses, write data, and write responses each have dedicated payload and flow-control signals. Their handshakes can progress separately, subject to explicit cross-channel dependencies and ordering rules.
+2. **Multiple outstanding transactions and ID-based reordering:** An implementation can accept multiple read and write requests without waiting for earlier responses. A capable slave or interconnect can return responses for different IDs *out of request order*, while still obeying AXI's ID- and destination-scoped ordering rules.
 
 The system view below shows where those interfaces live: initiators connect through an AXI fabric that decodes destinations, arbitrates only where routes contend, and returns each response to the correct source.
 
@@ -34,7 +34,7 @@ The system view below shows where those interfaces live: initiators connect thro
 
 ### Why the Change?
 
-AHB's pipelining (Address Phase overlapping with the previous Data Phase) is efficient, but it forces transactions to complete in the exact order they were issued. If an AHB master asks for Address A (which is slow to fetch) and then Address B (which is fast to fetch), Address B is stuck waiting behind A.
+AHB's pipelining (an Address Phase overlapping the previous Data Phase) is efficient, but a single AHB path accepts and completes transfers in pipeline order. If Address A produces a wait state, an overlapping Address B can be visible but cannot be accepted until that path becomes ready.
 
 In AXI, the master can issue Address A and Address B on an address channel. If they use different IDs and the target supports the required concurrency, the target can fetch B immediately, return B's response first, and then return A later. Multiple outstanding work and legal reordering are major sources of AXI throughput, particularly when talking to complex DDR memory controllers.
 
@@ -43,12 +43,14 @@ In AXI, the master can issue Address A and Address B on an address channel. If t
 Beyond independent channels and out-of-order execution, AXI introduces several other performance features:
 
 *   **Burst-based transactions with only the start address issued:** A master only sends one address, and the slave calculates the subsequent addresses for the rest of the burst.
-*   **Unaligned data transfers:** AXI natively supports transfers that do not align to the data bus width.
+*   **Unaligned data transfers:** AXI permits unaligned starts for INCR and FIXED transfers when the address and byte-lane information agree; WRAP starts must be transfer-size aligned.
 *   **Separate read and write data channels:** This allows simultaneous, full-duplex reads and writes.
 
 ## Abstract Transaction Flow
 
 AXI reads and writes each have a logical lifetime, but their independent channel windows can overlap significantly:
+
+All five memory-mapped channels are synchronous to `ACLK`. “Independent” describes their handshakes, not separate clocks or the absence of relationships: accepted AR precedes its R data, and in AXI4 an accepted AW plus the accepted final W beat precede `BVALID`.
 
 ![AXI4 read and write transaction lifetimes showing overlapping address, data, and response channels](visual:tl-abstract-transaction)
 

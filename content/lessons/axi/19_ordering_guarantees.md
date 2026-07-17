@@ -19,7 +19,7 @@ We know that AXI allows multiple outstanding transactions. The next logical ques
 
 This is governed by the single most misunderstood rule in the AXI specification. Memorize it:
 
-> **Read responses with the SAME ID, and write responses with the SAME ID, are returned in request order.**
+> **Read responses with the SAME ID, and write responses with the SAME ID, are returned in request order within the applicable same-channel destination/ordering domain.**
 > 
 > **Transactions with DIFFERENT IDs have no relative response-order guarantee; they may complete in either order.**
 
@@ -31,13 +31,11 @@ Why? Because the ID is the only mechanism the master has to correlate the return
 
 ![Two same-ID AXI reads completing in request order](visual:wf-axi-in-order)
 
-## Different IDs: Total Chaos
+## Different IDs: No Relative Response-Order Guarantee
 
 If a master issues Read A (ID: 0x0) and then issues Read B (ID: 0x1), the slave can return B before A, A before B, or—where the connected interfaces support read interleaving—interleave beats from the different IDs. The target is permitted to reorder; it is not required to do so.
 
-If a master *needs* A to complete before B (for example, reading a status register before reading a data payload), the master has two choices:
-1.  Use the same ID when the applicable same-channel ordering rules cover both transactions and their destination.
-2.  Use the universal sequencing method: wait for A's final response handshake before issuing B.
+If a master *needs* A to complete before B, it can use the same ID only when the applicable same-channel, destination, and memory-location/peripheral-region rules actually provide that order. The universal protocol sequencing method is to wait for A's final response before issuing B.
 
 ## Read/Write Interactions
 
@@ -48,4 +46,6 @@ What about a Read vs. a Write?
 
 If a master writes to Address X with ID 0, and then immediately reads from Address X with ID 0, the read might execute inside the slave *before* the write actually commits to memory. The master will read stale data! 
 
-If a master needs protocol ordering between a write and a following read, it must wait until the write response is accepted (`BVALID && BREADY`) before issuing the read address. Matching numeric read and write IDs alone does not create a cross-channel ordering guarantee.
+If a master needs protocol ordering between a write and a following read, it waits until the write response is received before issuing the read address. Matching numeric read and write IDs alone does not create a cross-channel ordering guarantee.
+
+A B response is interface-visible completion and participates in AXI ordering rules; it is not by itself a universal software memory barrier or proof that data has reached final physical storage. Bufferable transactions can receive a response before the final destination. Architectural visibility depends on transaction attributes, endpoint behavior, and the system memory-ordering mechanism.

@@ -30,6 +30,7 @@ const typeLabels: Record<VisualData['type'], string> = {
   'coverage-map': 'Coverage map',
   'formal-property': 'Formal property',
   'spec-rule-explorer': 'Spec rule explorer',
+  'checker-model': 'Checker model',
 };
 
 const learningPrompts: Record<VisualData['type'], string> = {
@@ -40,6 +41,7 @@ const learningPrompts: Record<VisualData['type'], string> = {
   'coverage-map': 'Find covered behavior, coverage holes, and intentionally illegal bins.',
   'formal-property': 'Change the scenario and observe when the protocol property passes or fails.',
   'spec-rule-explorer': 'Search protocol obligations and connect each rule to its bug signature.',
+  'checker-model': 'Execute bounded event sequences, inspect retained monitor state, and review evidence-linked checker results.',
 };
 
 function getProtocol(visual: VisualData): VisualProtocol {

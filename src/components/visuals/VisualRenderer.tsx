@@ -7,6 +7,7 @@ import SignalExplorer from './SignalExplorer';
 import CoverageMap from './CoverageMap';
 import FormalPropertyPlayground from './FormalPropertyPlayground';
 import SpecRuleExplorer from './SpecRuleExplorer';
+import CheckerModel from './CheckerModel';
 
 export default function VisualRenderer({ visualRef }: { visualRef: VisualRef, altText?: string }) {
   const data = getVisualById(visualRef.id);
@@ -41,6 +42,10 @@ export default function VisualRenderer({ visualRef }: { visualRef: VisualRef, al
 
   if (data.type === 'spec-rule-explorer') {
     return <SpecRuleExplorer data={data as any} />;
+  }
+
+  if (data.type === 'checker-model') {
+    return <CheckerModel data={data} />;
   }
   
   return <div className="visual-error" role="alert">Unknown visual type</div>;

@@ -1,7 +1,8 @@
 {
   "id": "tl-burst-transfer",
   "type": "timeline",
-  "title": "Burst Transfer with Out-of-Order Completion",
+  "title": "AXI Different-ID Read Response Completion",
+  "description": "Two accepted AXI read bursts use different IDs. The ID 2 response can finish before ID 1 while beats within each burst and applicable same-ID responses retain their required order.",
   "data": {
     "phases": ["Address", "Data", "Response"],
     "transactions": [
@@ -14,19 +15,19 @@
             "name": "Address",
             "startCycle": 1,
             "endCycle": 2,
-            "description": "Master issues starting address for Burst A."
+            "description": "The manager and subordinate accept AR for ID 1."
           },
           {
             "name": "Data",
             "startCycle": 2,
             "endCycle": 6,
-            "description": "4-beat burst data transfer."
+            "description": "Accepted R beats for ID 1 remain in burst beat order."
           },
           {
             "name": "Response",
             "startCycle": 8,
             "endCycle": 9,
-            "description": "Response for Burst A arrives late."
+            "description": "The accepted RLAST beat retires the ID 1 read burst."
           }
         ]
       },
@@ -39,19 +40,19 @@
             "name": "Address",
             "startCycle": 3,
             "endCycle": 4,
-            "description": "Master issues starting address for Burst B."
+            "description": "The manager and subordinate accept AR for different ID 2."
           },
           {
             "name": "Data",
             "startCycle": 6,
             "endCycle": 7,
-            "description": "Single-beat transfer."
+            "description": "The single R beat for ID 2 carries RLAST."
           },
           {
             "name": "Response",
             "startCycle": 7,
             "endCycle": 8,
-            "description": "Response for Burst B arrives BEFORE Response for Burst A (Out-of-order)."
+            "description": "The accepted ID 2 RLAST retires before ID 1; this different-ID order is legal, not mandatory."
           }
         ]
       }
@@ -68,13 +69,6 @@
         "sourcePhase": "Address",
         "targetTx": "T2",
         "targetPhase": "Data"
-      },
-      {
-        "sourceTx": "T2",
-        "sourcePhase": "Response",
-        "targetTx": "T1",
-        "targetPhase": "Response",
-        "type": "ordering"
       }
     ]
   }

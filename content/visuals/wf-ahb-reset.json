@@ -1,8 +1,8 @@
 {
   "id": "wf-ahb-reset",
   "type": "waveform",
-  "title": "AHB Reset Assertion and Safe Restart",
-  "description": "Observe asynchronous HRESETn assertion, synchronous deassertion, the required IDLE bus state, and the first legal NONSEQ transfer after reset.",
+  "title": "AHB Reset Assertion and Legal Restart",
+  "description": "Observe asynchronous HRESETn assertion between sampling edges, synchronous deassertion after a rising HCLK edge, required IDLE while reset is active, and one legal implementation choice for restarting traffic.",
   "cycleCount": 6,
   "signals": [
     { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1"] },
@@ -12,9 +12,9 @@
   ],
   "annotations": [
     { "cycle": 1, "message": "Before reset, the bus can carry a normal NONSEQ transfer." },
-    { "cycle": 2, "message": "HRESETn asserted asynchronously between sampling edges and is observed LOW here. The master immediately drives HTRANS to IDLE." },
-    { "cycle": 4, "message": "Reset remains active; address and control stay in a benign state." },
-    { "cycle": 5, "message": "HRESETn deasserts aligned with this rising HCLK edge. Keep HTRANS IDLE for a clean restart." },
-    { "cycle": 6, "message": "The first legal post-reset transfer starts with HTRANS=NONSEQ and a valid address." }
+    { "cycle": 2, "message": "HRESETn asserted asynchronously between sampling edges and is observed LOW here. While reset is active, the master drives HTRANS=IDLE and all address/control outputs to valid levels." },
+    { "cycle": 4, "message": "Reset remains active. Each component must observe reset for its declared minimum duration; AHB does not define one universal cycle count." },
+    { "cycle": 5, "message": "HRESETn deassertion is observed synchronously after a rising HCLK edge. This trace chooses IDLE here, but AHB does not mandate an extra full IDLE cycle after release." },
+    { "cycle": 6, "message": "Once the component's reset requirements are satisfied, a first legal transfer starts with HTRANS=NONSEQ and valid address/control." }
   ]
 }

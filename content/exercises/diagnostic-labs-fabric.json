@@ -278,12 +278,12 @@
         { "key": "event", "label": "Observed event" },
         { "key": "address", "label": "Address / range" },
         { "key": "geometry", "label": "Burst geometry" },
-        { "key": "page", "label": "4 KB region" },
+        { "key": "page", "label": "4 KB decode region" },
         { "key": "meaning", "label": "Meaning" }
       ],
       "rows": [
-        { "id": "e1", "label": "E1", "values": { "event": "AWVALID && AWREADY", "address": "AWADDR=0x0FF8", "geometry": "AWLEN=3, AWSIZE=2, INCR", "page": "start page 0x0000", "meaning": "Entire request accepted" } },
-        { "id": "d1", "label": "Derived", "values": { "event": "4 beats × 4 bytes", "address": "0x0FF8–0x1007", "geometry": "16-byte range", "page": "ends in page 0x1000", "meaning": "Crosses boundary" } },
+        { "id": "e1", "label": "E1", "values": { "event": "AWVALID && AWREADY", "address": "AWADDR=0x0FF8", "geometry": "AWLEN=3, AWSIZE=2, INCR", "page": "starts in region 0x0000", "meaning": "Entire request accepted" } },
+        { "id": "d1", "label": "Derived", "values": { "event": "4 beats × 4 bytes", "address": "0x0FF8–0x1007", "geometry": "16-byte range", "page": "ends in region 0x1000", "meaning": "Crosses boundary" } },
         { "id": "w1", "label": "W beat 1", "values": { "event": "W handshake", "address": "implied 0x0FF8", "geometry": "beat 1 of 4", "page": "0x0000", "meaning": "Request was already illegal" } },
         { "id": "w3", "label": "W beat 3", "values": { "event": "W handshake", "address": "implied 0x1000", "geometry": "beat 3 of 4", "page": "0x1000", "meaning": "Visible crossing, not first proof" } }
       ]
@@ -319,11 +319,11 @@
         "prompt": "Which accepted-request check is sufficient for this aligned INCR example?",
         "options": [
           { "id": "start-only", "label": "Require AWADDR[11:0] to be zero" },
-          { "id": "page", "label": "Require the first and last transferred byte to have the same address bits above bit 11" },
+          { "id": "page", "label": "Require the first and final transferred byte to have the same address bits above bit 11" },
           { "id": "wlast", "label": "Require WLAST on every data beat" }
         ],
         "correctOptionId": "page",
-        "explanation": "Comparing the 4 KB page of the first and last transferred byte directly tests whether the complete burst crosses the boundary."
+        "explanation": "Comparing the 4 KB decode region of the first and final transferred byte directly tests whether the complete burst crosses the boundary. This is a routing constraint, not virtual-memory page-fault behavior."
       }
     ],
     "expectedTakeaway": "The 4 KB rule is an address-request invariant. Derive the last transferred byte when AW or AR is accepted; do not wait for a later data beat to reveal an illegal burst that was already fully specified.",

@@ -17,10 +17,12 @@ checklistIds: []
 
 Before we get to complex bursts, let's look at how a master moves exactly one piece of data.
 
-A **Single Transfer** (where `HBURST = SINGLE`) consists of two overlapping phases:
+A **Single Transfer** (where `HBURST = SINGLE`) consists of two sequential phases for that transfer:
 
 1. **Address Phase:** The master drives `HADDR`, `HWRITE`, `HSIZE`, and sets `HBURST` to `SINGLE`. Most importantly, it drives `HTRANS` to `NONSEQ` to indicate this is a valid, isolated transfer.
-2. **Data Phase:** The slave samples the address, fetches or stores the data, and drives `HREADY = 1` and `HRESP = OKAY`.
+2. **Data Phase:** The subordinate returns or samples data and provides response/completion. It may extend this phase with any number of implementation-required wait states; AHB specifies no universal one-cycle completion.
+
+The phases of one transfer do not overlap each other. Pipelining means the **next** transfer's address phase can overlap the current transfer's data phase.
 
 Use the cycle selector below to answer two questions: which address owns the current data, and why does the second independent transfer start with `NONSEQ` again?
 
@@ -28,4 +30,4 @@ Use the cycle selector below to answer two questions: which address owns the cur
 
 If a master wants to do *another* single transfer immediately after the first one, it simply drives `HTRANS` to `NONSEQ` again in the very next cycle. 
 
-Even though multiple `NONSEQ` transfers can be issued back-to-back, they are treated by the slave and the arbiter as completely independent events. The arbiter could pull the bus away from the master between any two `NONSEQ` transfers.
+Multiple `NONSEQ` transfers can be presented back-to-back and are independent SINGLE bursts. Only original shared-bus AHB exposes an arbiter that can transfer ownership between them; on AHB-Lite/AHB5 there is one manager per interface, though a surrounding matrix can arbitrate contending routes internally.

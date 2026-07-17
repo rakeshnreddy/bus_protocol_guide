@@ -362,7 +362,7 @@
   {
     "id": "4KB Boundary Rule",
     "term": "4KB Boundary Rule",
-    "definition": "A fundamental AXI constraint stating that a single burst transaction must not cross a 4KB address boundary (where the lower 12 bits are zero). Prevents transactions from spanning across different physical memory pages or slave decode regions.",
+    "definition": "An AXI constraint stating that one burst must not cross a 4 KB address boundary. Compare the address bits above bit 11 for the first and final transferred byte. The rule keeps one accepted burst within one decode/routing region; it is not a virtual-memory page-fault rule.",
     "protocols": ["axi"]
   },
   {

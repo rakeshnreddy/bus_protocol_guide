@@ -33,7 +33,7 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
       'tp-axi-apb-bridge',
     ];
 
-    expect(getAllVisuals()).toHaveLength(79);
+    expect(getAllVisuals()).toHaveLength(87);
     expectedIds.forEach(id => expect(getVisualById(id), id).toBeDefined());
 
     for (let order = 23; order <= 33; order += 1) {
@@ -56,7 +56,7 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
     expect(visual.transactions?.find(transaction => transaction.id === 'wrap4')?.phases.map(phase => phase.name))
       .toEqual(['B0 · 0x100C', 'B1 · 0x1000', 'B2 · 0x1004', 'B3 · 0x1008']);
     expect(lesson(23).body).toMatch(/progression advances by `2\^AxSIZE` bytes/i);
-    expect(lesson(23).body).toMatch(/FIXED and WRAP bursts remain limited to 1–16 beats/i);
+    expect(lesson(23).body).toMatch(/FIXED is 1–16 beats.*WRAP.*exactly 2, 4, 8, or 16/i);
   });
 
   // Arm IHI 0022H A3.4 permits an unaligned start and requires low address
@@ -95,7 +95,8 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
     if (!visual || visual.type !== 'signal-explorer') throw new Error('Missing legality explorer');
 
     expect(visual.signals.map(signal => signal.name)).toEqual([
-      'VALID independence', 'B response', 'Burst bounds', 'LAST count', 'ID ordering', 'Read after write',
+      'VALID independence', 'B response', 'Early W policy', 'Interface timing',
+      'Burst bounds', 'LAST count', 'ID ordering', 'Read after write',
     ]);
     expect(visual.signals.find(signal => signal.name === 'B response')?.description)
       .toMatch(/accepted the write address.*accepted the final write-data transfer/i);

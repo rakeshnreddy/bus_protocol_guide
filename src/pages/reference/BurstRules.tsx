@@ -5,7 +5,7 @@ export default function BurstRules() {
     <div className="page-container">
       <h2>Burst Rules Reference</h2>
       <div className="reference-content">
-        <h3>AHB Bursts (HBURST) <span style={{fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '1rem'}}>Taught in <Link to="/lesson/15_burst_transfers">15_burst_transfers</Link></span></h3>
+        <h3>AHB Bursts (HBURST) <span style={{fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '1rem'}}>Taught in <Link to="/lesson/07_burst_and_size">07_burst_and_size</Link></span></h3>
         <ul>
           <li><strong>SINGLE:</strong> Single transfer.</li>
           <li><strong>INCR:</strong> Undefined length incrementing burst.</li>
@@ -21,7 +21,7 @@ export default function BurstRules() {
         </ul>
         <br/>
         <h3>The 4KB Boundary Rule (AXI) <span style={{fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '1rem'}}>Taught in <Link to="/lesson/25_4kb_boundary_rule">25_4kb_boundary_rule</Link></span></h3>
-        <p>A burst must not cross a 4KB address boundary. This ensures bursts do not cross slave boundaries or memory pages. If a transfer requires crossing 4KB, it must be split into multiple bursts.</p>
+        <p>A burst must not cross a 4 KB address boundary. The first and final transferred byte must have the same address bits above bit 11, which keeps one accepted burst within one decode/routing region. This is not a virtual-memory page-fault rule. If a requested byte range crosses the boundary, the manager must issue multiple legal bursts.</p>
       </div>
     </div>
   );

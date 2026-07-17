@@ -71,6 +71,19 @@ describe('CoverageMap', () => {
     expect(screen.queryByText('A × C')).not.toBeInTheDocument();
   });
 
+  it('exposes error beat-position coverage instead of collapsing every ERROR into one bin', () => {
+    const errorData: CoverageMapData = {
+      ...mockData,
+      bins: [{
+        ...mockData.bins[0],
+        errorBeatHits: { first: 2, middle: 3, final: 1 },
+      }, mockData.bins[1]],
+    };
+    render(<CoverageMap data={errorData} />);
+    fireEvent.click(screen.getByRole('button', { name: /A by C/i }));
+    expect(screen.getByText(/Error beat position: first 2, middle 3, final 1/)).toBeInTheDocument();
+  });
+
   it('supports keyboard focus and persistent selection without relying on color', () => {
     render(<CoverageMap data={mockData} />);
     const hole = screen.getByRole('button', { name: /B by C: illegal combination/i });
@@ -83,5 +96,29 @@ describe('CoverageMap', () => {
     fireEvent.click(hole);
     expect(hole).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('B × C')).toBeInTheDocument();
+  });
+
+  it('applies configuration-derived illegal rows and resets stale selection on mode change', () => {
+    const configuredData: CoverageMapData = {
+      ...mockData,
+      bins: [
+        { x: 'A', y: 'C', hits: 0, illegal: false, tooltip: 'Revision-dependent response' },
+        { x: 'B', y: 'C', hits: 0, illegal: false, tooltip: 'Revision-dependent response' },
+      ],
+      configurations: [
+        { id: 'lite', label: 'AHB-Lite / AHB5', illegalRows: ['C'] },
+        { id: 'original', label: 'Original AHB', description: 'RETRY and SPLIT are legal holes here.' },
+      ],
+    };
+
+    render(<CoverageMap data={configuredData} />);
+    const cell = screen.getByRole('button', { name: /A by C: illegal combination/i });
+    fireEvent.click(cell);
+    expect(cell).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.change(screen.getByLabelText('Protocol configuration'), { target: { value: 'original' } });
+    expect(screen.getByText('RETRY and SPLIT are legal holes here.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /A by C: coverage hole, zero hits/i }))
+      .toHaveAttribute('aria-pressed', 'false');
   });
 });

@@ -15,7 +15,7 @@ glossaryTerms: ["HMASTLOCK", "HEXCL", "HNONSEC", "HEXOKAY"]
 checklistIds: []
 ---
 
-As systems evolved to support multi-core processors and hardware security (like ARM TrustZone), the basic read/write signals were no longer enough. AHB5 introduced and refined several signals to handle these advanced use cases.
+Locking exists in original AHB and remains represented by bus-level `HMASTLOCK` on the single-manager interface. AHB5 separately defines optional exclusive-transfer and security properties. These mechanisms are not interchangeable.
 
 These mechanisms solve different problems. Open each signal before continuing: locking controls bus ownership, exclusives report conditional atomic success, and HNONSEC carries a security attribute.
 
@@ -23,18 +23,18 @@ These mechanisms solve different problems. Open each signal before continuing: l
 
 ## HMASTLOCK (Locked Transfers)
 
-**[glossary:HMASTLOCK]** is driven by the master to indicate that the current sequence of transfers must not be interrupted.
-- **Usage:** If a master needs to do a read-modify-write operation (like updating a page table) and absolutely cannot allow another master to access that memory in between the read and the write, it asserts `HMASTLOCK`.
-- **System Impact:** The arbiter sees `HMASTLOCK` and refuses to grant the bus to any other master until the locked sequence completes. 
-- **Modern Context:** Locked transfers destroy system performance by monopolizing the bus. Modern systems prefer *Exclusive Accesses* instead.
+**[glossary:HMASTLOCK]** indicates that the active transfer belongs to a locked sequence. In original shared AHB, per-manager `HLOCKx` requests feed arbitration and the arbiter produces bus-level `HMASTLOCK`; a single-manager AHB-Lite/AHB5 interface carries `HMASTLOCK` directly.
+- **Usage:** A master can mark a read-modify-write sequence as locked when it must retain ownership of the applicable original-AHB arbitration path between transfers. This is bus-ownership control, not an address reservation: it does not by itself prevent access through an independent or aliased route.
+- **System Impact:** An arbiter must not transfer active ownership of the applicable arbitration path while the locked sequence is in progress. The lock does not automatically protect every aliased address or independent system route.
+- **Performance context:** A lock can serialize the protected arbitration path, so a product may prefer exclusives when conditional-update semantics are sufficient. That is a system recommendation, not a replacement of the protocol's lock mechanism.
 
 ## Exclusive Accesses (HEXCL and HEXOKAY)
 
-To replace the heavy-handed `HMASTLOCK`, AHB5 introduced **[glossary:HEXCL]** (from the master) and **[glossary:HEXOKAY]** (from the slave). These are used to implement semaphores and mutexes without locking the whole bus.
+When the interface declares the AHB5 `Exclusive_Transfers` property, **[glossary:HEXCL]** and **[glossary:HEXOKAY]** support monitored conditional updates without retaining bus ownership.
 
-1. **The Exclusive Read:** The master reads a memory location and asserts `HEXCL`. The slave (an exclusive monitor) records the master's ID and the address.
+1. **The Exclusive Read:** The manager reads with `HEXCL` and `HMASTER`; a successful exclusive-read response uses `HEXOKAY=1` to report that monitor state was established for the monitored location/granule and required attributes.
 2. **The Intermission:** The bus is free! Other masters can use it.
-3. **The Exclusive Write:** The master tries to write the updated value back, again asserting `HEXCL`. 
+3. **The Exclusive Write:** The same manager identity writes with `HEXCL`, matching address/granule, size and the attributes required by the selected specification issue.
 4. **The Response:** 
    - If no other master wrote to that address in the meantime, the slave responds with **`HEXOKAY = 1`** and `HRESP = OKAY`. The write succeeds.
    - If another master *did* write to that address, the slave responds with **`HEXOKAY = 0`** and `HRESP = OKAY`. The write fails, and the master knows it must try the whole process again.
@@ -46,7 +46,7 @@ The timeline shows why an exclusive sequence does not lock the bus: other master
 ## Security (HNONSEC)
 
 In systems with ARM TrustZone, memory and peripherals are partitioned into "Secure" and "Non-Secure" regions.
-**[glossary:HNONSEC]** is driven by the master to indicate the security level of the transfer.
+When the AHB5 security property is declared, **[glossary:HNONSEC]** is driven by the manager to indicate the security attribute of the transfer.
 - `0`: Secure access.
 - `1`: Non-Secure access.
-- **Usage:** A slave will typically reject a Non-Secure write (`HNONSEC = 1`) to a Secure register, responding with an `ERROR` on `HRESP`.
+- **Usage:** The configured enforcement point can be a source firewall, interconnect, controller, or subordinate. System policy must prevent an unauthorized read from leaking secure data and an unauthorized write from changing secure state, then return the system-defined failure response; AHB does not mandate that every target perform this policy check locally.

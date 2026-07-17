@@ -27,10 +27,10 @@
       { "id": "ahb-expert-errors", "description": "Two-cycle ERROR behavior is checked on first, middle, and final burst beats, including the master's documented cancel-or-continue policy.", "done": false },
       { "id": "ahb-expert-data", "description": "An independent scoreboard proves no data loss, duplication, corruption, or target misrouting across stalls and errors.", "done": false },
       { "id": "ahb-expert-idle-busy", "description": "IDLE and BUSY receive zero-wait OKAY responses, cause no side effects, and obey the selected burst-context rules.", "done": false },
-      { "id": "ahb-expert-options", "description": "Assertions, stimulus, and coverage match the exact AHB revision and every declared AHB5 optional capability.", "done": false },
-      { "id": "ahb-expert-coverage", "description": "All critical legal coverage holes are closed and every illegal bin or exclusion has a reviewed justification.", "done": false },
+      { "id": "ahb-expert-options", "description": "A versioned configuration manifest identifies the exact AHB revision, data width, and every declared or absent optional property; stimulus, assertions, scoreboards, and coverage are generated from it and link to review evidence.", "done": false },
+      { "id": "ahb-expert-coverage", "description": "All critical legal coverage holes are closed and every illegal bin, ignore bin, exclusion, and waiver links to its configuration, requirement, owner, and reviewed evidence artifact.", "done": false },
       { "id": "ahb-expert-progress", "description": "Implementation-specific latency, arbitration, and forward-progress guarantees pass under their documented environmental assumptions.", "done": false },
-      { "id": "ahb-expert-debug", "description": "Representative failures produce readable waveforms and logs that identify phase ownership and the first violating edge.", "done": false }
+      { "id": "ahb-expert-debug", "description": "Representative failures produce readable waveforms and logs that identify phase ownership and the first violating edge; the signoff record links each claim to its specification issue/section, regression result, owner, and approved waiver when applicable.", "done": false }
     ]
   }
 ]

@@ -19,10 +19,13 @@ When designing or verifying an AHB system, it's not enough that the protocol wor
 
 ## Latency
 
-**Latency** is the time it takes for a *single piece of data* to be transferred.
-- In AHB, the absolute minimum latency for a transfer is 2 clock cycles: 1 cycle for the Address Phase, and 1 cycle for the Data Phase.
-- Latency increases linearly with every wait state (`HREADY=0`) inserted by the slave.
-- A slow slave (e.g., an off-chip Flash memory controller) might have a latency of 10-20 clock cycles for a single read.
+Define endpoints before quoting **latency**:
+
+- **Address-to-completion latency:** rising-edge intervals from acceptance of a valid address phase to the edge that completes its data phase. A zero-wait transfer completes at the next rising edge: one elapsed cycle, while occupying an address slot and a following data slot.
+- **First-beat latency:** request or first-address acceptance to the first completed data beat.
+- **Burst completion latency:** first-address acceptance to completion of the final accepted beat.
+
+Each wait cycle with global `HREADY=0` extends the current data phase and adds one interval to the affected completion measurement. Any quoted memory latency is an implementation measurement, not an AHB constant.
 
 The stalled burst below shows why a wait state affects more than one beat: delaying the current data phase also freezes the address phase queued behind it.
 
@@ -30,7 +33,7 @@ The stalled burst below shows why a wait state affects more than one beat: delay
 
 ## Throughput
 
-**Throughput** is the total volume of data moved over a period of time.
+**Throughput** is completed payload bytes divided by measured cycles or time. **Completion rate** is completed valid beats per cycle. **Data-bus utilization** is the fraction of measured cycles that complete a valid data beat.
 - Because AHB is pipelined, while the *latency* of a single transfer is 2 cycles, the *throughput* of a continuous burst with zero wait states is **1 transfer per cycle**. 
 - In our `wf-ahb-pipelined-sequence` example, we achieve 100% throughput utilization of the data bus during the burst.
 
@@ -40,16 +43,16 @@ The stalled burst below shows why a wait state affects more than one beat: delay
 
 Why do we use bursts instead of just issuing lots of single transfers?
 
-Consider a DDR memory controller. Accessing a random address in DDR is slow (high latency, maybe 20 cycles) because the memory must open a new row. However, once the row is open, accessing the *next* sequential address is very fast (1 cycle).
+Consider a hypothetical DDR controller model in which a row miss takes 20 cycles and each later same-row beat takes one cycle. Those numbers are teaching assumptions, not protocol guarantees.
 
-If a master issues four `SINGLE` transfers to random addresses, the DDR controller takes 20 cycles for each one: total time = 80 cycles.
+If four `SINGLE` transfers all miss in this hypothetical model, the example total is 80 cycles. A real controller can recognize contiguous SINGLE transfers and optimize them too; `HBURST` is useful intent, not the only possible implementation hint.
 
 If a master issues an `INCR4` burst:
 1. The DDR controller sees the burst start, opens the row, and takes 20 cycles to return the first beat.
-2. The controller sees that the next three beats are `SEQ`, meaning they are contiguous in memory! It can return them immediately, 1 cycle each.
+2. The controller sees legal `SEQ` progression and, under this model's same-row assumption, returns later beats one cycle apart.
 3. Total time = 20 + 1 + 1 + 1 = 23 cycles!
 
-By declaring its intent upfront via `HBURST`, the master gave the slave the information it needed to optimize its internal fetches, massively increasing throughput despite the high initial latency.
+`HBURST` helps communicate progression and declared length, but it does not guarantee that later beats complete one cycle apart. Wait behavior remains subordinate- and implementation-dependent.
 
 Compare the three completion lanes below. Focus a beat to distinguish first-completion latency from the spacing between later completions.
 

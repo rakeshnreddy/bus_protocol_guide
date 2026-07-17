@@ -23,9 +23,9 @@ Select each address-phase signal below to see who drives it, when it is sampled,
 
 ## HADDR (Address Bus)
 
-**[glossary:HADDR]** specifies the target physical address in memory.
+**[glossary:HADDR]** carries the byte address in the system address map.
 - **Driver:** Master.
-- **Width:** Typically 32 bits, but can be 64 bits in modern systems.
+- **Width in scope:** Both IHI 0011A and IHI 0033B.b define the base `HADDR[31:0]` interface. Do not infer a wider address from an implementation extension without documenting that extension separately.
 - **Rule:** The address must be aligned to the size of the transfer (which we will cover in the `HSIZE` lesson). For example, if you are reading 4 bytes, `HADDR` must be a multiple of 4.
 
 ## HWRITE (Transfer Direction)
@@ -39,13 +39,18 @@ Select each address-phase signal below to see who drives it, when it is sampled,
 
 ## HPROT (Protection Control)
 
-**[glossary:HPROT]** provides additional context about the *privilege level* and *nature* of the transaction. It is 4 bits wide in AHB-Lite, and expanded to 7 bits in AHB5.
+**[glossary:HPROT]** provides protection and memory-type attributes. The base signal is `HPROT[3:0]`; AHB5 adds `HPROT[6:4]` only when the interface declares `Extended_Memory_Types`.
 - **Driver:** Master.
 - **Bits (AHB-Lite):**
-  - `HPROT[0]`: Opcode fetch vs Data access
-  - `HPROT[1]`: Privileged vs User access
-  - `HPROT[2]`: Bufferable vs Non-bufferable
-  - `HPROT[3]`: Cacheable vs Non-cacheable
-- **Usage:** Slaves (especially Memory Protection Units) use `HPROT` to block unauthorized accesses. For example, if a User-mode application tries to write to a Privileged-only configuration register, the slave will see `HPROT[1] == 0` and reject the transaction with an ERROR response.
+  - `HPROT[0]`: `1` data access, `0` instruction fetch.
+  - `HPROT[1]`: `1` privileged, `0` unprivileged.
+  - `HPROT[2]`: `1` bufferable, `0` non-bufferable.
+  - `HPROT[3]`: `1` cacheable in the original/base naming; Issue B calls the same bit **Modifiable**, with `1` permitting characteristic modification.
+- **AHB5 extension:** `HPROT[4]` is Lookup, `HPROT[5]` Allocate, and `HPROT[6]` Shareable, with the detailed memory-type legality defined by the selected property and specification table.
+- **Policy use:** `HPROT` supplies attributes; the protocol does not require every subordinate to enforce a privilege policy. A configured firewall, interconnect, controller, or subordinate can enforce the system address/security policy and return the defined failure behavior.
+
+## Complete Address-Phase Context
+
+`HADDR` is interpreted with `HTRANS`, `HWRITE`, `HSIZE`, `HBURST`, the base `HPROT`, `HMASTLOCK`, and any enabled AHB5 address attributes such as `HNONSEC`, extended `HPROT`, `HEXCL`, `HMASTER`, and exclusive size. These controls belong to the visible address phase and are accepted only on a rising edge where global `HREADY` is HIGH and `HTRANS` denotes a valid transfer. A monitor stores the accepted context for the following data/response phase.
 
 In the next lesson, we'll look at the most important control signal of them all: `HTRANS`.

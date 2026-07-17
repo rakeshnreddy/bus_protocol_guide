@@ -6,21 +6,26 @@
   "cycleCount": 8,
   "signals": [
     { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "PHASE OWNER", "type": "sideband", "color": "#0f766e", "values": ["A1", "A2 | D1", "A2 | D1", "A3 | D2", "A4 | D3", "A4 | D3", "A4 | D3", "IDLE | D4"] },
+    { "name": "VISIBLE ADDR | DATA OWNER", "type": "sideband", "color": "#0f766e", "values": ["0x50 | —", "0x54 | 0x50", "0x54 | 0x50", "0x58 | 0x54", "0x5C | 0x58", "0x5C | 0x58", "0x5C | 0x58", "IDLE | 0x5C"] },
     { "name": "HTRANS", "type": "sideband", "color": "#2563eb", "values": ["NONSEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "SEQ", "IDLE"] },
+    { "name": "HBURST", "type": "sideband", "color": "#2563eb", "values": ["INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "—"] },
+    { "name": "HSIZE", "type": "sideband", "color": "#2563eb", "values": ["WORD", "WORD", "WORD", "WORD", "WORD", "WORD", "WORD", "—"] },
+    { "name": "HWRITE", "type": "control", "color": "#2563eb", "values": ["1", "1", "1", "1", "1", "1", "1", "0"] },
+    { "name": "SELECTED SLAVE", "type": "sideband", "color": "#0f766e", "values": ["SRAM", "SRAM", "SRAM", "SRAM", "SRAM", "SRAM", "SRAM", "default/idle"] },
     { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x50", "0x54", "0x54", "0x58", "0x5C", "0x5C", "0x5C", "—"] },
-    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "D0", "D0", "D1", "D2", "D2", "D2", "D3"] },
-    { "name": "HREADY", "type": "control", "color": "#dc2626", "values": ["1", "0", "1", "1", "0", "0", "1", "1"] },
+    { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "W0", "W0", "W1", "W2", "W2", "W2", "W3"] },
+    { "name": "HREADYOUT (SRAM)", "type": "control", "color": "#dc2626", "values": ["1", "0", "1", "1", "0", "0", "1", "1"] },
+    { "name": "HREADY (global)", "type": "control", "color": "#dc2626", "values": ["1", "0", "1", "1", "0", "0", "1", "1"] },
     { "name": "HRESP", "type": "control", "color": "#047857", "values": ["0", "0", "0", "0", "0", "0", "0", "0"] }
   ],
   "annotations": [
-    { "cycle": 1, "message": "A1 starts the burst at 0x50. No data phase exists yet." },
-    { "cycle": 2, "message": "D1 is stalled by HREADY=0. A2 at 0x54 is visible but cannot be accepted, so HTRANS, HADDR, and D0 must hold." },
-    { "cycle": 3, "message": "HREADY rises: D1 completes and the held A2 address is finally accepted at the same edge." },
-    { "cycle": 4, "message": "D2 completes without a wait state while A3 at 0x58 is accepted." },
-    { "cycle": 5, "message": "D3 stalls. A4 at 0x5C becomes the frozen next address phase." },
-    { "cycle": 6, "message": "The second wait cycle continues. A4, HTRANS=SEQ, and D2 all remain stable." },
-    { "cycle": 7, "message": "HREADY rises: D3 completes and the held A4 address is accepted." },
-    { "cycle": 8, "message": "D4 completes for 0x5C while the address phase returns to IDLE. The INCR4 burst is finished." }
+    { "cycle": 1, "message": "Address beat 1 starts the INCR4 write at 0x50. No data phase exists yet." },
+    { "cycle": 2, "message": "Write payload W0 for 0x50 is stalled by HREADY=0. Address 0x54 is visible but pending, so its complete context and W0 must hold." },
+    { "cycle": 3, "message": "HREADY rises: W0 for 0x50 completes and the held 0x54 address is accepted at the same edge." },
+    { "cycle": 4, "message": "W1 for 0x54 completes without a wait while address 0x58 is accepted." },
+    { "cycle": 5, "message": "W2 for 0x58 stalls. Address 0x5C becomes the pending next address phase." },
+    { "cycle": 6, "message": "The second wait cycle continues. Address 0x5C, HTRANS=SEQ, and W2 all remain stable." },
+    { "cycle": 7, "message": "HREADY rises: W2 for 0x58 completes and the held 0x5C address is accepted." },
+    { "cycle": 8, "message": "W3 completes for 0x5C while an IDLE address/control cycle is visible. The fourth accepted beat finishes the INCR4 burst." }
   ]
 }

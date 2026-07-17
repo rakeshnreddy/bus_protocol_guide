@@ -29,21 +29,23 @@ The combined waveform distinguishes a successful read, a successful write, and a
 
 ## Backpressure and Wait States: HREADY
 
-The most important signal controlled by the slave is **[glossary:HREADY]** (sometimes split into `HREADYOUT` from the slave and `HREADY` as a global signal into the master).
+Each subordinate drives **[glossary:HREADYOUT]** for its own data-phase transfer. The interconnect return mux combines the active data owner's output into global **[glossary:HREADY]**, which all managers and subordinates observe as the pipeline completion/advance signal.
 
-When a master sends a request (e.g., `HTRANS = NONSEQ`), the slave might need time to fetch the data from memory. It tells the master to wait by driving `HREADY` to `0`. 
+When a manager sends a request (for example, `HTRANS=NONSEQ`), the selected subordinate might need time to fetch the data. During that transfer's data phase it requests a wait by driving its `HREADYOUT` LOW; the interconnect then presents global `HREADY` LOW.
 This is called inserting a **Wait State**.
 
 ![AHB wait state showing HREADY low and the next address phase held stable](visual:wf-ahb-wait-state)
 
 - **Rule 1:** When `HREADY` is `0`, the current Data Phase is extended. The data on `HRDATA` (if reading) is not yet valid.
-- **Rule 2:** Because AHB uses a pipelined architecture (which we will cover in depth in Section D: Timing and Pipelining), inserting a wait state also stalls the *next* Address Phase! For now, just know that if the slave says "wait" (`HREADY` is `0`), the master must freeze and hold its `HADDR` and `HTRANS` perfectly stable.
+- **Rule 2:** A pending valid address phase must retain `HTRANS`, `HADDR`, `HWRITE`, `HSIZE`, `HBURST`, `HPROT`, `HMASTLOCK`, and every enabled address attribute while global `HREADY` is LOW, subject to the defined IDLE, BUSY, and first-ERROR-cycle exceptions. Stalled `HWDATA` for a current write data phase also remains stable.
 - **DV Check:** A massive source of bugs is masters improperly changing `HADDR` or `HTRANS` while `HREADY` is low.
 
 ## HRESP (Response)
 
-When the slave finally finishes the transfer (drives `HREADY = 1`), it must provide a response status via **[glossary:HRESP]**.
+When the owning subordinate finishes the transfer, it drives `HREADYOUT` HIGH and provides the response status via **[glossary:HRESP]**; the manager observes completion through global `HREADY`.
 - **`0` (OKAY):** The transfer was successful.
 - **`1` (ERROR):** The transfer failed (e.g., writing to a read-only register, or an unmapped address).
 
 Note: In the original AMBA 2.0 AHB, `HRESP` was a 2-bit signal to support `SPLIT` and `RETRY`. In AHB-Lite and AHB5, it is simplified to a 1-bit signal (`OKAY`/`ERROR`).
+
+Normal wait states keep `HRESP=OKAY`. An AHB-Lite/AHB5 `ERROR` response is a distinct two-cycle sequence: in ERROR1 the owning subordinate drives `HRESP=ERROR` with `HREADYOUT=LOW`; in ERROR2 it keeps `HRESP=ERROR` and drives `HREADYOUT=HIGH`, so global `HREADY` completes the transfer. `HRDATA`, `HRESP`, and `HREADYOUT` must be returned from the subordinate that owns the **current data phase**, not from the target decoded for the next visible address.

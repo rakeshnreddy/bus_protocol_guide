@@ -31,6 +31,10 @@ Even with AXI, systems still stall. The most common bottlenecks are:
 1.  **Outstanding Tracker Exhaustion:** If a master has only 4 scoreboard entries, it cannot accept responsibility for a fifth outstanding transaction until one retires. The number of distinct ID values controls how many independent ordering streams are available; it does **not** by itself cap outstanding depth, because the same ID can legally be reused for multiple queued transactions.
 2.  **B-Channel Latency:** A write isn't "done" until the B response arrives. If an interconnect is very slow at routing B responses, the master's outstanding transaction buffer will fill up, causing it to stall new requests even if the slave itself is very fast.
 
+### Write association state
+
+An AXI4 receiver maintains an accepted-AW queue in issue order and associates W bursts with that queue. Early accepted W beats need a pre-AW buffer until an address is available. B responses can reorder across different IDs only after each write's accepted AW and final accepted W prerequisites are satisfied; response reordering never changes AXI4 W association order. Repeated IDs require per-ID write queues rather than a single slot per numeric ID.
+
 ---
 
 ## AXI Bug Gallery

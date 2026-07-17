@@ -37,3 +37,7 @@ Trace the highlighted evidence path, then inspect the assertion and coverage bra
 
 - **Directed Tests:** Write these first to prove basic connectivity. Examples: "Write a word to Slave A and read it back," "Perform a WRAP4 burst."
 - **Constrained-Random:** Randomize legal burst types, alignments, sizes, responses, and especially `HREADY` timing to explore combinations efficiently. Rare interactions can also be reached with targeted directed tests or formal analysis; constrained-random is one powerful path to them, not the only possible path.
+
+The default generator produces only behavior legal for the configured revision, data width, address map, and declared properties. Deliberate misalignment, forbidden response encodings, malformed ERROR, or invalid manager behavior belongs in a separately labeled negative-test mode with an expected checker outcome.
+
+Configure the environment before enabling stimulus or assertions: original AHB versus AHB-Lite/AHB5, data width, optional security/extended-memory/exclusive properties, manager count and identity width, address map, and documented service contracts. The reference path also changes by DUT role: a manager environment predicts driven requests against subordinate responses; a subordinate environment predicts state from accepted manager transfers; a bridge conserves accepted upstream work against downstream operations; an interconnect additionally predicts decode, arbitration, route, and response ownership. One expected-data path is not sufficient for every partition.

@@ -2,7 +2,7 @@
   "id": "wf-axi-write-channels",
   "title": "AXI4 Write: Independent AW, W, and B Channels",
   "type": "waveform",
-  "description": "Trace a three-beat write where W data reaches the interface before the AW address is accepted, both channels absorb backpressure independently, and the B response waits for the accepted address and final data beat.",
+  "description": "Trace a three-beat AXI4 write where this destination chooses to accept and buffer W before AW, both channels absorb backpressure independently, and BVALID follows accepted AW plus accepted final W without depending on BREADY.",
   "cycleCount": 9,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
@@ -16,15 +16,17 @@
     { "name": "WDATA", "type": "data", "color": "green", "values": ["-", "D0", "D1", "D1", "D1", "D2", "-", "-", "-"] },
     { "name": "WSTRB", "type": "sideband", "color": "green", "values": ["-", "0xF", "0xF", "0xF", "0xF", "0xF", "-", "-", "-"] },
     { "name": "WLAST", "type": "control", "color": "green", "values": ["0", "0", "0", "0", "0", "1", "0", "0", "0"] },
+    { "name": "WUSER", "type": "sideband", "color": "green", "values": ["-", "U0", "U1", "U1", "U1", "U2", "-", "-", "-"] },
     { "name": "BVALID", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "1", "1", "0"] },
     { "name": "BREADY", "type": "control", "color": "purple", "values": ["0", "0", "0", "0", "0", "0", "0", "1", "0"] },
     { "name": "BID", "type": "data", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "3", "3", "-"] },
-    { "name": "BRESP", "type": "sideband", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "OKAY", "OKAY", "-"] }
+    { "name": "BRESP", "type": "sideband", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "OKAY", "OKAY", "-"] },
+    { "name": "BUSER", "type": "sideband", "color": "purple", "values": ["-", "-", "-", "-", "-", "-", "RESP-U", "RESP-U", "-"] }
   ],
   "annotations": [
     {
       "cycle": 2,
-      "message": "The first W beat transfers while AWREADY is LOW. AXI allows write data to appear at an interface before its write address is accepted."
+      "message": "This destination chooses to assert WREADY, so the first W beat transfers while AWREADY is LOW and enters pre-address association state. A destination may instead withhold WREADY."
     },
     {
       "cycle": 3,
@@ -32,7 +34,7 @@
     },
     {
       "cycle": 4,
-      "message": "AW is already complete, but the W channel remains stalled. WVALID, WDATA=D1, WSTRB, and WLAST must stay stable."
+      "message": "AW is already complete, but W remains stalled. WVALID and the complete WDATA/WSTRB/WLAST/WUSER payload must stay stable."
     },
     {
       "cycle": 5,
@@ -44,7 +46,7 @@
     },
     {
       "cycle": 7,
-      "message": "The slave offers BID=3 and BRESP=OKAY, but BREADY is LOW. The response remains valid and stable under backpressure."
+      "message": "The slave offers BID=3, BRESP=OKAY, and BUSER without waiting for BREADY. The complete response remains valid and stable under backpressure."
     },
     {
       "cycle": 8,

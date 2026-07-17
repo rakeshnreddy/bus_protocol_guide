@@ -15,7 +15,7 @@ glossaryTerms: []
 checklistIds: []
 ---
 
-We have established that AXI uses five independent channels. We have also established that every channel uses its own `VALID`/`READY` handshake. 
+We have established that AXI uses five independently handshaken channels, all synchronous to `ACLK`. We have also established that every channel uses its own `VALID`/`READY` handshake.
 
 The true power of AXI emerges when you combine these two facts: **Each channel has its own handshake and can make progress independently, except for the protocol's explicit cross-channel dependency rules.**
 
@@ -28,7 +28,7 @@ Consider a write transaction. The master wants to write data to an address. Intu
 Because the AW channel and the W channel are independent, a master is perfectly allowed to assert `WVALID` and put write data on the bus *before* it ever asserts `AWVALID`. 
 
 Why would it do this? 
-Imagine a master that generates data very quickly but takes several cycles to calculate the physical destination address. It can just push the data into the W channel pipe immediately. The slave will see `WVALID`, buffer the incoming data, and simply wait for the `AWVALID` to arrive later to tell it where to actually store the data.
+Imagine a master that generates data quickly but takes several cycles to calculate the destination address. It can offer data on W immediately. The slave can withhold `WREADY` until it has the address or buffer space; if it accepts the early W transfer, it must retain and later associate it with the correct AW request.
 
 The waveform below makes that independence concrete: the first W beat is accepted before the AW request, then each channel encounters its own stall.
 
@@ -36,9 +36,11 @@ The waveform below makes that independence concrete: the first W beat is accepte
 
 ### The Only Ordering Rules
 
-The AXI specification dictates very few hard rules across channels. The only absolute cross-channel dependencies are:
+The AXI specification dictates a small set of hard relationships across channels. The core response dependencies are:
 
 1.  **AXI4 writes:** The slave cannot assert `BVALID` (Write Response) until *after* both the final write data beat (`WVALID && WREADY && WLAST`) has been accepted AND the write address (`AWVALID && AWREADY`) has been accepted. You cannot respond to a write before you have received both the address and the full payload. AXI3 does not add the AXI4 requirement to wait for the AW handshake, but its response still follows acceptance of the final W beat.
 2.  **Reads:** The slave cannot assert `RVALID` (Read Data) until *after* the read address (`ARVALID`/`ARREADY`) has been accepted. A slave cannot return data if it does not yet know what address to read from.
 
 Subject to those dependency and per-channel handshake rules, channels can overlap, start early, or start late. Independence does not remove the obligation to hold a channel's `VALID` and payload stable while that channel is backpressured.
+
+Additional ordering state still matters: AXI4 W data follows write-address order, responses with the same ID preserve required request order, and IDs do not create read-versus-write ordering. `BVALID` must not wait for `BREADY`, `RVALID` must not wait for `RREADY`, and neither endpoint may use a combinational path from interface inputs to outputs.

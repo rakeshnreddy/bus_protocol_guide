@@ -21,20 +21,20 @@ All signals on this channel begin with the prefix `W`.
 
 ## Handshake Signals
 
-*   **`WVALID`** (Master -> Slave): The master drives this HIGH when valid write data is on the bus.
+*   **`WVALID`** (Master -> Slave): The master drives this HIGH when valid write data is on the bus. It must not wait for `WREADY`.
 *   **`WREADY`** (Slave -> Master): The slave drives this HIGH when it can accept the write data.
 
-*Note: The W channel handshake operates completely independently of the AW channel. A master can assert `WVALID` before, during, or after it asserts `AWVALID`!*
+*Note: The W handshake can occur before, with, or after AW. A destination is not required to accept early W data: it may keep `WREADY` LOW. If it does accept W before AW, it must buffer and later associate that data with the correct transaction.*
 
-Inspect the stalled cycles below. The first W beat is accepted before AW, while the second beat must hold `WDATA`, `WSTRB`, and `WLAST` stable until `WREADY` returns.
+Inspect the stalled cycles below. The first W beat is accepted before AW, while the second beat must hold the entire payload—`WDATA`, `WSTRB`, `WLAST`, and `WUSER` when present—stable until `WREADY` returns.
 
 ![AXI4 write waveform showing W data before AW acceptance and stable payload during backpressure](visual:wf-axi-write-channels)
 
 ## Data Payload Signals
 
 *   **`WDATA`** (Write Data): The actual payload. The bus width is typically 32, 64, 128, 256, 512, or 1024 bits wide.
-*   **`WSTRB`** (Write Strobes): One strobe bit for every byte lane in `WDATA`. If a strobe bit is HIGH, that specific byte is valid and should be written to memory. If LOW, that byte is ignored. This enables sparse writes and unaligned transfers.
-*   **`WLAST`** (Write Last): A critical control signal. The master must assert `WLAST` HIGH during the very final data beat of the burst. The slave relies on `WLAST` to know the burst is complete.
+*   **`WSTRB`** (Write Strobes): One strobe bit for every byte lane in `WDATA`. An asserted bit qualifies that byte for update and must be consistent with the byte lanes selected by the start address and `AWSIZE`.
+*   **`WLAST`** (Write Last): The master asserts `WLAST` on the transfer that becomes accepted beat `AWLEN + 1`. Stalled clock cycles do not advance the beat count.
 
 ## The Missing Signal: WID (AXI3 vs AXI4)
 

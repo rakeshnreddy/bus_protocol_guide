@@ -17,9 +17,9 @@ checklistIds: []
 
 To master AXI, you must completely abandon the AHB "shared bus" mental model. 
 
-In AHB, you request the bus, put an address on the wires, wait a cycle, and put data on the wires. It is a strictly sequential process happening on a shared set of physical wires.
+On each AHB path, an address phase overlaps the previous transfer's data phase, and `HREADY` couples whether both phases advance. Original shared-bus AHB also adds arbitration; AHB-Lite and AHB5 interfaces need not expose that shared-bus arbitration model.
 
-AXI is different. AXI is composed of **five independent, unidirectional channels**. Think of them as five completely separate pipes connecting the master to the slave. Each pipe only flows in one direction, and each pipe has its own flow control.
+AXI is different. AXI is composed of **five independently handshaken, unidirectional channels**. Each channel has its own flow control, while explicit transaction dependencies and ordering rules still connect their accepted events.
 
 ## The Five Channels
 
@@ -37,13 +37,15 @@ This interface map makes ownership explicit. Select a lane to see who sources `V
 
 ## Concurrency and Independence
 
-Because these are five physical, separate pipes, they can all be active at the exact same time.
+Because these are five distinct signal bundles with independent handshakes, they can be active concurrently when the required transaction dependencies, ordering rules, and destination resources permit.
 
 A master can be issuing a new write address (AW channel) while simultaneously sending data for a *previous* write (W channel), while simultaneously receiving a response for an even *older* write (B channel). And it can be doing read operations on the AR and R channels concurrently with all of that.
 
 ### Visualizing the Write Channels
 
-Look at this timeline of a write transaction. Notice how the Address, Data, and Response channels operate asynchronously relative to each other. The data can even start transferring in the exact same cycle the address is accepted!
+All five channels are synchronous to the interface `ACLK`, and transfers are sampled on its rising edge. Their handshake timing is decoupled: write data can transfer before, with, or after the write address when the destination chooses to accept it.
+
+On each channel, the information source drives `VALID` and payload while the destination returns `READY`: the master sources AW, W, and AR; the slave sources B and R. Accepted AR precedes its R data. In AXI4, accepted AW and the accepted W transfer carrying `WLAST` both precede `BVALID`, and W data for transactions follows write-address order.
 
 ![Three-beat AXI4 write showing independent address, data, and response handshakes](visual:wf-axi-write-channels)
 

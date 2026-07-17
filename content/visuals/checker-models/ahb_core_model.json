@@ -1,0 +1,95 @@
+{
+  "id": "model-ahb-core-checker",
+  "type": "checker-model",
+  "title": "AHB Accepted-Phase Core Checker",
+  "description": "Step a transfer through visible, pending, accepted, data-owner, wait, ERROR, burst-count, alignment, and 1 KB state using configuration-derived legality checks.",
+  "learnerQuestion": "Which AHB state advances on an accepted address or completed data phase, and which context must remain held?",
+  "protocolScope": "AMBA 5 AHB · IHI 0033B.b",
+  "calculator": {
+    "kind": "burst-address",
+    "protocol": "ahb",
+    "boundaryBytes": 1024,
+    "initial": { "startAddress": "0x03F0", "burst": "INCR", "bytesPerBeat": 4, "beats": 4, "busBytes": 4 },
+    "burstOptions": ["INCR", "WRAP"],
+    "bytesPerBeatOptions": [1, 2, 4, 8],
+    "beatOptions": [1, 4, 8, 16],
+    "busBytesOptions": [4, 8]
+  },
+  "configurations": [
+    { "id": "ahb5-32", "label": "AHB5 32-bit", "description": "Data width 4 bytes, RETRY/SPLIT illegal, every burst constrained to one 1 KB region." },
+    { "id": "original-ahb", "label": "Original AHB", "description": "AMBA 2 response set with RETRY/SPLIT enabled and shared-bus owner context." }
+  ],
+  "scenarios": [
+    {
+      "id": "busy-wait-and-reset",
+      "label": "BUSY, wait, and reset state",
+      "mode": "legal",
+      "configurationId": "ahb5-32",
+      "description": "BUSY does not allocate a transfer, an ordinary wait retains the pending valid context, and reset flushes monitor and scoreboard state.",
+      "steps": [
+        { "id": "busy", "label": "Insert BUSY", "event": "HREADY=1, HTRANS=BUSY inside an INCR burst", "state": { "acceptedBeats": 1, "pendingValid": false, "burstContext": "INCR active", "dataOwner": "prior accepted beat" }, "checks": [
+          { "id": "busy-count", "label": "BUSY is not a transfer", "field": "acceptedBeats", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "Only NONSEQ/SEQ with HREADY HIGH allocate an accepted beat." }
+        ] },
+        { "id": "wait", "label": "Hold SEQ", "event": "HREADY=0 with a pending SEQ address", "state": { "acceptedBeats": 1, "pendingValid": true, "pendingOwner": "manager 0", "dataOwner": "prior accepted beat", "heldSignals": ["HADDR", "HTRANS", "HWRITE", "HSIZE", "HBURST", "HPROT"] }, "checks": [
+          { "id": "pending", "label": "Pending beat remains unaccepted", "field": "acceptedBeats", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "The wait extends the active data phase and freezes the pending valid address/control." }
+        ] },
+        { "id": "reset", "label": "Assert reset", "event": "HRESETn asserts LOW during the wait", "state": { "acceptedBeats": 0, "pendingValid": false, "monitorQueue": [], "scoreboardQueue": [], "restartPolicy": "earliest legal or more conservative" }, "checks": [
+          { "id": "flush-monitor", "label": "Monitor state flushed", "field": "monitorQueue", "operator": "length-eq", "expected": 0, "requirementType": "protocol", "evidence": "Transfers active at reset are not required to complete; post-reset restart timing can be more conservative than the earliest legal edge." },
+          { "id": "flush-scoreboard", "label": "Scoreboard state flushed", "field": "scoreboardQueue", "operator": "length-eq", "expected": 0, "requirementType": "product-contract", "evidence": "The environment cancels reset-aborted expectations consistently." }
+        ] }
+      ]
+    },
+    {
+      "id": "waited-incr4",
+      "label": "Legal waited INCR4",
+      "mode": "legal",
+      "configurationId": "ahb5-32",
+      "description": "A wait freezes pending address/control and the active data phase; beat count advances only when the valid address is accepted.",
+      "steps": [
+        { "id": "first", "label": "Accept beat 1", "event": "HREADY=1, HTRANS=NONSEQ, HADDR=0x3F0", "state": { "visibleAddress": "0x3F0", "acceptedBeats": 1, "dataOwner": "beat 0 idle", "bytesPerBeat": 4, "boundaryRegion": "0x000-0x3FF", "hresp": "OKAY" }, "checks": [
+          { "id": "count", "label": "Accepted beat count", "field": "acceptedBeats", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "NONSEQ with HREADY HIGH starts the burst." },
+          { "id": "size", "label": "HSIZE within configured bus", "field": "bytesPerBeat", "operator": "lte", "expected": 4, "requirementType": "protocol", "evidence": "HSIZE cannot exceed the interface data width." }
+        ] },
+        { "id": "wait", "label": "Hold wait", "event": "HREADY=0, HRESP=OKAY", "state": { "visibleAddress": "0x3F4 held", "acceptedBeats": 1, "dataOwner": "beat 1 at 0x3F0", "heldContext": ["HADDR", "HTRANS", "HWRITE", "HSIZE", "HBURST", "HPROT", "HMASTLOCK"], "hresp": "OKAY" }, "checks": [
+          { "id": "no-count", "label": "Wait does not consume beat", "field": "acceptedBeats", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "The pending SEQ address is visible but unaccepted." },
+          { "id": "stable", "label": "Complete pending context retained", "field": "heldContext", "operator": "includes", "expected": "HBURST", "requirementType": "protocol", "evidence": "The pending valid address/control bundle remains stable during an ordinary wait." }
+        ] },
+        { "id": "finish", "label": "Complete burst", "event": "Three later SEQ acceptances", "state": { "visibleAddress": "0x3FC", "acceptedBeats": 4, "dataOwner": "beat 4", "finalByte": "0x3FF", "boundaryRegion": "0x000-0x3FF", "hresp": "OKAY" }, "checks": [
+          { "id": "beats", "label": "INCR4 exact count", "field": "acceptedBeats", "operator": "eq", "expected": 4, "requirementType": "protocol", "evidence": "Only accepted NONSEQ/SEQ transfers contribute to the fixed-length burst." },
+          { "id": "boundary", "label": "Final byte stays below 1 KB", "field": "finalByte", "operator": "eq", "expected": "0x3FF", "requirementType": "protocol", "evidence": "Every AHB burst remains within one 1 KB address region." }
+        ] }
+      ]
+    },
+    {
+      "id": "illegal-boundary",
+      "label": "Illegal 1 KB crossing",
+      "mode": "negative",
+      "configurationId": "ahb5-32",
+      "description": "A four-byte beat beginning at 0x400 belongs to a second 1 KB region and cannot continue the burst accepted below 0x400.",
+      "steps": [
+        { "id": "cross", "label": "Attempt crossing", "event": "SEQ HADDR=0x400 after NONSEQ below boundary", "state": { "startRegion": "0x000-0x3FF", "currentRegion": "0x400-0x7FF", "sameBoundary": false, "acceptedBeats": 3 }, "checks": [
+          { "id": "one-k", "label": "One 1 KB region", "field": "sameBoundary", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The checker flags the address request; the manager must terminate and restart with NONSEQ before the boundary." }
+        ] }
+      ]
+    },
+    {
+      "id": "error-pair",
+      "label": "Two-cycle ERROR",
+      "mode": "legal",
+      "configurationId": "ahb5-32",
+      "description": "Ordinary wait is OKAY; ERROR1 is not completion and ERROR2 completes the failed data phase.",
+      "steps": [
+        { "id": "error1", "label": "ERROR1", "event": "HRESP=ERROR, HREADYOUT=0", "state": { "responsePhase": "ERROR1", "completed": false, "pendingChoice": ["cancel", "continue"], "hresp": "ERROR" }, "checks": [
+          { "id": "first", "label": "First ERROR cycle does not complete", "field": "completed", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "The master can cancel the pending address/control or retain it." }
+        ] },
+        { "id": "error2", "label": "ERROR2", "event": "HRESP=ERROR, HREADYOUT=1", "state": { "responsePhase": "ERROR2", "completed": true, "pendingChoice": "implementation policy", "hresp": "ERROR" }, "checks": [
+          { "id": "second", "label": "Second ERROR cycle completes", "field": "completed", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "HREADY HIGH completes the failed data phase; post-error cancel/continue policy is checked separately." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AHB-CORE accepted progression", "stimulus": "NONSEQ/SEQ with inserted waits", "checker": "Phase owner + accepted beat predictor", "coverage": "HTRANS × HREADY × beat position", "evidence": "artifact://ahb/core/accepted", "owner": "AHB monitor owner", "configuration": "AHB5-32", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "AHB protocol lead" },
+    { "requirement": "AHB every burst within 1 KB", "stimulus": "edge-of-region legal + crossing negative", "checker": "first/final byte region", "coverage": "boundary offset × burst × size", "evidence": "artifact://ahb/core/1kb", "owner": "Address checker owner", "configuration": "AHB5-32", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Coverage lead" }
+  ]
+}

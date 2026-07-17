@@ -2,22 +2,26 @@
   "id": "wf-ahb-read-write-response",
   "type": "waveform",
   "title": "AHB Read, Write, Wait, and Error Completion",
-  "description": "Follow who drives HWDATA and HRDATA, then inspect the two-cycle AHB-Lite ERROR response qualified by HREADY and HRESP.",
-  "cycleCount": 7,
+  "description": "Follow address and data owners, distinguish the selected subordinate's HREADYOUT from muxed global HREADY, and inspect an ordinary OKAY wait before the required two-cycle AHB-Lite/AHB5 ERROR response.",
+  "cycleCount": 8,
   "signals": [
-    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "HTRANS", "type": "sideband", "color": "#1d4ed8", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE"] },
-    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x100", "0x104", "0xBAD", "—", "—", "—", "—"] },
-    { "name": "HWRITE", "type": "control", "color": "#0f766e", "values": ["0", "1", "0", "0", "0", "0", "0"] },
-    { "name": "HWDATA (master)", "type": "data", "color": "#047857", "values": ["—", "—", "0xCAFE", "—", "—", "—", "—"] },
-    { "name": "HRDATA (slave)", "type": "data", "color": "#0369a1", "values": ["—", "0xBEEF", "—", "invalid", "invalid", "—", "—"] },
-    { "name": "HREADY (slave)", "type": "control", "color": "#16a34a", "values": ["1", "1", "1", "0", "1", "1", "1"] },
-    { "name": "HRESP (slave)", "type": "control", "color": "#dc2626", "values": ["0", "0", "0", "1", "1", "0", "0"] }
+    { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
+    { "name": "VISIBLE ADDRESS", "type": "sideband", "color": "#1d4ed8", "values": ["R 0x100", "W 0x104", "R 0xBAD", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE"] },
+    { "name": "DATA OWNER", "type": "sideband", "color": "#0f766e", "values": ["—", "R 0x100", "W 0x104", "R 0xBAD", "R 0xBAD", "R 0xBAD", "—", "—"] },
+    { "name": "HTRANS", "type": "sideband", "color": "#1d4ed8", "values": ["NONSEQ", "NONSEQ", "NONSEQ", "IDLE", "IDLE", "IDLE", "IDLE", "IDLE"] },
+    { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0x100", "0x104", "0xBAD", "—", "—", "—", "—", "—"] },
+    { "name": "HWRITE", "type": "control", "color": "#0f766e", "values": ["0", "1", "0", "0", "0", "0", "0", "0"] },
+    { "name": "HWDATA (master)", "type": "data", "color": "#047857", "values": ["—", "—", "0xCAFE", "—", "—", "—", "—", "—"] },
+    { "name": "HRDATA (selected slave)", "type": "data", "color": "#0369a1", "values": ["—", "0xBEEF", "—", "invalid", "invalid", "invalid", "—", "—"] },
+    { "name": "HREADYOUT (selected slave)", "type": "control", "color": "#16a34a", "values": ["1", "1", "1", "0", "0", "1", "1", "1"] },
+    { "name": "HREADY (global mux)", "type": "control", "color": "#16a34a", "values": ["1", "1", "1", "0", "0", "1", "1", "1"] },
+    { "name": "HRESP (selected slave)", "type": "control", "color": "#dc2626", "values": ["OKAY", "OKAY", "OKAY", "OKAY", "ERROR", "ERROR", "OKAY", "OKAY"] }
   ],
   "annotations": [
     { "cycle": 2, "message": "Read data phase for address 0x100: the slave drives HRDATA=0xBEEF while the master presents the next write address." },
     { "cycle": 3, "message": "Write data phase for address 0x104: the master drives HWDATA=0xCAFE while the error-producing read address is issued." },
-    { "cycle": 4, "message": "First ERROR cycle: the slave asserts HRESP and drives HREADY LOW, extending the failing transfer." },
-    { "cycle": 5, "message": "Second ERROR cycle: HRESP remains asserted and HREADY returns HIGH, so the master samples error completion on this edge." }
+    { "cycle": 4, "message": "The selected slave inserts an ordinary wait for failing read 0xBAD: HREADYOUT=0 and HRESP=OKAY. The return mux presents those values as global HREADY/HRESP because this slave owns the data phase." },
+    { "cycle": 5, "message": "ERROR cycle 1: the selected slave drives HRESP=ERROR and HREADYOUT=0; the global return path preserves that data-owner response." },
+    { "cycle": 6, "message": "ERROR cycle 2: HRESP remains ERROR and HREADYOUT returns HIGH. Muxed HREADY is HIGH, so the manager samples error completion on this edge." }
   ]
 }

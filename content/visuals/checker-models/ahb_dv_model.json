@@ -1,0 +1,63 @@
+{
+  "id": "model-ahb-dv-rigor",
+  "type": "checker-model",
+  "title": "AHB Assertion, Coverage, and Formal Rigor Model",
+  "description": "Execute accepted-phase assertion triggers, configuration-derived coverage legality, reset cancellation, formal assumptions/covers, vacuity review, and bounded product-service contracts.",
+  "learnerQuestion": "What evidence proves an AHB property was triggered, non-vacuous, configuration-valid, and reviewed?",
+  "protocolScope": "AHB2/AHB5 DV signoff",
+  "configurations": [
+    { "id": "ahb5-lite", "label": "AHB5 single-manager", "description": "RETRY and SPLIT bins are illegal; ERROR and OKAY are legal." },
+    { "id": "original", "label": "Original shared AHB", "description": "RETRY and SPLIT are legal with revision-specific arbiter state." }
+  ],
+  "scenarios": [
+    {
+      "id": "formal-window",
+      "label": "Accepted trigger and bounded service",
+      "mode": "policy",
+      "configurationId": "ahb5-lite",
+      "description": "The protocol trigger is accepted transfer state; the four-cycle completion bound is a declared product contract.",
+      "steps": [
+        { "id": "pending", "label": "Pending", "event": "NONSEQ visible while HREADY LOW", "state": { "acceptedTriggerCount": 0, "activeObligations": 0, "vacuous": true, "serviceAge": 0, "reset": false }, "checks": [
+          { "id": "no-trigger", "label": "Held address does not retrigger", "field": "acceptedTriggerCount", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "Properties sample accepted phases, not every clock of a held request." }
+        ] },
+        { "id": "trigger", "label": "Trigger", "event": "HREADY && HTRANS[1] accepts request", "state": { "acceptedTriggerCount": 1, "activeObligations": 1, "vacuous": false, "serviceAge": 0, "reset": false }, "checks": [
+          { "id": "one", "label": "Exactly one obligation", "field": "activeObligations", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "The antecedent becomes non-vacuous on the accepted request." },
+          { "id": "vacuity", "label": "Antecedent exercised", "field": "vacuous", "operator": "eq", "expected": false, "requirementType": "product-contract", "evidence": "Cover evidence proves the assertion did not pass only because its trigger was absent." }
+        ] },
+        { "id": "complete", "label": "Complete", "event": "Following data phase completes at age 3", "state": { "acceptedTriggerCount": 1, "activeObligations": 0, "vacuous": false, "serviceAge": 3, "serviceBound": 4, "reset": false }, "checks": [
+          { "id": "bound", "label": "Configured service bound", "field": "serviceAge", "operator": "lte", "expected": 4, "requirementType": "product-contract", "evidence": "The bounded completion result is reported separately from universal protocol safety." }
+        ] }
+      ]
+    },
+    {
+      "id": "reset-cancel",
+      "label": "Reset cancellation",
+      "mode": "legal",
+      "configurationId": "ahb5-lite",
+      "description": "Reset cancels the local proof obligation; reset assumptions and post-reset covers remain explicit.",
+      "steps": [
+        { "id": "reset", "label": "Assert reset", "event": "HRESETn LOW during active obligation", "state": { "activeObligations": 0, "reset": true, "result": "cancelled", "postResetCoverHits": 1 }, "checks": [
+          { "id": "cancel", "label": "Disable-iff cancellation", "field": "result", "operator": "eq", "expected": "cancelled", "requirementType": "protocol", "evidence": "Reset behavior is modeled rather than counted as a completion or timeout." },
+          { "id": "cover", "label": "Post-reset behavior reachable", "field": "postResetCoverHits", "operator": "gte", "expected": 1, "requirementType": "product-contract", "evidence": "A cover prevents a reset assumption from making the proof vacuous." }
+        ] }
+      ]
+    },
+    {
+      "id": "coverage-config",
+      "label": "Configuration-derived bins",
+      "mode": "legal",
+      "configurationId": "ahb5-lite",
+      "description": "Legal, illegal, and ignore classifications derive from revision and enabled optional properties.",
+      "steps": [
+        { "id": "bins", "label": "Classify bins", "event": "Build response cross from selected revision", "state": { "legalBins": ["OKAY", "ERROR"], "illegalBins": ["RETRY", "SPLIT"], "ignoreBins": ["unsupported optional property"], "acceptedSamples": 14, "completedSamples": 12 }, "checks": [
+          { "id": "retry-illegal", "label": "RETRY illegal in selected configuration", "field": "illegalBins", "operator": "includes", "expected": "RETRY", "requirementType": "protocol", "evidence": "The coverage model does not create false holes for a response omitted from AHB5." },
+          { "id": "sample", "label": "Accepted-phase coverage exercised", "field": "acceptedSamples", "operator": "gte", "expected": 1, "requirementType": "product-contract", "evidence": "Accepted and completed events are sampled separately." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AHB-DV accepted trigger + reset", "stimulus": "pending, accepted, reset, completion", "checker": "SVA template with disable iff", "coverage": "antecedent cover + reset cross", "evidence": "artifact://formal/ahb-trigger", "owner": "Formal owner", "configuration": "ahb5-lite, bound=4", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Formal reviewer" },
+    { "requirement": "AHB-DV revision-aware response coverage", "stimulus": "OKAY/ERROR plus negative RETRY/SPLIT", "checker": "response legality gate", "coverage": "legal/illegal/ignore bin report", "evidence": "artifact://coverage/ahb-response", "owner": "Coverage owner", "configuration": "AHB5 single-manager", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Coverage reviewer" }
+  ]
+}

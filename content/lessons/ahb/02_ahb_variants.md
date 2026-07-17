@@ -19,21 +19,17 @@ checklistIds: []
 
 The AHB specification has evolved over the past two decades. As a Design Verification engineer, you must know which variant you are verifying, as the rules change significantly!
 
-### 1. The Original AHB (AMBA 2.0, 1999)
-The original AHB specification supported full multi-master systems directly on a shared bus. It required complex arbitration signals (`HBUSREQ`, `HGRANT`, `HLOCK`) and allowed for "Split" and "Retry" responses if a slave was busy. 
+### 1. Original AHB — AMBA Specification IHI 0011A
+The original AHB specification supports multiple managers directly on a shared bus. Per-manager `HBUSREQx`, `HGRANTx`, and `HLOCKx` participate in arbitration; bus-level `HMASTER` and `HMASTLOCK` identify the active owner and locked status. It also defines `RETRY` and `SPLIT` responses. These features are revision-specific verification modes, regardless of how frequently a particular product uses them.
 
-*Reality check:* Building arbiters for the original AHB was notoriously difficult, and Split/Retry logic was a nightmare to verify. Today, **you will almost never see an original AMBA 2.0 AHB multi-master bus.**
+### 2. AHB-Lite — the Single-Manager Interface Model
+**[glossary:AHB-Lite]** removes original shared-bus request/grant arbitration and the legacy `SPLIT`/`RETRY` response encodings from an interface. A matrix can connect multiple such manager-side interfaces and arbitrate internally. `HMASTLOCK` remains a defined interface signal, so “Lite” does not mean that all lock signaling disappeared. The interface responses are `OKAY` and `ERROR`.
 
-### 2. AHB-Lite (AMBA 3.0, 2006)
-ARM realized that most people didn't need complex arbitration on a single bus. Instead, they wanted simpler masters and used routing matrices to connect them. 
-
-**[glossary:AHB-Lite]** removed all the complex arbitration signals. An AHB-Lite master assumes it *always* owns the bus. If you need multiple masters, you connect them to a central Bus Matrix (a crossbar switch), and the matrix handles the arbitration internally. Furthermore, Split and Retry responses were removed. The only responses allowed are `OKAY` and `ERROR`.
-
-### 3. AHB5 (AMBA 5.0, 2015)
-As systems became more complex and secure, AHB-Lite needed an upgrade to stay relevant alongside AXI. **[glossary:AHB5]** is an extension of AHB-Lite that adds:
-- **Extended Memory Types:** Better alignment with AXI's memory attributes.
-- **Secure Transfers:** The `HNONSEC` signal indicates if a transfer is secure (TrustZone support).
-- **Exclusive Accesses:** The `HEXCL` and `HEXOKAY` signals support atomic operations (like semaphores in multi-core systems).
+### 3. AHB5 — AMBA 5 AHB IHI 0033B.b
+**[glossary:AHB5]** retains the single-manager interface model and defines optional declared interface properties, including:
+- **Extended Memory Types:** `HPROT[6:4]` extends the base protection attributes when `Extended_Memory_Types` is declared.
+- **Secure Transfers:** `HNONSEC` is present when the security property is declared.
+- **Exclusive Accesses:** `HEXCL`, `HEXOKAY`, and the required identity context are present when `Exclusive_Transfers` is declared.
 - **Single-Copy Atomicity:** Stricter rules on how data is accessed.
 
 Open each variant below and compare the verification contract—not just the release date. In particular, notice that AHB5 adds attributes and exclusives without restoring original AHB's shared-bus arbitration model.
@@ -42,9 +38,4 @@ Open each variant below and compare the verification contract—not just the rel
 
 ## Which one should I care about?
 
-In modern RTL design and verification:
-- **AHB-Lite** is the baseline. 90% of AHB IPs you encounter will speak AHB-Lite.
-- **AHB5** is the modern standard. You must understand the secure and exclusive access signals if you work on modern IoT or microcontroller SoCs.
-- **AMBA 2.0 AHB** is effectively obsolete. (If you see `HBUSREQ` in your RTL, it's legacy code).
-
-Throughout this course, when we say "AHB", we are referring to the **AHB-Lite / AHB5** mental model, as that is the industry standard today.
+Verification begins by selecting the exact revision and declared properties. Do not generate `SPLIT`, `RETRY`, `HNONSEC`, extended `HPROT`, or exclusives merely because the umbrella name says AHB. Unless a lesson explicitly says “original AHB,” the transfer examples use the AHB-Lite/AHB5 single-manager interface; revision comparison lessons call out original shared-bus behavior separately.

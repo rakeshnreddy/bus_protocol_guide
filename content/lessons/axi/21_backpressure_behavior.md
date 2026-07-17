@@ -23,8 +23,7 @@ AXI does not have a global `HREADY`. Instead, flow control is distributed via th
 
 Because the channels are independent, backpressure on one channel does not inherently stall the others.
 
-If a slave's write data FIFO is full, it will pull `WREADY` LOW. The master cannot send any more write data. 
-However, the master is completely free to continue sending write *addresses* on the AW channel (as long as `AWREADY` is HIGH), and it is completely free to continue reading data on the AR and R channels!
+If a slave's write-data FIFO is full, it can pull `WREADY` LOW. No additional W beat is accepted, but a beat already offered with `WVALID=1` remains stable. AW, AR, R, and B can still handshake when their independent destinations have capacity; an implementation can also backpressure AW to prevent its configured association or outstanding resources from overflowing.
 
 This localized backpressure prevents a bottleneck in one part of the system from dragging down the entire SoC.
 
@@ -45,3 +44,5 @@ Look at the waveform below. Both sides are waiting for the other side to do some
 ![AXI W and B sources holding VALID while circular READY policies prevent every transfer](visual:wf-axi-deadlock)
 
 This dependency loop creates a permanent system-level liveness failure. In the shown waveform, both sources assert and hold `VALID` correctly; the deadlock comes from individually permitted but mutually incompatible cross-channel `READY` policies. It is therefore not automatically a single-interface safety violation. If those policies are implemented as direct combinational input-to-output paths, that separately violates AXI's no-combinational-path rule; the steady waveform alone does not prove how they were implemented. Verification needs an integration-level progress contract or bounded timeout in addition to the AXI stability assertions discussed in Lesson 11.
+
+Keep safety and liveness separate: the protocol requires stable offered payloads, VALID independence, response prerequisites, and no input-to-output combinational paths. A bound such as “READY or completion within N cycles” is a configured service contract, not a universal AXI timing rule.

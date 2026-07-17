@@ -15,7 +15,7 @@ glossaryTerms: ["Out-of-Order Completion"]
 checklistIds: []
 ---
 
-We know that if a master gives two transactions different IDs, the slave is allowed to complete them in any order. Why is this so important for performance?
+Transactions with different IDs have no relative response-order guarantee, so a capable target or interconnect can return either response first when the rest of the ordering rules allow it. This is permission, not a required scheduling policy.
 
 ## The DDR Memory Bottleneck
 
@@ -40,4 +40,4 @@ Instead of making B wait, the slave immediately fetches B's data, puts it on the
 
 ![Two AXI reads using different IDs and completing in reverse request order](visual:wf-axi-out-of-order)
 
-The master receives B before A and uses `RID` plus its per-ID issue queue to select the correct destination state. This can improve service opportunity and channel utilization, but the exact throughput benefit depends on the target, interconnect, buffering, and traffic pattern.
+The master receives B before A and uses `RID` plus its per-ID issue queue to select the correct destination state. Beats within each burst remain ordered. Read data from different IDs can be interleaved where the interfaces support it; AXI3 can use `WID` for write-data interleaving, while AXI4 removes `WID` and requires W bursts to follow AW order. Response order does not reveal the target's complete internal execution schedule or establish memory visibility beyond the applicable ordering contract.

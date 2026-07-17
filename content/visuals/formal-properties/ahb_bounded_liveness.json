@@ -4,11 +4,11 @@
   "title": "AHB Example Bounded Completion Contract",
   "property": {
     "name": "Configured Bounded Liveness",
-    "description": "This example assumes the implementation contract requires an accepted NONSEQ request to see HREADY HIGH within four cycles. Four is a teaching/configuration bound, not one universal AHB protocol limit.",
-    "svaString": "assert property (@(posedge HCLK) (HTRANS == NONSEQ) |-> ##[0:4] (HREADY == 1));",
+    "description": "This example contract starts only when a valid address phase is accepted with HTRANS[1] and HREADY HIGH. Completion must occur in one of the following four data-phase cycles; same-edge HREADY belongs to the preceding data owner. Reset cancels the obligation. Four is a teaching/configuration bound, not an AHB protocol maximum.",
+    "svaString": "assert property (@(posedge HCLK) disable iff (!HRESETn) (HTRANS[1] && HREADY) |-> ##[1:4] HREADY);",
     "evaluatorRule": "ahb-hready-bounded-liveness"
   },
-  "editableSignals": ["HREADY"],
+  "editableSignals": ["HREADY", "HRESETn"],
   "waveform": {
     "id": "wf-ahb-hready-base",
     "type": "waveform",
@@ -26,10 +26,19 @@
         "values": ["IDLE", "NONSEQ", "SEQ", "IDLE", "IDLE", "IDLE", "IDLE"]
       },
       {
+        "name": "HRESETn",
+        "type": "control",
+        "values": ["1", "1", "1", "1", "1", "1", "1"]
+      },
+      {
         "name": "HREADY",
         "type": "control",
         "values": ["1", "1", "1", "1", "1", "1", "1"]
       }
+    ],
+    "annotations": [
+      { "cycle": 2, "message": "The NONSEQ address is accepted here because HREADY is HIGH. This same edge completes the preceding data owner and does not satisfy the new obligation." },
+      { "cycle": 3, "message": "The accepted address now owns the data phase. Cycles 3-6 are the configured four-cycle completion window." }
     ]
   }
 }

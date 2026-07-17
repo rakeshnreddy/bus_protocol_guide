@@ -37,15 +37,18 @@ Select each cycle to follow both the current address phase and the data beat bel
 ### Undefined Length Bursts (INCR)
 
 The `HBURST` signal has a value called `INCR` (as opposed to `INCR4`, `INCR8`, etc.). This indicates a burst of *undefined length*.
-- The master can keep issuing `SEQ` beats indefinitely.
+- The manager can choose the length, but every accepted beat remains subject to the 1KB boundary rule.
 - The burst is only terminated when the master drops `HTRANS` to `NONSEQ` (starting a new burst) or `IDLE` (stopping altogether).
+- If the next beat would enter another 1KB region, the manager ends the burst before that beat and restarts remaining work with `NONSEQ` in the new region.
 
 Expand `INCR` and the fixed-length burst entries below to compare termination rules, beat counts, and the address checks a monitor must maintain.
 
 ![Interactive comparison of undefined and fixed-length AHB burst progression rules](visual:sig-ahb-burst-size)
 
-## Bug Gallery: Incorrect Address Calculation
+Progress advances only on accepted valid beats (`HREADY && HTRANS[1]`). Waited repetitions and BUSY cycles do not advance the beat index or predicted address.
 
-A common RTL bug in slave design is ignoring the master's `HADDR` during `SEQ` beats and relying entirely on an internal counter.
+## Checker Gallery: Incorrect Address Calculation
 
-While it is true that the slave *can* calculate the address of a `SEQ` beat itself (by taking the previous address + `HSIZE`), it is much safer for verification if the slave checks that the master's `HADDR` actually matches the expected value. If a master calculates `0x24` but accidentally drives `0x28` on the second beat of an `INCR4`, a lazy slave will write data to `0x24`, masking the master's bug!
+A protocol checker should retain an independent predicted next address and compare it with the manager's actual `HADDR` on each accepted `SEQ` beat.
+
+A subordinate may predict addresses as an implementation optimization, but functional access remains defined by the manager-driven protocol address. If the manager drives `0x28` where the accepted progression requires `0x24`, the checker reports a progression violation; the subordinate must not silently substitute its own counter value and mask the bad input.

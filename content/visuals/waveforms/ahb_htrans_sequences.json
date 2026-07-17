@@ -1,23 +1,29 @@
 {
   "id": "wf-ahb-htrans-sequences",
   "type": "waveform",
-  "title": "HTRANS: Valid Burst and Suspicious Restart",
-  "description": "Compare a legal NONSEQ–SEQ burst containing BUSY with a buggy sequence that resumes using SEQ after leaving the burst.",
+  "title": "HTRANS: Accepted Beats, Waits, BUSY, and Illegal Termination",
+  "description": "Follow an INCR4 burst whose accepted-beat counter advances only on HREADY-high NONSEQ/SEQ edges, then compare a SINGLE-to-BUSY violation and early termination of a fixed-length burst.",
   "cycleCount": 8,
   "signals": [
     { "name": "HCLK", "type": "clock", "values": ["1", "1", "1", "1", "1", "1", "1", "1"] },
-    { "name": "VALID HTRANS", "type": "sideband", "color": "#1d4ed8", "values": ["IDLE", "NONSEQ", "SEQ", "BUSY", "SEQ", "SEQ", "IDLE", "IDLE"] },
-    { "name": "VALID HADDR", "type": "data", "color": "#0f766e", "values": ["—", "0x100", "0x104", "hold", "0x108", "0x10C", "—", "—"] },
-    { "name": "BUGGY HTRANS", "type": "sideband", "color": "#dc2626", "values": ["IDLE", "NONSEQ", "SEQ", "IDLE", "SEQ", "SEQ", "IDLE", "IDLE"] },
-    { "name": "BUGGY HADDR", "type": "data", "color": "#b91c1c", "values": ["—", "0x200", "0x204", "—", "0x208", "0x20C", "—", "—"] }
+    { "name": "VALID HBURST", "type": "sideband", "color": "#1d4ed8", "values": ["—", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "INCR4", "—"] },
+    { "name": "VALID HTRANS", "type": "sideband", "color": "#1d4ed8", "values": ["IDLE", "NONSEQ", "SEQ", "SEQ", "BUSY", "SEQ", "SEQ", "IDLE"] },
+    { "name": "VALID HADDR", "type": "data", "color": "#0f766e", "values": ["—", "0x100", "0x104", "0x104", "hold", "0x108", "0x10C", "—"] },
+    { "name": "VALID HREADY", "type": "control", "color": "#0f766e", "values": ["1", "1", "0", "1", "1", "1", "1", "1"] },
+    { "name": "ACCEPTED BEATS", "type": "sideband", "color": "#0f766e", "values": ["0", "1", "1", "2", "2", "3", "4", "4"] },
+    { "name": "BUGGY HBURST", "type": "sideband", "color": "#dc2626", "values": ["—", "SINGLE", "SINGLE", "INCR4", "INCR4", "INCR4", "—", "—"] },
+    { "name": "BUGGY HTRANS", "type": "sideband", "color": "#dc2626", "values": ["IDLE", "NONSEQ", "BUSY", "NONSEQ", "SEQ", "IDLE", "IDLE", "IDLE"] }
   ],
   "annotations": [
-    { "cycle": 2, "message": "NONSEQ marks the first valid beat of both bursts." },
-    { "cycle": 3, "message": "SEQ is legal because it continues the burst started by NONSEQ." },
-    { "cycle": 4, "message": "BUSY inserts no transfer but preserves the valid burst context; address progression resumes afterward." },
-    { "cycle": 5, "message": "The valid sequence resumes with SEQ after BUSY. The buggy sequence used IDLE, so its next valid beat must restart with NONSEQ." }
+    { "cycle": 2, "message": "The INCR4 NONSEQ beat is accepted because HREADY is HIGH; accepted-beat count becomes one." },
+    { "cycle": 3, "message": "The SEQ address 0x104 is visible but HREADY is LOW, so it is pending and the count remains one." },
+    { "cycle": 4, "message": "The held 0x104 SEQ beat is now accepted. The buggy SINGLE sequence, by contrast, already violated the rule by inserting BUSY after its sole beat." },
+    { "cycle": 5, "message": "BUSY preserves the valid INCR4 context but consumes no beat and does not itself guarantee arbitration ownership." },
+    { "cycle": 6, "message": "The third accepted INCR4 beat advances the count. The buggy INCR4 terminates here after only two accepted beats." },
+    { "cycle": 7, "message": "The fourth accepted beat legally completes the fixed-length INCR4 burst. An undefined-length INCR can instead terminate after BUSY at a permitted boundary, but still cannot cross 1 KB." }
   ],
   "violations": [
-    { "cycle": 5, "message": "BUGGY HTRANS uses SEQ after IDLE. No active burst remains, so this transfer must be NONSEQ." }
+    { "cycle": 3, "message": "SINGLE cannot continue with BUSY; the single accepted NONSEQ beat already completed that burst." },
+    { "cycle": 6, "message": "The fixed-length INCR4 burst terminates after only two accepted beats; wait and BUSY cycles never count as beats." }
   ]
 }

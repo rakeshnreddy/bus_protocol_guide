@@ -19,9 +19,9 @@ In a senior DV interview or on a stressful Friday afternoon debug session, you w
 
 Test your intuition with the following review waveform. Look at the visual first, then answer the interactive question below to see if your analysis was correct.
 
-## Scenario 1: The Aborted Sequence
+## Scenario 1: ERROR and the Documented Following-Transfer Policy
 
-Analyze the following waveform carefully. Pay special attention to the relationship between the `HRESP` signal and the master's subsequent `HTRANS` behavior.
+Identify the data-phase owner before judging `HRESP`. The shown manager cancels the following transfer during ERROR1, which is legal; another documented implementation can retain and continue legal following work. Cancellation is permitted, not mandatory.
 
 ![Review waveform showing two-cycle ERROR ownership and an optional cancellation of the following transfer](visual:wf-ahb-review-error)
 

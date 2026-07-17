@@ -1,7 +1,7 @@
 {
   "id": "wf-ahb-illegal-htrans",
   "title": "Illegal Address-Phase Change During a Wait State",
-  "description": "The master corrupts a pending SEQ address phase by changing HTRANS and HADDR while HREADY remains low.",
+  "description": "In this ordinary HRESP=OKAY wait, the master corrupts a pending valid SEQ address phase by changing its address/control context while HREADY remains LOW. This is not a blanket rule for IDLE, BUSY, or the first ERROR cycle, which have specification-defined exceptions.",
   "type": "waveform",
   "cycleCount": 5,
   "signals": [
@@ -11,15 +11,17 @@
     { "name": "HADDR", "type": "data", "color": "#7c3aed", "values": ["0xA0", "0xA4", "—", "—", "—"] },
     { "name": "HWRITE", "type": "control", "color": "#2563eb", "values": ["1", "1", "0", "0", "0"] },
     { "name": "HWDATA", "type": "data", "color": "#047857", "values": ["—", "D0", "D0", "D0", "—"] },
-    { "name": "HREADY", "type": "control", "color": "#dc2626", "values": ["1", "0", "0", "1", "1"] }
+    { "name": "HREADY", "type": "control", "color": "#dc2626", "values": ["1", "0", "0", "1", "1"] },
+    { "name": "HRESP", "type": "control", "color": "#0f766e", "values": ["OKAY", "OKAY", "OKAY", "OKAY", "OKAY"] },
+    { "name": "RULE CONTEXT", "type": "sideband", "color": "#0f766e", "values": ["accepted A1", "valid A2 pending", "valid A2 corrupted", "old data completes", "idle"] }
   ],
   "annotations": [
     { "cycle": 1, "message": "The master starts a write burst with a NONSEQ address phase at 0xA0." },
-    { "cycle": 2, "message": "Data for 0xA0 is stalled. The next SEQ address 0xA4 is visible but not yet accepted, so every address/control signal must remain stable." },
-    { "cycle": 3, "message": "Protocol violation: HREADY is still low, but the master changes HTRANS, HADDR, and HWRITE. The pending 0xA4 beat is lost." },
+    { "cycle": 2, "message": "Data for 0xA0 is stalled with HRESP=OKAY. The next valid SEQ address 0xA4 is visible but not yet accepted, so its complete address/control context must remain stable." },
+    { "cycle": 3, "message": "Protocol violation in this specific pending-valid context: HREADY remains LOW and HRESP remains OKAY, but the master changes HTRANS, HADDR, and HWRITE. The pending 0xA4 beat is lost. IDLE and BUSY have their own legal change rules, and ERROR1 permits cancellation." },
     { "cycle": 4, "message": "HREADY finally rises and completes the old data phase, but the illegal change has already corrupted the burst." }
   ],
   "violations": [
-    { "cycle": 3, "message": "Address/control changed while HREADY was low; the master must hold the pending address phase stable." }
+    { "cycle": 3, "message": "A pending valid SEQ address/control context changed during an ordinary OKAY wait. The IDLE, BUSY, and first-ERROR-cycle exceptions do not apply to this trace." }
   ]
 }

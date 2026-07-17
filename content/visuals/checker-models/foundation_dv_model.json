@@ -1,0 +1,82 @@
+{
+  "id": "model-foundation-dv",
+  "type": "checker-model",
+  "title": "DV Evidence Pipeline Model",
+  "description": "Execute legal constrained-random and intentional-negative traffic checkpoints, inspect retained ownership and capacity state, and trace each requirement through stimulus, checker, coverage, and reviewed evidence.",
+  "learnerQuestion": "How does a DV plan distinguish legal stimulus, intentional negative testing, and evidence-backed signoff?",
+  "protocolScope": "AHB5 + AXI4 methodology",
+  "configurations": [
+    { "id": "legal-regression", "label": "Legal regression", "description": "Only protocol-legal traffic within the declared interface capabilities." },
+    { "id": "negative-campaign", "label": "Negative campaign", "description": "Malformed stimulus is isolated, labeled, and checked for the configured containment behavior." }
+  ],
+  "scenarios": [
+    {
+      "id": "crossbar-resource-contention",
+      "label": "Topology and resource contention",
+      "mode": "policy",
+      "configurationId": "legal-regression",
+      "description": "Different targets can progress concurrently while same-target requests wait for an implementation-defined arbitration decision; overlapping decode is a separate invalid system state.",
+      "steps": [
+        { "id": "different-targets", "label": "Different targets", "event": "M0→S0 and M1→S1 accepted", "state": { "acceptedRequests": 2, "completedTransfers": 2, "targetConflict": false, "decodeOverlap": false, "arbitrationPolicy": "not exercised" }, "checks": [
+          { "id": "concurrent", "label": "Independent resources can progress", "field": "completedTransfers", "operator": "eq", "expected": 2, "requirementType": "system-policy", "evidence": "Concurrency follows the implemented topology and available resources, not the word bus alone." }
+        ] },
+        { "id": "same-target", "label": "Same target", "event": "M0→S0 and M1→S0 contend", "state": { "acceptedRequests": 1, "completedTransfers": 1, "blockedRequests": 1, "targetConflict": true, "decodeOverlap": false, "arbitrationPolicy": "configured round robin" }, "checks": [
+          { "id": "one-owner", "label": "One accepted owner for constrained resource", "field": "acceptedRequests", "operator": "eq", "expected": 1, "requirementType": "system-policy", "evidence": "The selected policy chooses one request; the protocol does not mandate round robin." }
+        ] },
+        { "id": "overlap", "label": "Overlapping decode", "event": "One accepted address selects S0 and S1", "state": { "selectedTargets": ["S0", "S1"], "decodeOverlap": true, "responseOwners": 2 }, "checks": [
+          { "id": "one-target", "label": "Decode must select one response owner", "field": "responseOwners", "operator": "eq", "expected": 1, "requirementType": "system-policy", "evidence": "The model flags overlapping configured address-map ownership instead of calling it arbitration." }
+        ] }
+      ]
+    },
+    {
+      "id": "sampling-evidence-classification",
+      "label": "Sampling, X, and metastability",
+      "mode": "negative",
+      "configurationId": "negative-campaign",
+      "description": "A simulation X near a sampled edge is evidence to investigate; it does not prove a physical analog metastability event.",
+      "steps": [
+        { "id": "sample-x", "label": "Observe X", "event": "RTL monitor samples X at the configured clock edge", "state": { "sampledValue": "X", "setupHoldEvidence": "unknown in RTL", "cdcReviewRequired": true, "metastabilityProven": false }, "checks": [
+          { "id": "not-proof", "label": "Do not equate X with metastability", "field": "metastabilityProven", "operator": "eq", "expected": false, "requirementType": "recommendation", "evidence": "Analog setup/hold and CDC analysis, not a four-state value alone, establish the physical risk." },
+          { "id": "review", "label": "Preserve CDC investigation", "field": "cdcReviewRequired", "operator": "eq", "expected": true, "requirementType": "product-contract", "evidence": "The verification plan retains the clock/reset-domain evidence and sampled edge." }
+        ] }
+      ]
+    },
+    {
+      "id": "legal-accepted-events",
+      "label": "Accepted-event reconstruction",
+      "mode": "legal",
+      "configurationId": "legal-regression",
+      "description": "The monitor creates state only at protocol acceptance points and the scoreboard stays within configured depth.",
+      "steps": [
+        { "id": "offer", "label": "Offer", "event": "VALID without READY / visible AHB address with HREADY LOW", "state": { "accepted": false, "owner": "pending source", "outstanding": 0, "maxOutstanding": 4, "stimulusMode": "legal" }, "checks": [
+          { "id": "no-allocate", "label": "No allocation before acceptance", "field": "outstanding", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "A visible or offered request is not yet an accepted transaction." },
+          { "id": "legal-mode", "label": "Legal stimulus lane", "field": "stimulusMode", "operator": "eq", "expected": "legal", "requirementType": "product-contract", "evidence": "The regression lane contains only generated traffic allowed by the selected protocol configuration." }
+        ] },
+        { "id": "accept", "label": "Accept", "event": "VALID && READY or HREADY && HTRANS[1]", "state": { "accepted": true, "owner": "captured request", "outstanding": 1, "maxOutstanding": 4, "stimulusMode": "legal" }, "checks": [
+          { "id": "allocate", "label": "Allocate on accepted event", "field": "accepted", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The phase-aware monitor captures owner, attributes, and expected response state on the accepting edge." },
+          { "id": "depth", "label": "Configured outstanding limit", "field": "outstanding", "operator": "lte", "expected": 4, "requirementType": "product-contract", "evidence": "The checker compares live depth with the declared implementation capability." }
+        ] },
+        { "id": "retire", "label": "Retire", "event": "Accepted completion response", "state": { "accepted": true, "owner": "retired", "outstanding": 0, "maxOutstanding": 4, "stimulusMode": "legal" }, "checks": [
+          { "id": "balanced", "label": "Allocation/completion balance", "field": "outstanding", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "Completed-phase sampling retires exactly one previously allocated transaction." }
+        ] }
+      ]
+    },
+    {
+      "id": "intentional-invalid",
+      "label": "Intentional invalid stimulus",
+      "mode": "negative",
+      "configurationId": "negative-campaign",
+      "description": "An illegal request is not counted as legal coverage and must carry an explicit expected-containment contract.",
+      "steps": [
+        { "id": "inject", "label": "Inject", "event": "Malformed length/alignment encoding", "state": { "stimulusMode": "negative", "legalCoverageHits": 0, "negativeTestId": "NEG-BURST-004", "containmentObserved": true }, "checks": [
+          { "id": "separate", "label": "Do not pollute legal bins", "field": "legalCoverageHits", "operator": "eq", "expected": 0, "requirementType": "product-contract", "evidence": "Intentional protocol violations use separate tests and result accounting." },
+          { "id": "contain", "label": "Configured containment observed", "field": "containmentObserved", "operator": "eq", "expected": true, "requirementType": "product-contract", "evidence": "The protocol might not define recovery; the product negative-test plan defines the expected containment evidence." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "REQ-MON-001 accepted-event ownership", "stimulus": "Offer, stall, accept, complete", "checker": "Phase-aware monitor + allocation balance", "coverage": "offered × accepted × completed", "evidence": "artifact://regression/accepted-events", "owner": "DV monitor owner", "configuration": "AHB5+AXI4 legal", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Protocol lead" },
+    { "requirement": "REQ-NEG-004 isolated malformed traffic", "stimulus": "NEG-BURST-004", "checker": "Containment policy checker", "coverage": "negative tests, excluded from legal closure", "evidence": "artifact://negative/NEG-BURST-004", "owner": "Negative-test owner", "configuration": "negative-campaign", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Signoff reviewer" }
+  ]
+}

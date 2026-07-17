@@ -35,4 +35,6 @@ The AXI specification states that early termination is not supported: no compone
 
 ![Four-beat AXI4 write with WLAST asserted one beat early and missing on the declared final beat](visual:wf-axi-debug-wlast)
 
-**Senior DV Tip:** Count only accepted data transfers. Assert that `WLAST` is HIGH if and only if `WVALID && WREADY` accepts beat `AWLEN + 1`; apply the equivalent check to `RLAST`, `RVALID && RREADY`, and `ARLEN`.
+**Senior DV Tip:** Count only accepted data transfers. Assert that `WLAST` is HIGH if and only if `WVALID && WREADY` accepts beat `AWLEN + 1`; apply the equivalent check to `RLAST`, `RVALID && RREADY`, and `ARLEN`. A stalled LAST remains asserted with the complete payload stable until acceptance.
+
+The checker must also use the right association model. AXI3 has `WID` and permits revision-specific write-data interleaving; AXI4 removes `WID`, so complete W bursts follow AW order even when some W transfers were accepted before their AW request. A malformed LAST never changes the declared beat count, and any recovery behavior is implementation-defined.

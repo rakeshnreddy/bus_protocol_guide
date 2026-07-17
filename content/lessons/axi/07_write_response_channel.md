@@ -21,17 +21,19 @@ This channel flows in the opposite direction: Slave -> Master. All signals begin
 
 ## Handshake Signals
 
-*   **`BVALID`** (Slave -> Master): The slave drives this HIGH when it has a valid response to send. *In AXI4, the slave must not assert `BVALID` until it has accepted both the AW request and the final W beat with `WLAST=1`.*
+*   **`BVALID`** (Slave -> Master): The slave drives this HIGH when it has a valid response to send. Its assertion must not depend on `BREADY`. *In AXI4, the slave must not assert `BVALID` until it has accepted both the AW request and the final W beat with `WLAST=1`.*
 *   **`BREADY`** (Master -> Slave): The master drives this HIGH when it is ready to accept the response.
 
 ## Response Signals
 
 *   **`BRESP`** (Write Response): A 2-bit status code indicating the outcome of the entire write transaction.
     *   `0b00` (OKAY): Normal access success.
-    *   `0b01` (EXOKAY): Exclusive access success (used for atomics).
+    *   `0b01` (EXOKAY): Successful exclusive access. An exclusive write that does not succeed returns `OKAY`, not `EXOKAY`, and does not update the addressed location.
     *   `0b10` (SLVERR): Slave error (e.g., trying to write to a read-only register).
     *   `0b11` (DECERR): Decode error (no slave exists at that address).
-*   **`BID`** (Response ID): The ID tag matching the original `AWID` from the Write Address channel. 
+*   **`BID`** (Response ID): The ID tag matching the original `AWID` from the Write Address channel.
+
+If `BVALID=1` while `BREADY=0`, the slave must hold `BVALID` and the entire B payload—`BID`, `BRESP`, and `BUSER` when present—stable. Responses with the same ID are returned in request order; different IDs have no relative response-order guarantee.
 
 ### Why is BID necessary?
 
@@ -41,4 +43,4 @@ When the master receives a response on the B channel, it uses the `BID` tag to c
 
 ![Two AXI4 writes sending data in address order but returning different-ID responses out of order](visual:wf-axi-ids-correlation)
 
-**Senior DV Tip:** A very common RTL bug is a master failing to assert `BREADY`. If the master fires off writes and forgets to accept the responses, the B channel will backpressure the slave, eventually bringing the entire system to a halt. Always verify that your masters can consume `BRESP`s!
+**Senior DV Tip:** A master that never accepts B responses can exhaust the finite response or outstanding capacity on affected paths. The resulting scope—one ID, one endpoint, one route, or a wider subsystem—depends on the implementation. Verify the configured service contract instead of claiming every such stall halts the entire system.

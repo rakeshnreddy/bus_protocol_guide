@@ -31,11 +31,11 @@ Trace the highlighted denied path, then inspect the Secure and shared-target rou
 
 ![AHB5 security topology showing HNONSEC routing, allowed targets, and a denied transfer returning ERROR](visual:topo-ahb-security-filter)
 
-## Slave Enforcement
+## Configured Enforcement
 
-The system must enforce security policy at an appropriate point, which can be a slave, an interconnect protection controller, or another implementation-defined component. A slave might have its memory region divided into Secure and Non-Secure halves.
+The system must enforce security policy at an appropriate configured point: a source firewall, interconnect protection controller, memory controller, or target. AHB5 carries the attribute but does not universally require every target to implement the policy check or mandate one failure topology.
 
-If a master attempts a Non-Secure write (`HNONSEC = 1`) to a Secure address region, the slave **must** reject the transfer by returning an `ERROR` response (`HRESP = 1`).
+For a denied Non-secure **read**, the enforcement path must not return Secure data. For a denied Non-secure **write**, it must not update Secure state. The configured system returns its defined failure response, commonly an AHB `ERROR`, and verification checks both the response and absence of data leakage or side effects.
 
 ## System-Level Isolation
 

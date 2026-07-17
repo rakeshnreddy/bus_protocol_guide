@@ -41,7 +41,7 @@ describe('AXI Batch 2 protocol-accuracy guards', () => {
       .toEqual([4, 7, 8]);
     expect(values('wf-axi-read-channels', 'RDATA').slice(4, 7)).toEqual(['D1', 'D1', 'D1']);
     expect(values('wf-axi-read-channels', 'RRESP')[7]).toBe('SLVERR');
-    expect(lesson(14).body).toMatch(/receiving implementation's recovery behavior is not defined/i);
+    expect(lesson(14).body).toMatch(/recovery is implementation-defined/i);
   });
 
   // Arm IHI 0022H A3.4 defines AxLEN+1, 2^AxSIZE bytes, FIXED/INCR/WRAP,
@@ -61,8 +61,8 @@ describe('AXI Batch 2 protocol-accuracy guards', () => {
     expect(names('wrap4')).toEqual([
       'B0 · 0x100C', 'B1 · 0x1000', 'B2 · 0x1004', 'B3 · 0x1008',
     ]);
-    expect(lesson(15).body).toMatch(/FIXED and WRAP bursts remain limited to 16/i);
-    expect(lesson(15).body).toMatch(/increment is `2\^AxSIZE` bytes/i);
+    expect(lesson(15).body).toMatch(/FIXED is 1–16.*WRAP is exactly 2, 4, 8, or 16/i);
+    expect(lesson(15).body).toMatch(/`B = 2\^AxSIZE`/i);
   });
 
   // Arm IHI 0022H A3.2/A3.4 require LAST on the final transfer and state
@@ -112,7 +112,7 @@ describe('AXI Batch 2 protocol-accuracy guards', () => {
     expect(values('wf-axi-out-of-order', 'ARID').filter(value => value !== '-')).toEqual(['0', '1']);
     expect(values('wf-axi-out-of-order', 'R_TXN').filter(value => value !== '-')).toEqual(['B', 'B', 'A', 'A']);
     expect(lesson(19).body).toMatch(/Matching numeric read and write IDs alone does not create a cross-channel ordering guarantee/i);
-    expect(lesson(20).body).toMatch(/slave.*permitted to complete the responses in a different order/i);
+    expect(lesson(20).body).toMatch(/different IDs have no relative response-order guarantee/i);
   });
 
   // AXI source VALID independence is a safety requirement. READY can wait for

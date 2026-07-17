@@ -2,7 +2,7 @@
   "id": "ex-ahb-bounded-liveness",
   "type": "reflection",
   "difficulty": "intermediate",
-  "prompt": "Toggle HREADY to stay low past cycle 4 after a NONSEQ transfer. What happens to the property evaluation, and why does the bounded window matter for hardware in practice?",
-  "expectedTakeaway": "The configured bounded-progress property evaluates to FAIL after its allowed window. That is a product or integration liveness failure, not by itself a universal AHB safety violation: AHB does not define a single maximum wait count for every implementation. Keeping protocol-stability assertions separate from the configured timeout makes the debug result precise.",
+  "prompt": "The NONSEQ address is accepted in cycle 2. Toggle HREADY LOW in following data-phase cycles 3-6. Why does cycle-2 HREADY not satisfy the property, and how does asserting HRESETn LOW inside the window change the result?",
+  "expectedTakeaway": "The configured contract fails only when the accepted cycle-2 address sees no completion in following cycles 3-6. Cycle-2 HREADY completed the preceding data owner while accepting this address, so it cannot satisfy the new transfer. HRESETn LOW cancels the obligation through disable iff. A timeout failure is a configured service-contract result, not by itself a universal AHB protocol-safety violation.",
   "relatedLessons": ["32_ahb_formal_properties"]
 }

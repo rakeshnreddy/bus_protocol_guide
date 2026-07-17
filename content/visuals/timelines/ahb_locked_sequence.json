@@ -2,8 +2,8 @@
   "id": "tl-ahb-locked-sequence",
   "type": "timeline",
   "title": "Locked Read-Modify-Write Ownership",
-  "description": "Original multi-master AHB uses a requesting master's HLOCKx and the arbiter's bus-level HMASTLOCK indication to keep other masters out of an indivisible sequence.",
-  "labels": ["Original AMBA 2 AHB", "Bus ownership", "Atomic sequence", "Blocked requester"],
+  "description": "Original multi-master AHB uses a requesting master's HLOCKx and the arbiter's bus-level HMASTLOCK indication to retain active ownership on the applicable arbitration/resource path through an indivisible sequence; future grant computation is not the same as ownership transfer.",
+  "labels": ["Original AMBA 2 AHB", "Active ownership", "Applicable resource path", "Future grant may be computed"],
   "transactions": [
     {
       "id": "cpu-lock-request",
@@ -17,7 +17,7 @@
       "id": "bus-lock",
       "label": "Bus HMASTLOCK",
       "phases": [
-        { "id": "bus-locked", "name": "Locked owner", "startCycle": 2, "endCycle": 4, "description": "The arbiter identifies the active transfer sequence as locked. Other masters cannot be granted until it completes." },
+        { "id": "bus-locked", "name": "Locked active owner", "startCycle": 2, "endCycle": 4, "description": "The arbiter identifies the active transfer sequence as locked and must not transfer active ownership on this arbitration path. It can still compute or signal a future grant if that indication cannot take effect early." },
         { "id": "bus-release", "name": "Release boundary", "startCycle": 4, "endCycle": 5, "description": "The final locked transfer completes; an IDLE after a locked sequence is recommended so arbitration can change cleanly." }
       ]
     },
@@ -25,15 +25,15 @@
       "id": "cpu-operations",
       "label": "CPU transfer",
       "phases": [
-        { "id": "locked-read", "name": "Read semaphore", "startCycle": 2, "endCycle": 3, "description": "CPU reads the semaphore while retaining locked ownership." },
-        { "id": "locked-write", "name": "Write semaphore", "startCycle": 3, "endCycle": 4, "description": "CPU writes the updated semaphore before another master can access the protected target." }
+        { "id": "locked-read", "name": "Read semaphore", "startCycle": 2, "endCycle": 3, "description": "CPU reads the semaphore while retaining locked ownership on the shown path." },
+        { "id": "locked-write", "name": "Write semaphore", "startCycle": 3, "endCycle": 4, "description": "CPU writes the updated semaphore before another master can use this protected arbitration/resource path. Independent aliases or paths need their own system-level protection." }
       ]
     },
     {
       "id": "dma-operations",
       "label": "DMA request",
       "phases": [
-        { "id": "dma-blocked", "name": "Request blocked", "startCycle": 2, "endCycle": 5, "description": "DMA can request throughout the sequence, but the arbiter must not transfer ownership while HMASTLOCK identifies the locked sequence." },
+        { "id": "dma-blocked", "name": "Request blocked", "startCycle": 2, "endCycle": 5, "description": "DMA can request and the arbiter may compute its future grant, but the arbiter must not transfer ownership while HMASTLOCK identifies the locked sequence on this path. 'Blocked' here means blocked from becoming active owner, not prohibited from requesting or being selected for a future grant." },
         { "id": "dma-granted", "name": "DMA granted", "startCycle": 5, "endCycle": 6, "description": "DMA can take ownership only after the locked sequence and its legal release boundary." }
       ]
     }

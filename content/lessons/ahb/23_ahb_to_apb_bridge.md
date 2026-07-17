@@ -21,20 +21,22 @@ The solution is the **[glossary:APB]** (Advanced Peripheral Bus) and a Bridge.
 
 ## The AHB-to-APB Bridge
 
-To the AHB system, the bridge is just a standard AHB Slave. It has `HSEL`, `HREADY`, `HADDR`, and `HWDATA` inputs.
+To the AHB system, the bridge is an AHB subordinate. Its upstream inputs include `HSEL`, `HADDR`, `HTRANS`, `HWRITE`, `HSIZE`, `HBURST`, protection and enabled attributes, `HWDATA`, and global `HREADY`. Its upstream outputs are `HREADYOUT`, `HRESP`, and `HRDATA`.
 To the APB system, the bridge is the *only* Master.
 
 ![AHB bridge topology showing its upstream slave role, downstream master role, and response return path](visual:topo-ahb-apb-bridge)
 
 ## Bridging the Timing Domain
 
-APB is an unpipelined, 2-cycle protocol. It does not support bursts. 
+The existing downstream peripheral transfer has a minimum Setup phase followed by an Access phase. The Access phase can be extended while `PREADY=0`; it is therefore not universally “a two-cycle protocol.” The bridge translates each accepted AHB beat into the required downstream operation.
 
 For a typical simple, unbuffered bridge, when an AHB master initiates a transfer targeting an APB peripheral:
 1. **AHB Address Phase:** The master drives `HTRANS=NONSEQ` targeting the APB UART address. The AHB decoder selects the Bridge.
-2. **AHB Data Phase / APB Setup:** The Bridge samples the address. Because APB takes two cycles, the Bridge immediately drives `HREADY=0` to the AHB master, stalling the AHB pipeline. Simultaneously, the Bridge initiates the APB "Setup Phase" targeting the UART.
+2. **AHB Data Phase / downstream Setup:** For an unbuffered bridge, the Bridge drives `HREADYOUT=0`, which produces global `HREADY=0` and stalls the AHB pipeline while the Setup phase is driven.
 3. **APB Access:** In the next cycle, the Bridge moves the APB bus to the "Access Phase".
-4. **AHB Completion:** Once the APB transfer finishes, the Bridge finally drives `HREADY=1` on the AHB side, completing the AHB Data Phase.
+4. **AHB Completion:** Once the downstream Access completes, the Bridge drives `HREADYOUT=1` with `HRESP`; the interconnect presents global `HREADY=1` to complete the AHB data phase.
+
+For an AHB write, the bridge retains the accepted address/control and its following `HWDATA`, then drives a downstream write. For an AHB read, it retains the address/control, performs a downstream read, and returns the read payload on `HRDATA`. The two translations have different AHB data ownership and must not be collapsed into one directionless sequence.
 
 ## Why this matters for Verification
 
@@ -43,5 +45,7 @@ If an AHB master issues an `INCR4` burst to a simple APB Bridge:
 - The master issues Beat 1. The Bridge stalls it (`HREADY=0`) while it translates it to a 2-cycle APB transfer.
 - The master issues Beat 2. The Bridge stalls it again.
 - Each accepted AHB beat must ultimately become an individual downstream peripheral transfer. A more capable bridge can buffer requests, but it must preserve address/data ownership and return responses to the correct AHB beat.
+
+An unbuffered bridge cannot accept another AHB beat while its `HREADYOUT=0` is holding global `HREADY` LOW. Any bridge that accepts additional beats needs explicit buffering and conservation checks for every accepted request, payload, and completion.
 
 Verification engineers must write tests to ensure the bridge correctly handles back-to-back AHB bursts without dropping data or locking up the bus.

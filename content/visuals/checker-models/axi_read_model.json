@@ -1,0 +1,100 @@
+{
+  "id": "model-axi-read-checker",
+  "type": "checker-model",
+  "title": "AXI Per-ID Read and Reorder-Safe Scoreboard",
+  "description": "Execute AR allocation, exact R beat/RLAST retirement, different-ID response reordering, same-ID FIFO checks, ID restoration, data comparison, and configured depth guards.",
+  "learnerQuestion": "How does a scoreboard accept legal completion reordering without losing per-ID order or end-to-end data attribution?",
+  "protocolScope": "AXI3 / AXI4 read and response order",
+  "configurations": [
+    { "id": "read-depth4", "label": "Read depth 4", "description": "Four total reads, two per ID, independently counted from write outstanding state." },
+    { "id": "remapped-fabric", "label": "Fabric ID remap", "description": "Source-port context is retained internally and original RID restored at the master interface." }
+  ],
+  "scenarios": [
+    {
+      "id": "read-gaps-and-backpressure",
+      "label": "Read gaps and R backpressure",
+      "mode": "legal",
+      "configurationId": "read-depth4",
+      "description": "AR acceptance allocates one queue entry; the subordinate may insert R gaps, but once RVALID is asserted the complete payload remains stable until each beat is accepted.",
+      "steps": [
+        { "id": "ar", "label": "Accept AR", "event": "ARID=6, ARLEN=1 handshake", "state": { "perId6Queue": ["R6 len2"], "readOutstanding": 1, "acceptedRBeats": 0, "rvalid": false }, "checks": [
+          { "id": "allocate", "label": "AR allocates per-ID state", "field": "readOutstanding", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "The request remains outstanding through the accepted final R beat." }
+        ] },
+        { "id": "gap", "label": "Insert R gap", "event": "RVALID=0 for two cycles", "state": { "rGapCycles": 2, "acceptedRBeats": 0, "readOutstanding": 1, "progressBound": "not a base AXI rule" }, "checks": [
+          { "id": "no-phantom", "label": "Gap does not consume a beat", "field": "acceptedRBeats", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "A product liveness contract can bound the gap, but base AXI does not invent a transfer." }
+        ] },
+        { "id": "stall", "label": "Backpressure R", "event": "RVALID=1, RREADY=0 on beat 1", "state": { "acceptedRBeats": 0, "heldPayload": ["RID=6", "RDATA=D0", "RRESP=OKAY", "RLAST=0", "RUSER=U0"], "readOutstanding": 1 }, "checks": [
+          { "id": "payload", "label": "Complete R payload retained", "field": "heldPayload", "operator": "includes", "expected": "RLAST=0", "requirementType": "protocol", "evidence": "The subordinate source retains all R payload signals until acceptance." }
+        ] },
+        { "id": "last", "label": "Accept final R", "event": "Beat 1 and beat 2 accepted; RLAST=1 on beat 2", "state": { "acceptedRBeats": 2, "lastOnBeat": 2, "perId6Queue": [], "readOutstanding": 0 }, "checks": [
+          { "id": "last-count", "label": "RLAST on exact accepted beat", "field": "lastOnBeat", "operator": "eq", "expected": 2, "requirementType": "protocol", "evidence": "Gap and stalled cycles never advance the beat count." },
+          { "id": "retire", "label": "Accepted RLAST retires request", "field": "readOutstanding", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "The per-ID head retires only on RVALID && RREADY && RLAST." }
+        ] }
+      ]
+    },
+    {
+      "id": "early-rlast",
+      "label": "Early RLAST failure",
+      "mode": "negative",
+      "configurationId": "read-depth4",
+      "description": "RLAST on accepted beat 2 of a four-beat request is the first failing accepted edge; recovery after the violation is implementation-defined.",
+      "steps": [
+        { "id": "early", "label": "Accept early RLAST", "event": "RID3 beat 2 handshakes with RLAST=1, expected beat 4", "state": { "acceptedRBeats": 2, "expectedRBeats": 4, "lastOnBeat": 2, "lastCorrect": false, "readOutstanding": 1, "recoveryPolicy": "implementation-defined" }, "checks": [
+          { "id": "last", "label": "RLAST must match accepted beat count", "field": "lastCorrect", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The checker reports this accepted edge and keeps the declared request length as the expectation." }
+        ] }
+      ]
+    },
+    {
+      "id": "different-id-reorder",
+      "label": "Legal different-ID completion",
+      "mode": "legal",
+      "configurationId": "read-depth4",
+      "description": "Read B can complete before A because their IDs differ; data comparison selects the correct expected per-ID head.",
+      "steps": [
+        { "id": "allocate", "label": "Accept AR A/B", "event": "AR A(ID0,len2), then AR B(ID1,len1)", "state": { "perId0Queue": ["A:2 beats"], "perId1Queue": ["B:1 beat"], "readOutstanding": 2, "writeOutstanding": 1, "maxReads": 4, "maxPerId": 2 }, "checks": [
+          { "id": "total", "label": "Read depth within limit", "field": "readOutstanding", "operator": "lte", "expected": 4, "requirementType": "product-contract", "evidence": "Read and write counters remain separate." },
+          { "id": "id-depth", "label": "Per-ID FIFO allocated", "field": "perId0Queue", "operator": "length-eq", "expected": 1, "requirementType": "protocol", "evidence": "Same numeric ID can be reused by queueing additional ordered entries." }
+        ] },
+        { "id": "retire-b", "label": "Retire B first", "event": "RID1 data=B0 with accepted RLAST", "state": { "perId0Queue": ["A:2 beats"], "perId1Queue": [], "readOutstanding": 1, "observedData": "B0", "expectedData": "B0", "acceptedRBeatsId1": 1, "expectedRBeatsId1": 1, "rlastAccepted": true }, "checks": [
+          { "id": "data", "label": "Data uses RID-selected expectation", "field": "observedData", "operator": "eq", "expected": "B0", "requirementType": "protocol", "evidence": "End-to-end comparison is independent of global completion order." },
+          { "id": "last", "label": "Accepted RLAST retires B", "field": "readOutstanding", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "Only B retired; A remains in the ID0 queue." }
+        ] },
+        { "id": "retire-a", "label": "Retire A", "event": "Two RID0 beats, RLAST on accepted beat 2", "state": { "perId0Queue": [], "perId1Queue": [], "readOutstanding": 0, "acceptedRBeatsId0": 2, "expectedRBeatsId0": 2, "lastOnBeat": 2, "responseUnderflow": false }, "checks": [
+          { "id": "count", "label": "Exact accepted beat count", "field": "lastOnBeat", "operator": "eq", "expected": 2, "requirementType": "protocol", "evidence": "R stalls do not advance the per-transaction counter." },
+          { "id": "balanced", "label": "All reads retired", "field": "readOutstanding", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "Each accepted AR has one accepted final R retirement." }
+        ] }
+      ]
+    },
+    {
+      "id": "same-id-corruption",
+      "label": "Corrupt same-ID reorder",
+      "mode": "negative",
+      "configurationId": "read-depth4",
+      "description": "Two ID0 requests A then C cannot return C first because RID alone cannot distinguish them.",
+      "steps": [
+        { "id": "wrong-head", "label": "Return C before A", "event": "RID0 data=C0 while per-ID head is A", "state": { "perId0Queue": ["A", "C"], "expectedHead": "A", "observedTransaction": "C", "sameIdOrderPreserved": false, "responseUnderflow": false }, "checks": [
+          { "id": "head", "label": "Per-ID head must respond first", "field": "sameIdOrderPreserved", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The scoreboard flags the first accepted corrupt RID0 beat." }
+        ] }
+      ]
+    },
+    {
+      "id": "id-restore",
+      "label": "Source-scoped ID restoration",
+      "mode": "legal",
+      "configurationId": "remapped-fabric",
+      "description": "Two masters reuse local ID5; internal route IDs differ and responses restore each original local RID.",
+      "steps": [
+        { "id": "map", "label": "Map requests", "event": "M0/ID5→route 0x15, M1/ID5→route 0x25", "state": { "internalIds": ["0x15", "0x25"], "sourceOwners": ["M0", "M1"], "collisions": 0, "readOutstanding": 2 }, "checks": [
+          { "id": "distinct", "label": "Internal ownership stays distinct", "field": "collisions", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "The fabric can append, remap, or retain metadata; it must preserve source attribution." }
+        ] },
+        { "id": "restore", "label": "Restore responses", "event": "0x25 returns to M1 as RID5; 0x15 returns to M0 as RID5", "state": { "restoredRoutes": ["M1/RID5", "M0/RID5"], "misroutes": 0, "readOutstanding": 0 }, "checks": [
+          { "id": "route", "label": "No response misroute", "field": "misroutes", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "Different completion order does not change source ownership or local ID restoration." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AXI-R per-ID order and exact LAST", "stimulus": "same/different IDs, R gaps and R backpressure", "checker": "per-ID AR FIFO + beat counter", "coverage": "ID relation × completion order × RLAST position × depth", "evidence": "artifact://axi/read/per-id", "owner": "AXI read DV", "configuration": "read-depth4", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "AXI protocol lead" },
+    { "requirement": "AXI-R ID remap/restoration", "stimulus": "two sources reuse local ID5", "checker": "route-owner and restored RID", "coverage": "source × local ID × target × completion order", "evidence": "artifact://axi/read/remap", "owner": "Fabric DV", "configuration": "remapped-fabric", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Interconnect architect" }
+  ]
+}

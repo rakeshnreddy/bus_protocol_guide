@@ -25,9 +25,11 @@ The debugger below answers: **which endpoint owns the rule, and what state must 
 *   **ILLEGAL:** A master waits for `AWREADY` to go HIGH before it asserts `AWVALID`.
 *   **ILLEGAL:** A master waits for `WREADY` to go HIGH before it asserts `WVALID`.
 *   **LEGAL:** A slave waits for `AWVALID` to go HIGH before it asserts `AWREADY`.
+*   **ILLEGAL implementation structure:** A master or slave has a combinational path from interface input signals to interface outputs.
 
 ## 2. Channel Independence
 *   **LEGAL:** A master asserts `WVALID` and sends data beats before it has even asserted `AWVALID` for the write address.
+*   **LEGAL:** A slave keeps `WREADY` LOW until it has address context or buffer capacity; early W acceptance is permitted, not required.
 *   **ILLEGAL:** In AXI4, a slave asserts `BVALID` before it has accepted both the write address and the final write-data transfer with `WLAST` HIGH.
 *   **ILLEGAL:** A slave asserts `RVALID` (Read Data) before it has accepted the corresponding read address.
 
@@ -38,9 +40,15 @@ The debugger below answers: **which endpoint owns the rule, and what state must 
 
 ## 4. Termination
 *   **ILLEGAL:** A master requests `AWLEN = 3` (4 beats), but asserts `WLAST` on the second data beat to abort the transfer early.
-*   **LEGAL:** A master requests `AWLEN = 3` (4 beats), but drives all the `WSTRB` bits LOW on the final two beats because it didn't actually have data for them. (This is the correct way to "pad" a burst you can't fill).
+*   **LEGAL when the lane mask and target contract allow it:** A master requests `AWLEN = 3` (4 beats), completes all four transfers, and drives all `WSTRB` bits LOW on unwanted remaining beats. The transfers still occur and LAST/count obligations remain; the zero strobes merely suppress byte updates.
 
 ## 5. Ordering
 *   **ILLEGAL:** A master issues Write A (ID:0) and Write B (ID:0). The slave returns the `BRESP` for B before returning the `BRESP` for A.
 *   **LEGAL:** A master issues Write A (ID:0) and Write B (ID:1). The slave returns the `BRESP` for B before returning the `BRESP` for A.
 *   **LEGAL at the channel level, subject to system ordering:** A master issues a Write to Address X, then a Read to Address X, and the Read data can appear before the Write response. Independent read and write channels do not create a universal response-order guarantee; the requester and system ordering mechanism must establish any required read-after-write dependency.
+
+## 6. Revision-aware write association
+
+*   **AXI3:** `WID` associates write data and the revision permits write-data interleaving under its rules.
+*   **AXI4:** `WID` is removed; W bursts follow write-address order and cannot interleave.
+*   **Both:** a source can offer W before AW, while the destination chooses whether to accept it. In AXI4, `BVALID` still waits for accepted AW and the accepted final W transfer; in AXI3 the response dependency requires the final accepted W transfer but does not add the AXI4 AW-handshake prerequisite.

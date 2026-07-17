@@ -43,6 +43,7 @@ export const supportedVisualTypes = new Set<VisualType>([
   'coverage-map',
   'formal-property',
   'spec-rule-explorer',
+  'checker-model',
 ]);
 
 function isVisualFile(value: unknown): value is VisualFile {
@@ -281,6 +282,87 @@ function normalizeVisual(rawData: VisualFile, type: VisualType): VisualData {
   return { ...rawData, type } as VisualData;
 }
 
+function checkerModelValidationError(rawData: VisualFile): string | undefined {
+  const requiredText = ['title', 'description', 'learnerQuestion', 'protocolScope'];
+  const missingText = requiredText.find(field => typeof rawData[field] !== 'string' || !(rawData[field] as string).trim());
+  if (missingText) return `checker-model requires non-empty '${missingText}'.`;
+  if (!Array.isArray(rawData.scenarios) || rawData.scenarios.length === 0) return 'checker-model requires at least one scenario.';
+  if (!Array.isArray(rawData.traceability) || rawData.traceability.length === 0) return 'checker-model requires traceability evidence.';
+
+  const configurations = Array.isArray(rawData.configurations) ? rawData.configurations : [];
+  const configurationIds = configurations.flatMap(item => {
+    const config = asRecord(item);
+    return config && typeof config.id === 'string' && typeof config.label === 'string' && typeof config.description === 'string'
+      ? [config.id]
+      : [];
+  });
+  if (configurationIds.length !== configurations.length || new Set(configurationIds).size !== configurationIds.length) {
+    return 'checker-model configurations require unique IDs, labels, and descriptions.';
+  }
+
+  const scenarioIds = new Set<string>();
+  for (const rawScenario of rawData.scenarios) {
+    const scenario = asRecord(rawScenario);
+    if (!scenario || typeof scenario.id !== 'string' || !scenario.id.trim() || scenarioIds.has(scenario.id)) {
+      return 'checker-model scenarios require unique non-empty IDs.';
+    }
+    scenarioIds.add(scenario.id);
+    if (typeof scenario.label !== 'string' || typeof scenario.description !== 'string' ||
+        !['legal', 'negative', 'policy'].includes(String(scenario.mode))) {
+      return `checker-model scenario '${scenario.id}' has invalid metadata.`;
+    }
+    if (scenario.configurationId !== undefined &&
+        (typeof scenario.configurationId !== 'string' || !configurationIds.includes(scenario.configurationId))) {
+      return `checker-model scenario '${scenario.id}' references an unknown configuration.`;
+    }
+    if (!Array.isArray(scenario.steps) || scenario.steps.length === 0) return `checker-model scenario '${scenario.id}' has no steps.`;
+    const stepIds = new Set<string>();
+    for (const rawStep of scenario.steps) {
+      const step = asRecord(rawStep);
+      if (!step || typeof step.id !== 'string' || !step.id.trim() || stepIds.has(step.id)) {
+        return `checker-model scenario '${scenario.id}' requires unique step IDs.`;
+      }
+      stepIds.add(step.id);
+      if (typeof step.label !== 'string' || typeof step.event !== 'string' || !asRecord(step.state) ||
+          !Array.isArray(step.checks) || step.checks.length === 0) {
+        return `checker-model step '${step.id}' has invalid event, state, or checks.`;
+      }
+      const checkIds = new Set<string>();
+      for (const rawCheck of step.checks) {
+        const check = asRecord(rawCheck);
+        if (!check || typeof check.id !== 'string' || !check.id.trim() || checkIds.has(check.id) ||
+            typeof check.label !== 'string' || typeof check.field !== 'string' || typeof check.evidence !== 'string' ||
+            !['eq', 'neq', 'lte', 'gte', 'includes', 'not-includes', 'length-eq'].includes(String(check.operator)) ||
+            !['protocol', 'recommendation', 'product-contract', 'system-policy'].includes(String(check.requirementType))) {
+          return `checker-model step '${step.id}' contains an invalid or duplicate check.`;
+        }
+        checkIds.add(check.id);
+      }
+    }
+  }
+
+  for (const rawRow of rawData.traceability) {
+    const row = asRecord(rawRow);
+    const fields = ['requirement', 'stimulus', 'checker', 'coverage', 'evidence', 'owner', 'configuration', 'lastRegression', 'reviewer'];
+    if (!row || fields.some(field => typeof row[field] !== 'string' || !(row[field] as string).trim()) ||
+        !['Pass', 'Open', 'Waived'].includes(String(row?.status))) {
+      return 'checker-model traceability rows require complete owned and reviewed evidence.';
+    }
+  }
+
+  if (rawData.calculator !== undefined) {
+    const calculator = asRecord(rawData.calculator);
+    const initial = asRecord(calculator?.initial);
+    if (!calculator || calculator.kind !== 'burst-address' || !['axi', 'ahb'].includes(String(calculator.protocol)) ||
+        ![1024, 4096].includes(Number(calculator.boundaryBytes)) || !initial ||
+        typeof initial.startAddress !== 'string' || !['FIXED', 'INCR', 'WRAP'].includes(String(initial.burst)) ||
+        !['burstOptions', 'bytesPerBeatOptions', 'beatOptions', 'busBytesOptions'].every(field => Array.isArray(calculator[field]) && (calculator[field] as unknown[]).length > 0)) {
+      return 'checker-model burst calculator configuration is malformed.';
+    }
+  }
+  return undefined;
+}
+
 export function buildVisualRegistry(files: Record<string, unknown>): VisualRegistryBuildResult {
   const registry = new Map<string, VisualData>();
   const sourcePaths = new Map<string, string>();
@@ -314,6 +396,19 @@ export function buildVisualRegistry(files: Record<string, unknown>): VisualRegis
         message: `Visual '${rawData.id}' at ${path} has an unsupported or unknown visual type.`,
       });
       continue;
+    }
+
+    if (type === 'checker-model') {
+      const validationError = checkerModelValidationError(rawData);
+      if (validationError) {
+        issues.push({
+          kind: 'malformed-file',
+          path,
+          id: rawData.id,
+          message: `Visual '${rawData.id}' at ${path} is malformed: ${validationError}`,
+        });
+        continue;
+      }
     }
 
     if (registry.has(rawData.id)) {
@@ -370,6 +465,7 @@ export function getVisualRegistryReport(): VisualRegistryReport {
     'coverage-map': 0,
     'formal-property': 0,
     'spec-rule-explorer': 0,
+    'checker-model': 0,
   };
 
   for (const visual of visualRegistry.values()) countByType[visual.type] += 1;

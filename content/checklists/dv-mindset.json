@@ -2,42 +2,43 @@
   {
     "id": "dv-mindset",
     "title": "Senior DV Protocol Checklist",
-    "description": "A mindset checklist for finding corner-case bugs in protocol implementations.",
+    "protocol": "foundations",
+    "description": "An evidence-oriented checklist for finding corner cases and signing off the selected protocol revision and interface configuration.",
     "items": [
       {
         "id": "dv-1",
-        "text": "Did I test 0-delay handshakes (READY high before VALID)?",
-        "completed": false
+        "description": "Stimulus: legal traffic is constrained by revision, interface width, address map, optional properties, and configured resource limits; negative protocol injection is a separate mode with expected checker outcomes.",
+        "done": false
       },
       {
         "id": "dv-2",
-        "text": "Did I test maximum backpressure (slave holds READY low for 1000+ cycles)?",
-        "completed": false
+        "description": "Checking: monitors reconstruct only accepted transfers; independent predictors and scoreboards retain phase, channel, ID, route, beat, data, and response ownership.",
+        "done": false
       },
       {
         "id": "dv-3",
-        "text": "Did I test single-cycle backpressure (READY toggling every other cycle)?",
-        "completed": false
+        "description": "Stability and legality: zero-delay, consecutive, single-cycle, bursty, and long stalls pass protocol safety properties, including payload stability and known controls.",
+        "done": false
       },
       {
         "id": "dv-4",
-        "text": "Does the master legally hold all DATA and control signals stable while stalled?",
-        "completed": false
+        "description": "Coverage: legal, illegal, and ignore bins are generated from configuration; every planned legal hit is correlated with passing checker and scoreboard evidence.",
+        "done": false
       },
       {
         "id": "dv-5",
-        "text": "Did I test back-to-back bursts with no idle cycles between them?",
-        "completed": false
+        "description": "Formal: reset and environment assumptions, covers, proof bounds, abstractions, vacuity results, and over-constraint review are documented.",
+        "done": false
       },
       {
         "id": "dv-6",
-        "text": "Does the system maintain forward progress (no livelock/deadlock) under heavy contention?",
-        "completed": false
+        "description": "Progress: fairness, timeouts, and bounded service are checked only against documented product contracts and assumptions, separately from universal protocol safety.",
+        "done": false
       },
       {
         "id": "dv-7",
-        "text": "Are error responses (like SLVERR) handled gracefully by the master?",
-        "completed": false
+        "description": "Signoff: each requirement links to stimulus, checker/assertion, coverage, regression artifact, owner, configuration, open-bug status, waiver rationale, and reviewer.",
+        "done": false
       }
     ]
   }

@@ -1,33 +1,34 @@
 {
   "id": "wf-signal-sampling",
   "type": "waveform",
-  "title": "Signal Sampling and Valid Windows",
+  "title": "AMBA Rising-Edge Sampling and Valid Windows",
+  "description": "A cycle-level teaching view of an AHB HCLK or AXI ACLK input becoming stable before, and remaining stable after, its protocol sampling edge; setup and hold intervals are implementation constraints and are not drawn to scale.",
   "data": {
     "totalCycles": 5,
     "signals": [
       {
-        "name": "CLK",
+        "name": "HCLK / ACLK",
         "type": "clock",
         "values": ["HIGH", "HIGH", "HIGH", "HIGH", "HIGH"]
       },
       {
         "name": "SIGNAL_A",
         "type": "control",
-        "values": ["LOW", "LOW", "HIGH", "LOW", "LOW"]
+        "values": ["LOW", "LOW", "LOW", "HIGH", "HIGH"]
       }
     ],
     "annotations": [
       {
         "cycle": 1,
-        "message": "Signal is stable at LOW during the rising edge."
+        "message": "The input is LOW at this rising edge. The protocol samples the value present at the edge; implementation setup and hold checks apply around it."
       },
       {
         "cycle": 2,
-        "message": "Signal transitions to HIGH. It must be stable for a 'setup' time before the clock edge, and a 'hold' time after."
+        "message": "SIGNAL_A becomes HIGH early enough to satisfy the receiving register's setup requirement before the next rising edge."
       },
       {
         "cycle": 3,
-        "message": "The active edge samples SIGNAL_A as HIGH."
+        "message": "This rising edge samples SIGNAL_A as HIGH. It must remain stable for the implementation's hold interval after the edge; an RTL X is not a literal analog metastable voltage."
       }
     ]
   }

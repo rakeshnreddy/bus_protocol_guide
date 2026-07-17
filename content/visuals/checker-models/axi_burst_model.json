@@ -1,0 +1,87 @@
+{
+  "id": "model-axi-burst-checker",
+  "type": "checker-model",
+  "title": "AXI Burst, Lane, LAST, and 4 KB Checker",
+  "description": "Execute FIXED/INCR/WRAP prediction, unaligned and narrow byte-lane masks, WSTRB legality, accepted LAST checks, and exact final-byte/split calculations.",
+  "learnerQuestion": "Which derived address, active lane, accepted beat, or final byte first proves a burst is legal or illegal?",
+  "protocolScope": "AXI3 / AXI4 transaction structure",
+  "calculator": {
+    "kind": "burst-address",
+    "protocol": "axi",
+    "boundaryBytes": 4096,
+    "initial": { "startAddress": "0x0FF8", "burst": "INCR", "bytesPerBeat": 4, "beats": 4, "busBytes": 8, "strobe": "0x0F" },
+    "burstOptions": ["FIXED", "INCR", "WRAP"],
+    "bytesPerBeatOptions": [1, 2, 4, 8],
+    "beatOptions": [1, 2, 4, 8, 16],
+    "busBytesOptions": [4, 8]
+  },
+  "configurations": [
+    { "id": "axi4-64", "label": "AXI4 64-bit", "description": "Eight byte lanes, INCR up to 256, FIXED 1–16, WRAP exactly 2/4/8/16." },
+    { "id": "axi3-32", "label": "AXI3 32-bit", "description": "Four byte lanes and 1–16 beats for burst types, with exact WRAP lengths." }
+  ],
+  "scenarios": [
+    {
+      "id": "wrap4",
+      "label": "Legal four-beat WRAP",
+      "mode": "legal",
+      "configurationId": "axi4-64",
+      "description": "AxADDR=0x10C, AxSIZE=2 and AxLEN=3 produce a 16-byte wrap region at 0x100–0x10F.",
+      "steps": [
+        { "id": "derive", "label": "Derive addresses", "event": "Accept WRAP request", "state": { "beats": 4, "bytesPerBeat": 4, "wrapBytes": 16, "wrapBase": "0x100", "addresses": ["0x10C", "0x100", "0x104", "0x108"], "burstEncoding": "0b10", "one4kbRegion": true }, "checks": [
+          { "id": "length", "label": "Legal WRAP length", "field": "beats", "operator": "eq", "expected": 4, "requirementType": "protocol", "evidence": "WRAP permits exactly 2, 4, 8, or 16 transfers." },
+          { "id": "wrap", "label": "Modulo wrap sequence", "field": "addresses", "operator": "eq", "expected": ["0x10C", "0x100", "0x104", "0x108"], "requirementType": "protocol", "evidence": "The predictor uses N×2^AxSIZE and the wrap base, not bus width." },
+          { "id": "boundary", "label": "One 4 KB region", "field": "one4kbRegion", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "Every AXI burst type obeys the boundary rule." }
+        ] }
+      ]
+    },
+    {
+      "id": "unaligned-lanes",
+      "label": "Unaligned narrow INCR lanes",
+      "mode": "legal",
+      "configurationId": "axi4-64",
+      "description": "A four-byte INCR starting at 0x101 uses lanes 1–3 on its first transfer and lanes 4–7 at derived address 0x104.",
+      "steps": [
+        { "id": "first", "label": "First beat", "event": "AWADDR=0x101, AWSIZE=2, WSTRB=0x0E", "state": { "beatAddress": "0x101", "legalLaneMask": "0x0E", "observedWstrb": "0x0E", "activeLanes": ["1", "2", "3"], "readHasRstrb": false }, "checks": [
+          { "id": "mask", "label": "WSTRB inside first-beat mask", "field": "observedWstrb", "operator": "eq", "expected": "0x0E", "requirementType": "protocol", "evidence": "Address low bits and WSTRB describe the same unaligned byte selection." },
+          { "id": "read", "label": "Read uses no RSTRB", "field": "readHasRstrb", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "Read scoring derives requested lanes from address and ARSIZE." }
+        ] },
+        { "id": "next", "label": "Next beat", "event": "Derived INCR address and WSTRB=0xF0", "state": { "beatAddress": "0x104", "legalLaneMask": "0xF0", "observedWstrb": "0xF0", "activeLanes": ["4", "5", "6", "7"] }, "checks": [
+          { "id": "progress", "label": "Aligned subsequent progression", "field": "beatAddress", "operator": "eq", "expected": "0x104", "requirementType": "protocol", "evidence": "After the unaligned first transfer, INCR advances from the aligned base by 2^AxSIZE." }
+        ] }
+      ]
+    },
+    {
+      "id": "last-strobe-error",
+      "label": "Illegal LAST and WSTRB",
+      "mode": "negative",
+      "configurationId": "axi4-64",
+      "description": "Accepted beat count, not elapsed cycles, catches early LAST; WSTRB outside the derived lane mask is independently illegal.",
+      "steps": [
+        { "id": "bad", "label": "Accept bad beat", "event": "Beat 3 of 4 has WLAST=1 and WSTRB=0x81 for legal mask 0x0F", "state": { "acceptedBeat": 3, "expectedLastBeat": 4, "lastCorrect": false, "legalLaneMask": "0x0F", "observedWstrb": "0x81", "wstrbWithinMask": false }, "checks": [
+          { "id": "last", "label": "LAST iff final accepted beat", "field": "lastCorrect", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "Early termination is unsupported; recovery remains implementation-defined." },
+          { "id": "strobe", "label": "WSTRB subset of active lanes", "field": "wstrbWithinMask", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The checker reports the lane-mask error separately from LAST." }
+        ] }
+      ]
+    },
+    {
+      "id": "four-kb-split",
+      "label": "Exact 4 KB split",
+      "mode": "policy",
+      "configurationId": "axi4-64",
+      "description": "A four-beat, four-byte INCR at 0xFF8 ends at byte 0x1007; the manager must issue two legal requests.",
+      "steps": [
+        { "id": "detect", "label": "Detect crossing", "event": "Accept geometry candidate before issuing AW", "state": { "start": "0x0FF8", "beats": 4, "bytesPerBeat": 4, "endExclusive": "0x1008", "finalByte": "0x1007", "same4kbRegion": false }, "checks": [
+          { "id": "same", "label": "First/final byte region", "field": "same4kbRegion", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The unsplit candidate crosses from the 0x0000 decode region into 0x1000." }
+        ] },
+        { "id": "split", "label": "Split request", "event": "Issue 2 beats at 0xFF8 and 2 beats at 0x1000", "state": { "transactions": ["0x0FF8–0x0FFF", "0x1000–0x1007"], "splitCount": 2, "same4kbRegion": true, "finalByte": "0x1007" }, "checks": [
+          { "id": "legal", "label": "Each split stays in one region", "field": "same4kbRegion", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "Decode/routing sees one destination per accepted burst." },
+          { "id": "two", "label": "Two transactions generated", "field": "splitCount", "operator": "eq", "expected": 2, "requirementType": "product-contract", "evidence": "The manager-side splitter preserves the requested byte range without issuing an illegal burst." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AXI-BURST address and lane prediction", "stimulus": "FIXED/INCR/WRAP × aligned/unaligned × narrow", "checker": "address predictor + active-lane/WSTRB mask", "coverage": "burst × length × size × offset × lane mask", "evidence": "artifact://axi/burst/lanes", "owner": "AXI burst DV", "configuration": "AXI3-32 + AXI4-64", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "AXI protocol lead" },
+    { "requirement": "AXI-BURST LAST and 4 KB", "stimulus": "accepted-beat stalls, early/missing LAST, edge-of-region splits", "checker": "beat counter + final-byte region", "coverage": "LAST position × backpressure × boundary offset", "evidence": "artifact://axi/burst/last-4kb", "owner": "AXI burst DV", "configuration": "all legal burst types", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Coverage reviewer" }
+  ]
+}

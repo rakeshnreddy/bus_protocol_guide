@@ -34,7 +34,7 @@ In an original AMBA 2 multi-master system:
 4. The master performs the Write.
 5. The locked sequence ends and arbitration can move to another requester. An `IDLE` transfer after the sequence is recommended to create a clean handover opportunity.
 
-When the Arbiter sees `HMASTLOCK = 1`, it **guarantees** it will not grant the bus to any other master until the locked sequence finishes, even if a higher priority master requests the bus.
+While the locked sequence is active, the arbiter must not transfer **active ownership** of the applicable arbitration path to another manager. It can still compute or signal a future grant if that does not change active ownership early; grant-policy timing and active ownership are separate states.
 
 Follow the CPU lock request, the arbiter's bus-level indication, and the DMA request that must wait.
 
@@ -42,7 +42,7 @@ Follow the CPU lock request, the arbiter's bus-level indication, and the DMA req
 
 ## The Downside
 
-Locking serializes access through the protected path. If a master holds a locked sequence for 10 cycles, other masters needing that shared resource can be delayed for those 10 cycles.
+Locking serializes access through the applicable protected arbitration path or resource. It does not automatically lock every aliased address, cache, or independent route in a larger system; broader atomicity depends on the system topology and memory contract.
 
 AHB5 still defines `HMASTLOCK`; Exclusive Access is an additional, more scalable conditional-atomic mechanism rather than a protocol deletion of locking. Inspect the signals below before moving to the exclusive sequence.
 

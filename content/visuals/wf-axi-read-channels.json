@@ -2,7 +2,7 @@
   "id": "wf-axi-read-channels",
   "title": "AXI4 Read: Address, Data, Response, and Backpressure",
   "type": "waveform",
-  "description": "Trace an AR request into three R beats, including a stalled middle beat whose RID, RDATA, RRESP, and RLAST remain stable until the master accepts it.",
+  "description": "Trace an accepted AR request into three R beats, including a stalled middle beat whose complete RID/RDATA/RRESP/RLAST/RUSER payload remains stable until the master accepts it.",
   "cycleCount": 9,
   "signals": [
     { "name": "ACLK", "type": "clock", "values": [] },
@@ -16,7 +16,8 @@
     { "name": "RID", "type": "data", "color": "red", "values": ["-", "-", "-", "5", "5", "5", "5", "5", "-"] },
     { "name": "RDATA", "type": "data", "color": "red", "values": ["-", "-", "-", "D0", "D1", "D1", "D1", "D2", "-"] },
     { "name": "RRESP", "type": "sideband", "color": "red", "values": ["-", "-", "-", "OKAY", "OKAY", "OKAY", "OKAY", "SLVERR", "-"] },
-    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "0", "0", "1", "0"] }
+    { "name": "RLAST", "type": "control", "color": "red", "values": ["0", "0", "0", "0", "0", "0", "0", "1", "0"] },
+    { "name": "RUSER", "type": "sideband", "color": "red", "values": ["-", "-", "-", "U0", "U1", "U1", "U1", "U2", "-"] }
   ],
   "annotations": [
     {
@@ -33,7 +34,7 @@
     },
     {
       "cycle": 5,
-      "message": "The slave offers D1, but the master deasserts RREADY. No beat transfers; the slave must hold RID, RDATA, RRESP, RLAST, and RVALID stable."
+      "message": "The slave offers D1, but the master deasserts RREADY. No beat transfers; it must hold RVALID and the complete RID/RDATA/RRESP/RLAST/RUSER payload stable."
     },
     {
       "cycle": 6,

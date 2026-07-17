@@ -5,6 +5,10 @@
       "protocol": "ahb",
       "category": "timing",
       "severity": "critical",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["3.6.2 Address changes during wait states", "5.1.3 ERROR response", "6.1 Data buses"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
       "statement": "A master must hold a pending valid transfer's address/control stable while HREADY is LOW, and must hold stalled write data stable for its data phase, subject to the protocol-defined IDLE, BUSY, and ERROR exceptions.",
       "bugPattern": {
         "symptom": "Data is permanently lost. The slave samples the wrong data when it finally raises HREADY.",
@@ -17,7 +21,11 @@
       "protocol": "ahb",
       "category": "timing",
       "severity": "moderate",
-      "statement": "Slaves MUST only sample control signals synchronously on the rising clock edge when HREADY is HIGH.",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["3.1 Overview", "4.1 Slave interface", "4.2 Slave select signal"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
+      "statement": "A slave accepts a valid transfer only on a rising HCLK edge with its HSEL asserted, HTRANS[1] asserted, and global HREADY HIGH. A raw combinational HSEL transient between sampling edges is not an accepted transfer.",
       "bugPattern": {
         "symptom": "A slave accidentally triggers a transaction during a brief address phase glitch.",
         "rootCause": "The central address decoder is purely combinatorial. If HADDR transitions, HSEL might spike high for a fraction of a nanosecond. If the slave uses an asynchronous latch based directly on HSEL, it triggers incorrectly."
@@ -29,6 +37,10 @@
       "protocol": "ahb",
       "category": "deadlock",
       "severity": "critical",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["4.1 Slave interface", "4.3 Transfer response", "7.1 Clock and reset"],
+      "requirementType": "integration-derived",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
       "statement": "System integration must avoid a combinational loop through a slave HREADYOUT path and the selected global HREADY return path; the exact registered/combinational implementation is a timing and integration choice.",
       "bugPattern": {
         "symptom": "The synthesis tool throws errors about combinatorial loops, or the silicon oscillates.",
@@ -41,7 +53,11 @@
       "protocol": "ahb",
       "category": "response_handling",
       "severity": "critical",
-      "statement": "After ERROR, a master may cancel the remaining burst or continue it. If it cancels, it drives HTRANS to IDLE during the two-cycle response.",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["3.6.2 Address changes during wait states", "5.1.3 ERROR response"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
+      "statement": "Ordinary wait cycles before an ERROR use HRESP=OKAY. ERROR then has a first cycle with HRESP=ERROR and HREADYOUT/global HREADY LOW followed by a completion cycle with HRESP=ERROR and HREADYOUT/global HREADY HIGH. The master may cancel the pending transfer during the first ERROR cycle or continue it legally; cancellation is not mandatory.",
       "bugPattern": {
         "symptom": "The master and checker disagree about whether the remaining burst was canceled, so following transfers are misclassified or side effects diverge from the documented design policy.",
         "rootCause": "The implementation or verification environment treats one legal post-ERROR choice as universally mandatory instead of checking the master's documented cancel-or-continue behavior."
@@ -53,6 +69,10 @@
       "protocol": "ahb",
       "category": "qos",
       "severity": "moderate",
+      "specification": "Arm AMBA Specification (Rev 2.0), IHI 0011A; product service contract",
+      "sections": ["3.11 Arbitration"],
+      "requirementType": "product-contract",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0011/a/",
       "statement": "AHB does not mandate one arbitration policy. If the system contract promises bounded service or fairness, the arbiter and its checker must enforce that implementation-specific guarantee.",
       "bugPattern": {
         "symptom": "A DMA buffer overflows because it can never get access to memory to flush its data.",
@@ -61,10 +81,94 @@
       "relatedLessons": ["33_common_rtl_bugs"]
     },
     {
+      "id": "ahb-busy-and-burst-termination",
+      "protocol": "ahb",
+      "category": "burst_structure",
+      "severity": "critical",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["3.2 Transfer types", "3.5 Burst operation", "3.6 Waited transfers"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
+      "statement": "BUSY is not a valid transfer and does not consume a beat. A fixed-length burst must complete its declared accepted NONSEQ/SEQ beat count; only an undefined-length INCR burst can terminate after BUSY, and every burst must remain within one 1 KB region.",
+      "bugPattern": {
+        "symptom": "The checker reports the wrong beat count or accepts early termination of a fixed burst.",
+        "rootCause": "The monitor counted BUSY or waited cycles as beats, or applied the undefined-length INCR termination rule to a fixed-length burst."
+      },
+      "relatedLessons": ["11_htrans_semantics", "12_burst_progression", "30_ahb_assertions"]
+    },
+    {
+      "id": "ahb-retry-response",
+      "protocol": "ahb",
+      "category": "response_handling",
+      "severity": "critical",
+      "specification": "Arm AMBA Specification (Rev 2.0), IHI 0011A",
+      "sections": ["3.9 Slave transfer responses", "3.9.5 Split and retry"],
+      "requirementType": "protocol-original-ahb-only",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0011/a/",
+      "statement": "Original AHB RETRY is a two-cycle response that requires the master to cancel the following transfer and later reattempt the failed transfer. RETRY does not remove the master from arbitration eligibility and does not use HSPLITx.",
+      "bugPattern": {
+        "symptom": "A retried master remains permanently masked or waits for a completion indication that never arrives.",
+        "rootCause": "The design incorrectly reused SPLIT masking and HSPLITx restoration state for RETRY."
+      },
+      "relatedLessons": ["28_ahb5_vs_ahb2", "36_ahb_signal_reference"]
+    },
+    {
+      "id": "ahb-split-response",
+      "protocol": "ahb",
+      "category": "response_handling",
+      "severity": "critical",
+      "specification": "Arm AMBA Specification (Rev 2.0), IHI 0011A",
+      "sections": ["3.9.5 Split and retry", "3.12 Split transfers"],
+      "requirementType": "protocol-original-ahb-only",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0011/a/",
+      "statement": "Original AHB SPLIT is a two-cycle response that causes the arbiter to mask that master's request; the slave later asserts the corresponding HSPLITx indication so the arbiter restores eligibility. A restored master is not guaranteed an immediate grant.",
+      "bugPattern": {
+        "symptom": "A split master retries too early, never becomes eligible again, or is incorrectly granted immediately on HSPLITx.",
+        "rootCause": "The arbiter failed to preserve HMASTER-tagged SPLIT state or confused eligibility restoration with grant selection."
+      },
+      "relatedLessons": ["28_ahb5_vs_ahb2", "36_ahb_signal_reference"]
+    },
+    {
+      "id": "ahb-exclusive-monitor-result",
+      "protocol": "ahb",
+      "category": "exclusive_access",
+      "severity": "critical",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b",
+      "sections": ["8.1 Introduction", "8.2 Exclusive Access Monitor", "8.3 Exclusive access signaling", "8.4 Exclusive Transfer restrictions"],
+      "requirementType": "protocol-when-optional-property-enabled",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
+      "statement": "When Exclusive_Transfers is enabled, a supported exclusive read reports HEXOKAY=1 and establishes monitor state for HMASTER and the required matching attributes. A failed exclusive write does not update memory and can complete with HRESP=OKAY, HEXOKAY=0; HEXOKAY is asserted only with HREADY and never with HRESP=ERROR.",
+      "bugPattern": {
+        "symptom": "A conditional write updates memory after interference, or the checker reports an ordinary HRESP error for a legal exclusive failure.",
+        "rootCause": "The monitor omitted HMASTER/matching attributes, ignored invalidation, or conflated HEXOKAY with HRESP."
+      },
+      "relatedLessons": ["26_exclusive_accesses", "32_ahb_formal_properties", "36_ahb_signal_reference"]
+    },
+    {
+      "id": "ahb-security-enforcement-policy",
+      "protocol": "ahb",
+      "category": "security",
+      "severity": "critical",
+      "specification": "Arm AMBA 5 AHB Protocol Specification, IHI 0033B.b; configured system security policy",
+      "sections": ["3.9 Secure transfers", "4 Slave operation"],
+      "requirementType": "protocol-attribute-plus-system-policy",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0033/bb/",
+      "statement": "When Secure_Transfers is enabled, HNONSEC is an address-phase attribute with HADDR validity constraints. The system security policy—not AHB alone—selects the enforcement location and denial behavior; verification must prove a denied read leaks no secure data and a denied write creates no secure side effect.",
+      "bugPattern": {
+        "symptom": "A forbidden read exposes secure data, a denied write changes secure state, or policy is bypassed on one route.",
+        "rootCause": "The environment assumed every target enforced policy locally instead of checking end-to-end attribution, routing, and the configured enforcement point."
+      },
+      "relatedLessons": ["27_secure_vs_non_secure", "32_ahb_formal_properties", "36_ahb_signal_reference"]
+    },
+    {
       "id": "axi-address-based-scoreboard",
       "protocol": "axi",
       "category": "ordering",
       "severity": "moderate",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A5.2 ID signals", "A6.1 AXI ordering model overview"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
       "statement": "Read responses for requests from the same manager with the same ARID MUST preserve request order; responses associated with different IDs can be returned in another order.",
       "bugPattern": {
         "symptom": "The testbench flags a data mismatch on a read, but the waveform shows the correct data returning on the bus.",
@@ -77,6 +181,10 @@
       "protocol": "axi",
       "category": "burst_structure",
       "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.2.2 Write data channel", "A3.4.1 Burst length"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
       "statement": "WLAST MUST be asserted exactly when the final data beat of the burst is transferred, as determined by AWLEN.",
       "bugPattern": {
         "symptom": "An interconnect state machine locks up permanently or drops data.",
@@ -89,6 +197,10 @@
       "protocol": "axi",
       "category": "qos",
       "severity": "moderate",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H; product service contract",
+      "sections": ["A8.1 Quality of Service signaling"],
+      "requirementType": "protocol-recommendation-plus-product-policy",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
       "statement": "AXI does not specify the exact use of AxQOS. It recommends treating a higher value as higher priority, while arbitration, fairness, and starvation prevention remain system policy.",
       "bugPattern": {
         "symptom": "A low-priority bulk DMA transfer times out after 10,000 cycles.",
@@ -101,6 +213,10 @@
       "protocol": "axi",
       "category": "ordering",
       "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A5.2.3 Interconnect use of transaction identifiers", "A6.1 AXI ordering model overview"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
       "statement": "Any interconnect manipulation of AXI IDs MUST preserve the ordering requirements of the original ID values; response routing must also retain enough source context to return each response to its origin.",
       "bugPattern": {
         "symptom": "A multi-master system returns data to the wrong master.",
@@ -113,12 +229,96 @@
       "protocol": "axi",
       "category": "deadlock",
       "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H; configured system service contract",
+      "sections": ["A3.1.1 Clock", "A3.2.1 Handshake process", "A3.3.1 Dependencies between channel handshake signals"],
+      "requirementType": "protocol-safety-plus-product-liveness",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
       "statement": "A channel source MUST NOT wait for READY before asserting VALID, and an AXI interface has no combinational input-to-output paths. READY can wait for VALID, so bounded cross-channel progress requires a separate system contract.",
       "bugPattern": {
         "symptom": "The entire SoC freezes.",
         "rootCause": "The manager withholds BREADY until a pending W transfer is accepted while the subordinate withholds WREADY until its pending B response is accepted. Both sources hold VALID correctly, but the combined destination policies create a circular liveness failure."
       },
       "relatedLessons": ["38_common_rtl_bugs"]
+    },
+    {
+      "id": "axi-response-dependencies",
+      "protocol": "axi",
+      "category": "response_handling",
+      "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.3 Relationships between the channels", "A3.3.1 AXI3 write transaction dependencies", "A3.3.1 AXI4 and AXI5 write transaction dependencies"],
+      "requirementType": "protocol-revision-aware",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
+      "statement": "RVALID for a read follows accepted AR. AXI4 BVALID follows accepted AW plus the accepted final W transfer; AXI3 requires the accepted final W transfer but does not add the AXI4 AW-handshake prerequisite. BVALID must not depend on BREADY and RVALID must not depend on RREADY.",
+      "bugPattern": {
+        "symptom": "A response appears before its request is eligible or is never asserted while READY is LOW.",
+        "rootCause": "The implementation checked signal levels instead of accepted prerequisite events, used the wrong AXI revision, or made source VALID depend on destination READY."
+      },
+      "relatedLessons": ["07_write_response_channel", "09_read_data_channel", "12_independent_channel_behavior", "13_write_transaction_walkthrough"]
+    },
+    {
+      "id": "axi-early-write-data-association",
+      "protocol": "axi",
+      "category": "write_data",
+      "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.3 Relationships between the channels", "A5.2.2 Write data ordering"],
+      "requirementType": "protocol-plus-implementation-capability",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
+      "statement": "A master can offer W before AW. A slave is not required to accept that early W transfer, but if WVALID and WREADY accept it, the slave must retain and associate it. AXI4 has no WID and write data follows write-address order; AXI3 uses WID and its revision-specific interleaving rules.",
+      "bugPattern": {
+        "symptom": "Accepted W data is applied to the wrong address or a legal early W offer is falsely reported as a protocol violation.",
+        "rootCause": "The receiver omitted pre-AW buffering/association state or the checker assumed every destination must accept early W."
+      },
+      "relatedLessons": ["06_write_data_channel", "12_independent_channel_behavior", "13_write_transaction_walkthrough", "22_throughput_reasoning_bottlenecks"]
+    },
+    {
+      "id": "axi-burst-geometry",
+      "protocol": "axi",
+      "category": "burst_structure",
+      "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.4.1 Address structure", "A3.4.1 Burst length", "A3.4.1 Burst type"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
+      "statement": "AxLEN encodes beats minus one and AxSIZE encodes log2 bytes per beat. AXI4 INCR permits 1–256 beats, FIXED 1–16, and WRAP exactly 2, 4, 8, or 16; AxBURST=0b11 is reserved. WRAP starts are transfer-size aligned, early termination is unsupported, and every burst remains within one 4 KB region.",
+      "bugPattern": {
+        "symptom": "A checker predicts the wrong beat address, accepts an illegal WRAP length, or misses a boundary crossing.",
+        "rootCause": "It used AxSIZE as a byte count, treated WRAP as any 1–16 length, counted stalled cycles, or checked only the start address."
+      },
+      "relatedLessons": ["15_burst_structure_beat_progression", "16_wlast_and_rlast_meaning", "23_burst_types", "25_4kb_boundary_rule"]
+    },
+    {
+      "id": "axi-byte-lane-legality",
+      "protocol": "axi",
+      "category": "data_lanes",
+      "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.4.2 Data read and write structure", "A3.4.2 Unaligned transfers"],
+      "requirementType": "protocol-plus-configured-interface-support",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
+      "statement": "AXI permits unaligned starts, except WRAP starts must be transfer-size aligned. Address low bits and WSTRB must describe a consistent active-byte selection; asserted WSTRB bits stay within the beat lane mask. Reads have no RSTRB, so only requested lanes belong to a narrow read transfer.",
+      "bugPattern": {
+        "symptom": "A write corrupts bytes outside the requested transfer or a read scoreboard compares inactive lanes.",
+        "rootCause": "The checker used the data-bus width instead of AxSIZE/address progression to derive active lanes."
+      },
+      "relatedLessons": ["24_address_alignment", "26_legal_illegal_patterns"]
+    },
+    {
+      "id": "axi-four-kilobyte-boundary",
+      "protocol": "axi",
+      "category": "addressing",
+      "severity": "critical",
+      "specification": "Arm AMBA AXI and ACE Protocol Specification, IHI 0022H",
+      "sections": ["A3.4.1 Address structure"],
+      "requirementType": "protocol",
+      "sourceUrl": "https://developer.arm.com/documentation/ihi0022/h/",
+      "statement": "A burst must not cross a 4 KB address boundary. Check the first and final transferred byte (or every derived active-byte range); for an aligned INCR burst, endExclusive=start+(AxLEN+1)×2^AxSIZE and the final byte is endExclusive-1. The rationale is bounded address generation and one decode destination, not virtual-memory page-fault behavior.",
+      "bugPattern": {
+        "symptom": "One accepted burst spans two decode regions or a legal burst ending at byte 0xFFF is rejected.",
+        "rootCause": "The implementation compared the wrong endpoint, omitted the minus one, or treated the next end-exclusive address as a transferred byte."
+      },
+      "relatedLessons": ["25_4kb_boundary_rule"]
     }
   ]
 }

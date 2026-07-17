@@ -20,7 +20,7 @@ When verifying a new AHB Master or Slave, you will almost certainly encounter th
 ## 1. Wait State Data Loss (The "Early Advance" Bug)
 
 **The Bug:** A master fails to hold `HWDATA` stable when the slave drives `HREADY = 0`.
-**Why it happens:** The RTL designer wrote their state machine to advance data on every clock edge where `HTRANS != IDLE`, forgetting to AND that condition with `HREADY`.
+**Why it happens:** Address-phase and data-phase enables are conflated. The design advances a write payload without checking completion of the saved write data owner, or advances address context without a valid accepted address event (`HREADY && HTRANS[1]`). A single `HTRANS != IDLE` enable is wrong because BUSY is not a valid beat and current `HTRANS` can belong to another phase.
 **The Result:** Data is permanently lost. The slave samples the wrong data when it finally raises `HREADY`.
 
 ![Waveform exposing write data advancing one cycle before its stalled AHB data phase completes](visual:wf-ahb-bug-wait-state)
@@ -51,10 +51,12 @@ When verifying a new AHB Master or Slave, you will almost certainly encounter th
 **Why it happens:** The Arbiter was designed with strict fixed priority, and the CPU is heavily utilizing undefined-length `INCR` bursts.
 **The Result:** The DMA buffers overflow because it can never get access to memory to flush its data.
 
+This is a product/QoS or configured-service failure only when a fairness or latency contract exists and its assumptions hold. Strict fixed priority without such a promise is a legal arbitration policy, even though it can be a poor system choice.
+
 ---
 
 ## AHB Spec Rule Explorer
 
-For a quick reference of the formal specification rules violated by the bugs above, you can explore the searchable index below. This tool extracts the "shall/must" rules and maps them directly back to these common failure patterns.
+For a quick reference, explore the searchable index below. Treat an entry as normative only when its provenance names the selected specification issue and section and the statement has been checked against that primary source; the explorer is a traceability aid, not an authority merely because it uses “shall” or “must.”
 
 ![Searchable AHB rule and bug-pattern explorer for timing, response, integration, and arbitration failures](visual:spec-rule-explorer-ahb)

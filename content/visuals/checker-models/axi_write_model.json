@@ -1,0 +1,118 @@
+{
+  "id": "model-axi-write-checker",
+  "type": "checker-model",
+  "title": "AXI Write Association and Response Model",
+  "description": "Execute independent AW/W acceptance, pre-AW buffering, revision-aware W association, exact beat/LAST state, per-ID response queues, and configured underflow/overflow checks.",
+  "learnerQuestion": "How does a checker associate accepted W data with AW requests before allowing exactly one B response?",
+  "protocolScope": "AXI3 / AXI4 write channels",
+  "configurations": [
+    { "id": "axi4-depth2", "label": "AXI4 · depth 2", "description": "No WID; W bursts follow AW order; two accepted write requests maximum." },
+    { "id": "axi3-wid", "label": "AXI3 · WID aware", "description": "WID selects the write-data transaction under AXI3 interleaving rules." }
+  ],
+  "scenarios": [
+    {
+      "id": "axi4-aw-first",
+      "label": "AXI4 AW-first with W stall",
+      "mode": "legal",
+      "configurationId": "axi4-depth2",
+      "description": "AW allocates the request first; W can start later and must retain its complete payload while WREADY is LOW.",
+      "steps": [
+        { "id": "aw", "label": "Accept AW", "event": "AWID=2, AWLEN=1 handshake before WVALID", "state": { "acceptedAwQueue": ["ID2 len2"], "preAwWBuffer": [], "outstandingWrites": 1, "acceptedWBeats": 0, "bEligible": false }, "checks": [
+          { "id": "allocate", "label": "AW allocates one write", "field": "outstandingWrites", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "An accepted AW entry waits for its AXI4 AW-order W burst." }
+        ] },
+        { "id": "w-stall", "label": "Stall first W", "event": "WVALID=1, WREADY=0", "state": { "acceptedWBeats": 0, "heldPayload": ["WDATA", "WSTRB", "WLAST", "WUSER"], "currentWOwner": "ID2", "bEligible": false }, "checks": [
+          { "id": "no-beat", "label": "Stall does not consume a beat", "field": "acceptedWBeats", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "The source retains the complete W payload until acceptance." },
+          { "id": "payload", "label": "Complete W payload retained", "field": "heldPayload", "operator": "includes", "expected": "WSTRB", "requirementType": "protocol", "evidence": "Data, byte strobes, LAST, and USER when present remain stable." }
+        ] },
+        { "id": "complete", "label": "Accept W and B", "event": "Two W handshakes, WLAST on beat 2, then B handshake", "state": { "acceptedAwQueue": [], "acceptedWBeats": 2, "lastOnBeat": 2, "outstandingWrites": 0, "responses": 1 }, "checks": [
+          { "id": "one-response", "label": "One burst gets one B response", "field": "responses", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "Accepted AW and final W enable one stable response, retired on B handshake." }
+        ] }
+      ]
+    },
+    {
+      "id": "axi4-simultaneous",
+      "label": "AXI4 simultaneous AW/W",
+      "mode": "legal",
+      "configurationId": "axi4-depth2",
+      "description": "AW and the first W beat can transfer on the same edge; independent channel handshakes still create separate accepted events.",
+      "steps": [
+        { "id": "same-edge", "label": "Accept AW + W", "event": "AWVALID&&AWREADY and WVALID&&WREADY on one edge", "state": { "acceptedAwEvents": 1, "acceptedWBeats": 1, "acceptedAwQueue": ["ID4 len1 data-complete"], "preAwWBuffer": [], "bEligible": true, "bready": false }, "checks": [
+          { "id": "aw-event", "label": "AW accepted independently", "field": "acceptedAwEvents", "operator": "eq", "expected": 1, "requirementType": "protocol", "evidence": "Simultaneity does not merge the AW and W channel rules." },
+          { "id": "b-eligible", "label": "Both response prerequisites met", "field": "bEligible", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "A single-beat burst accepted its AW and final W on the same edge; BVALID cannot depend on BREADY." }
+        ] }
+      ]
+    },
+    {
+      "id": "independent-write-stalls",
+      "label": "Independent AW/W/B stalls",
+      "mode": "legal",
+      "configurationId": "axi4-depth2",
+      "description": "READY delays vary independently while each source retains VALID and its payload; a stable B response waits for acceptance without being withdrawn.",
+      "steps": [
+        { "id": "aw-delay", "label": "Delay AWREADY", "event": "AWVALID held for three cycles before AWREADY", "state": { "awDelay": 3, "awPayloadStable": true, "acceptedAwEvents": 1, "wDelay": 0 }, "checks": [
+          { "id": "aw-stable", "label": "AW payload persists", "field": "awPayloadStable", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The AW source does not wait for or withdraw VALID because READY is LOW." }
+        ] },
+        { "id": "w-delay", "label": "Delay WREADY", "event": "WVALID payload held for two cycles", "state": { "awDelay": 3, "wDelay": 2, "wPayloadStable": true, "acceptedWBeats": 1, "bDelay": 0 }, "checks": [
+          { "id": "w-stable", "label": "W payload persists", "field": "wPayloadStable", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "Independent W backpressure does not alter accepted AW state." }
+        ] },
+        { "id": "b-delay", "label": "Delay BREADY", "event": "BVALID held while BREADY=0", "state": { "bDelay": 4, "bPayloadStable": true, "outstandingWrites": 1, "responseAccepted": false }, "checks": [
+          { "id": "b-stable", "label": "B response persists", "field": "bPayloadStable", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "The subordinate source retains BVALID, BID, BRESP, and BUSER until handshake." }
+        ] }
+      ]
+    },
+    {
+      "id": "axi4-w-first",
+      "label": "AXI4 W-first association",
+      "mode": "legal",
+      "configurationId": "axi4-depth2",
+      "description": "This destination accepts one W beat before AW, then joins it to the head of the accepted-AW order and waits for both response prerequisites.",
+      "steps": [
+        { "id": "early-w", "label": "Accept early W", "event": "WVALID && WREADY accepts D0 before AW", "state": { "acceptedAwQueue": [], "preAwWBuffer": ["D0"], "wAssociationMode": "AXI4 AW order", "acceptedWBeats": 1, "expectedWBeats": 2, "bEligible": false, "outstandingWrites": 0, "maxWrites": 2 }, "checks": [
+          { "id": "buffer", "label": "Accepted early W is retained", "field": "preAwWBuffer", "operator": "includes", "expected": "D0", "requirementType": "protocol", "evidence": "Because WREADY accepted the beat, it cannot be discarded while waiting for AW association." },
+          { "id": "no-b", "label": "B not yet eligible", "field": "bEligible", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "AXI4 still lacks accepted AW and accepted final W." }
+        ] },
+        { "id": "accept-aw", "label": "Accept AW", "event": "AWID=3, AWLEN=1 handshake", "state": { "acceptedAwQueue": ["ID3 len2"], "preAwWBuffer": ["D0→ID3"], "wAssociationMode": "AXI4 AW order", "acceptedWBeats": 1, "expectedWBeats": 2, "bEligible": false, "outstandingWrites": 1, "maxWrites": 2 }, "checks": [
+          { "id": "aw-depth", "label": "Configured AW depth", "field": "outstandingWrites", "operator": "lte", "expected": 2, "requirementType": "product-contract", "evidence": "The accepted-AW queue allocates one entry without exceeding the configured limit." },
+          { "id": "order", "label": "AXI4 association mode", "field": "wAssociationMode", "operator": "eq", "expected": "AXI4 AW order", "requirementType": "protocol", "evidence": "AXI4 has no WID; W belongs to requests in write-address order." }
+        ] },
+        { "id": "final-w", "label": "Accept final W", "event": "D1 transfers with WLAST", "state": { "acceptedAwQueue": ["ID3 complete-data"], "preAwWBuffer": [], "acceptedWBeats": 2, "expectedWBeats": 2, "lastOnBeat": 2, "bEligible": true, "eligibleBIds": ["3"], "outstandingWrites": 1 }, "checks": [
+          { "id": "last", "label": "WLAST exact accepted beat", "field": "lastOnBeat", "operator": "eq", "expected": 2, "requirementType": "protocol", "evidence": "Backpressured cycles do not increment the beat counter." },
+          { "id": "eligible", "label": "Both AXI4 prerequisites met", "field": "bEligible", "operator": "eq", "expected": true, "requirementType": "protocol", "evidence": "Accepted AW plus accepted final W permits BVALID independently of BREADY." }
+        ] },
+        { "id": "accept-b", "label": "Retire B", "event": "BID=3, BVALID && BREADY", "state": { "acceptedAwQueue": [], "preAwWBuffer": [], "eligibleBIds": [], "outstandingWrites": 0, "responseUnderflow": false, "responsesForId3": 1 }, "checks": [
+          { "id": "retire", "label": "One response retires one write", "field": "outstandingWrites", "operator": "eq", "expected": 0, "requirementType": "protocol", "evidence": "The per-ID head is removed only on an accepted B transfer." },
+          { "id": "underflow", "label": "No response underflow", "field": "responseUnderflow", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "BID mapped to an eligible outstanding write." }
+        ] }
+      ]
+    },
+    {
+      "id": "axi3-wid-interleave",
+      "label": "AXI3 WID association",
+      "mode": "legal",
+      "configurationId": "axi3-wid",
+      "description": "WID selects the corresponding accepted write stream instead of applying the AXI4 no-WID rule.",
+      "steps": [
+        { "id": "wid", "label": "Interleave WID", "event": "WID 0 beat, WID 1 beat, WID 0 WLAST", "state": { "acceptedAwQueue": ["ID0 len2", "ID1 len2"], "wAssociationMode": "AXI3 WID", "activeWIds": ["0", "1"], "id0AcceptedBeats": 2, "id1AcceptedBeats": 1, "id0EligibleB": true }, "checks": [
+          { "id": "mode", "label": "Revision selects WID", "field": "wAssociationMode", "operator": "eq", "expected": "AXI3 WID", "requirementType": "protocol", "evidence": "The checker is explicitly configured for AXI3 rather than applying AXI4 AW-order association." },
+          { "id": "id0-last", "label": "ID0 complete", "field": "id0AcceptedBeats", "operator": "eq", "expected": 2, "requirementType": "protocol", "evidence": "WID-aware counters retain independent accepted-beat state." }
+        ] }
+      ]
+    },
+    {
+      "id": "response-underflow",
+      "label": "Unexpected B response",
+      "mode": "negative",
+      "configurationId": "axi4-depth2",
+      "description": "A BID with no eligible accepted-AW/final-W entry is a response underflow.",
+      "steps": [
+        { "id": "bad-b", "label": "Accept unmatched B", "event": "BID=7 handshake with empty per-ID queue", "state": { "acceptedAwQueue": [], "eligibleBIds": [], "observedBid": "7", "responseUnderflow": true, "outstandingWrites": 0 }, "checks": [
+          { "id": "no-underflow", "label": "Response must match eligible write", "field": "responseUnderflow", "operator": "eq", "expected": false, "requirementType": "protocol", "evidence": "The checker flags the first accepted B response without a corresponding transaction." }
+        ] }
+      ]
+    }
+  ],
+  "traceability": [
+    { "requirement": "AXI-W accepted AW + final W before BVALID", "stimulus": "AW-first/W-first/simultaneous with independent delays", "checker": "AW queue + pre-AW W join + B eligibility", "coverage": "channel order × W stalls × B stalls × depth", "evidence": "artifact://axi/write/association", "owner": "AXI write DV", "configuration": "AXI4 depth2", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "AXI protocol lead" },
+    { "requirement": "AXI-W revision association", "stimulus": "AXI3 WID interleave and AXI4 AW order", "checker": "revision-selected W association", "coverage": "revision × W order × repeated ID", "evidence": "artifact://axi/write/revision", "owner": "AXI write DV", "configuration": "AXI3+AXI4", "status": "Pass", "lastRegression": "2026-07-17", "reviewer": "Compatibility reviewer" }
+  ]
+}

@@ -23,7 +23,7 @@ Components receiving or routing the burst derive the transfer address for each b
 
 1.  **Length (`AxLEN`):** Specifies the number of data transfers (beats). 
     *   In AXI3, `AxLEN` is 4 bits (1 to 16 beats).
-    *   In AXI4, `AxLEN` is 8 bits (1 to 256 beats for INCR bursts; FIXED and WRAP bursts remain limited to 16).
+    *   In AXI4, `AxLEN` is 8 bits (1 to 256 beats for INCR bursts; FIXED is 1–16; WRAP is exactly 2, 4, 8, or 16).
     *   *Formula: Exact number of beats = AxLEN + 1.* So a value of 0 means 1 beat.
 
 2.  **Size (`AxSIZE`):** Specifies the maximum number of bytes transferred in *each* beat.
@@ -34,6 +34,7 @@ Components receiving or routing the burst derive the transfer address for each b
     *   **FIXED (0b00):** Every beat in the burst targets the exact same address. Used for loading/emptying FIFOs.
     *   **INCR (0b01):** The address increments by `AxSIZE` bytes for each beat. Used for normal sequential memory access.
     *   **WRAP (0b10):** Similar to INCR, but if the address reaches an upper boundary, it wraps back around to a lower boundary. Used primarily by processors fetching cache lines.
+    *   **Reserved (0b11):** Illegal for AXI bursts.
 
 Inspect the three four-beat lanes below. They use the same `AxLEN` and `AxSIZE`, so only `AxBURST` changes the generated address sequence.
 
@@ -53,4 +54,4 @@ The master sends this address on the AW channel *once*. Then, on the W channel, 
 *   Beat 3: Written to 0x1008
 *   Beat 4: Written to 0x100C
 
-The increment is `2^AxSIZE` bytes, not the numeric value of the `AxSIZE` field. All bursts must remain within one 4 KB address boundary, and WRAP bursts also use a naturally sized wrap region of `beats × bytes per beat`.
+Let `N = AxLEN + 1` and `B = 2^AxSIZE`. FIXED uses the same byte address for every beat. INCR derives later addresses from `floor(start/B)×B + n×B` after the unaligned first transfer. WRAP uses `wrapBytes=N×B`, `lower=floor(start/wrapBytes)×wrapBytes`, and wraps each increment within `[lower, lower+wrapBytes)`. WRAP starts must be B-byte aligned. Every AXI burst must remain within one 4 KB region.

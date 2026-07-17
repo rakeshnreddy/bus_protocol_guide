@@ -2,61 +2,61 @@
   {
     "id": "ex-bus-architectures",
     "type": "multiple-choice",
-    "prompt": "Which interconnect topology provides the highest concurrent throughput, assuming multiple masters want to talk to different slaves simultaneously?",
+    "prompt": "Two managers request the same target in a crossbar during the same cycle. Which statement is accurate?",
     "options": [
-      "A shared bus",
-      "A point-to-point connection",
-      "A switched interconnect (crossbar)"
+      "Both requests must complete concurrently because a crossbar always has parallel paths.",
+      "The target-facing route still needs arbitration or buffering, even though unrelated target routes can remain concurrent.",
+      "Both managers may drive the target wires and let the response mux decide later."
     ],
-    "correctOptionIndex": 2,
-    "explanation": "A switched interconnect allows multiple independent paths to operate at the same time. A shared bus forces serialization, and point-to-point only connects one master to one slave."
+    "correctOptionIndex": 1,
+    "explanation": "A switched fabric provides potential path concurrency, not unlimited target capacity. Same-target requests contend; the design must select one owner or buffer work and must preserve the response route back to the correct source."
   },
   {
     "id": "ex-signal-thinking",
     "type": "multiple-choice",
-    "prompt": "If a signal is 'active-low' (e.g., RESETn) and you want to trigger the reset, what value should the signal have?",
+    "prompt": "A timing model reports X after a setup violation at an AHB or AXI sampling edge. What does that prove?",
     "options": [
-      "HIGH (1)",
-      "LOW (0)",
-      "High-Impedance (Z)"
+      "The silicon voltage is physically X and will remain there.",
+      "The simulation value is unknown; physical metastability is analog and its resolution cannot be inferred from the RTL X alone.",
+      "Anything between rising edges is irrelevant, so the X can be ignored."
     ],
     "correctOptionIndex": 1,
-    "explanation": "Active-low means the logical 'true' or 'asserted' state is represented by a physical low voltage (0)."
+    "explanation": "An RTL X is four-state simulation evidence. A setup/hold violation can cause analog metastability in a receiving register, but the simulator does not reproduce the physical voltage or predict the final resolved value."
   },
   {
     "id": "ex-timing-diagrams",
     "type": "reflection",
-    "prompt": "Look at a pipeline timing diagram. Why does the address phase of Transaction B overlap with the data phase of Transaction A? What hardware requirement does this imply for the slave?",
-    "explanation": "Pipelining increases throughput by doing work in parallel. The slave must have internal registers to hold Transaction B's address while it finishes sending Transaction A's data."
+    "prompt": "In an AHB waveform, transfer B's address/control is visible while transfer A owns the data/response phase. Which edge accepts B, and what context must a monitor retain?",
+    "explanation": "B is accepted only on a rising HCLK edge with HREADY HIGH and valid HTRANS. The monitor retains A's previously accepted address/control as the current data owner and records B only when B is accepted. The protocol requires correct behavior, not a particular internal register architecture."
   },
   {
     "id": "ex-handshakes",
     "type": "multiple-choice",
-    "prompt": "In a ready/valid handshake, the master asserts VALID, but the slave keeps READY low for 3 cycles. What must the master do during these 3 cycles?",
+    "prompt": "On an AXI read-data channel, the subordinate asserts RVALID while the manager holds RREADY low for three cycles. What must the channel source do?",
     "options": [
-      "De-assert VALID to prevent data loss.",
-      "Send the next piece of data anyway.",
-      "Hold both VALID and DATA completely stable until READY goes high."
+      "Drop RVALID until the manager becomes ready.",
+      "Advance RDATA every cycle because the subordinate is not the manager.",
+      "Hold RVALID and the complete R payload stable until an edge accepts it with RVALID and RREADY HIGH."
     ],
     "correctOptionIndex": 2,
-    "explanation": "This is backpressure. The master is legally required to hold its outputs stable once it asserts VALID until the handshake completes."
+    "explanation": "The subordinate is the R-channel source. AXI's source rule is channel-specific: VALID and the complete offered payload remain stable until the accepting VALID/READY edge."
   },
   {
     "id": "ex-transaction-structure",
     "type": "multiple-choice",
-    "prompt": "What is the primary benefit of out-of-order completion?",
+    "prompt": "Two AXI reads reuse ID 5, while a third read uses ID 2. Which response behavior is legal?",
     "options": [
-      "It makes the hardware much simpler to design.",
-      "It prevents a slow slave from blocking transactions intended for other, faster slaves.",
-      "It reduces the number of wires required for the bus."
+      "The second ID-5 response can pass the first because their transaction IDs are equal.",
+      "The ID-2 response can complete before either ID-5 response, while the two ID-5 responses retain their issue order.",
+      "Numeric read and write ID equality creates a global barrier between both directions."
     ],
     "correctOptionIndex": 1,
-    "explanation": "Out-of-order completion allows the interconnect to route responses back to the master as soon as they are ready, bypassing stalled transactions."
+    "explanation": "Different ID streams have no relative response-order guarantee, while the applicable same-ID order remains. IDs define ordering/correlation streams and can be reused; they are not globally unique transaction numbers."
   },
   {
     "id": "ex-dv-mindset",
     "type": "reflection",
-    "prompt": "Why is 'randomization' a core tenet of the Senior DV mindset when verifying a bus protocol?",
-    "explanation": "Hardware state spaces are too large for directed testing. Randomizing stall durations (READY toggling), transfer types, and back-to-back timing exposes subtle corner-case bugs that human designers miss."
+    "prompt": "A legal constrained-random test hits every planned transaction bin. What additional evidence is needed before signoff, and where should intentional protocol violations be generated?",
+    "explanation": "Coverage hits must correlate with passing protocol assertions and scoreboards, reviewed code/formal results, bug closure, configuration snapshots, and justified exclusions or waivers. Intentional protocol violations belong in a separately labeled negative-test path with expected checker behavior; they must not leak into the default legal generator."
   }
 ]

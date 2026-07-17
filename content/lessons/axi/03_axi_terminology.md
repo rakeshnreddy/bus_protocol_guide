@@ -17,11 +17,12 @@ checklistIds: []
 
 Before we dive into the signaling, we must align on terminology. AXI relies heavily on specific terms that describe the flow of data.
 
-*   **Transaction:** A complete read or write operation. A read transaction runs from its accepted AR request through the final R beat; a write transaction runs from its accepted AW request and W burst through its B response. A single transaction may move multiple pieces of data.
+*   **Transaction:** A complete read or write operation. For interface scoreboarding, a read runs from its accepted AR request through the accepted final R beat; a write allocates on an accepted AW request and retires on its accepted B response. AXI also permits W beats to be accepted before AW; those beats require separate pre-address buffering/association state until an AW request is available.
 *   **Burst:** The ordered sequence of data transfers within a transaction. If a master requests to read 64 bytes of data starting at address 0x1000, that entire 64-byte sequence is the "burst."
-*   **Beat:** A single data transfer within a burst. If the data bus is 4 bytes wide, the 64-byte burst mentioned above will take 16 "beats" to complete. 
+*   **Beat:** A single accepted data-channel transfer. Its maximum byte count is `2^AxSIZE`, not automatically the physical data-bus width. On a 4-byte bus, a 64-byte full-width burst takes 16 beats; a narrow transfer uses fewer active byte lanes per beat.
 *   **Handshake:** The fundamental mechanism of AXI. Every single piece of information—whether it is an address, a data beat, or a response—is transferred using a two-way `VALID` and `READY` handshake.
-*   **Outstanding Transaction:** A transaction where the master has issued the address, but has not yet received all the data (for a read) or the final response (for a write). AXI's high performance comes from allowing multiple *outstanding* transactions simultaneously.
+*   **Outstanding Transaction:** An accepted address request whose final read data or write response has not yet been accepted. Supported outstanding depth is an implementation capability. Accepted pre-AW W data is tracked separately until it can be associated.
+*   **Transaction ID:** A tag that selects an ordering/correlation stream at one interface. It is not a globally unique transaction number: an ID can be reused for multiple queued requests while the required per-ID order is preserved.
 
 Select the terms in this map to connect the structural vocabulary (transaction, burst, and beat) with channel handshakes, outstanding lifetime, and response-ID correlation.
 

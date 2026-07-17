@@ -31,7 +31,7 @@ Your AXI coverage model should cross multiple dimensions. A single transaction h
 Your verification plan should cover the supported cross-product of:
 * **Burst Type:** `FIXED`, `INCR`, `WRAP`
 * **Burst Size:** 1 byte up to the maximum bus width (e.g., 128 bytes)
-* **Burst Length:** 1 beat up to 256 beats (for INCR) or 16 beats (for WRAP)
+* **Burst Length:** Revision- and type-aware bins: AXI4 INCR permits 1–256 beats, FIXED permits 1–16, and WRAP permits exactly 2, 4, 8, or 16. AXI3 uses its narrower length field and the same exact WRAP set.
 
 *Why?* To ensure your address calculation logic (or the slave's memory pointer logic) works for all legal shapes.
 

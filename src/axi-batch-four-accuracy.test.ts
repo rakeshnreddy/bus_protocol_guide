@@ -27,7 +27,7 @@ describe('AXI Batch 4 protocol-accuracy guards', () => {
       'sig-axi-senior-recap',
     ];
 
-    expect(getAllVisuals()).toHaveLength(79);
+    expect(getAllVisuals()).toHaveLength(87);
     expectedIds.forEach(id => expect(getVisualById(id), id).toBeDefined());
 
     for (let order = 34; order <= 44; order += 1) {

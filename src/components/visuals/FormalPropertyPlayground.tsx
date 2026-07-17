@@ -1,34 +1,64 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { FormalPropertyData, WaveformVisualData } from '../../types/visuals';
 import WaveformVisualizer from './WaveformVisualizer';
 import './visuals.css';
 
-// Lightweight, deterministic evaluator for formal properties
-function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): WaveformVisualData['violations'] {
+type FormalEvaluation = {
+  violations: NonNullable<WaveformVisualData['violations']>;
+  triggerCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  pendingCount: number;
+};
+
+// Lightweight, deterministic evaluator for formal-property teaching traces.
+export function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): FormalEvaluation {
   const violations: NonNullable<WaveformVisualData['violations']> = [];
   const cycleCount = waveform.cycleCount;
+  let triggerCount = 0;
+  let completedCount = 0;
+  let cancelledCount = 0;
+  let pendingCount = 0;
 
   if (rule === 'ahb-hready-bounded-liveness') {
     const htrans = waveform.signals.find(s => s.name === 'HTRANS');
     const hready = waveform.signals.find(s => s.name === 'HREADY');
+    const hresetn = waveform.signals.find(s => s.name === 'HRESETn');
     
     if (htrans && hready) {
       for (let i = 0; i < cycleCount; i++) {
-        if (htrans.values[i] === 'NONSEQ') {
-          let foundHigh = false;
-          // Look ahead up to 4 cycles (i to i+4)
-          for (let j = i; j <= Math.min(i + 4, cycleCount - 1); j++) {
+        const validAddress = htrans.values[i] === 'NONSEQ' || htrans.values[i] === 'SEQ';
+        const resetActive = hresetn?.values[i] === '0';
+        const acceptedAddress = validAddress && hready.values[i] === '1' && !resetActive;
+        if (acceptedAddress) {
+          triggerCount++;
+          const finalWindowIndex = i + 4;
+          let completed = false;
+          let cancelled = false;
+
+          // The accepted address enters its data phase on the following cycle.
+          // Same-cycle HREADY completed the prior data owner and cannot satisfy it.
+          for (let j = i + 1; j <= Math.min(finalWindowIndex, cycleCount - 1); j++) {
+            if (hresetn?.values[j] === '0') {
+              cancelled = true;
+              break;
+            }
             if (hready.values[j] === '1') {
-              foundHigh = true;
+              completed = true;
               break;
             }
           }
-          if (!foundHigh) {
-            // Mark the cycle where the bound expires or waveform ends
-            const endCycle = Math.min(i + 4, cycleCount - 1) + 1;
+
+          if (cancelled) {
+            cancelledCount++;
+          } else if (completed) {
+            completedCount++;
+          } else if (finalWindowIndex >= cycleCount) {
+            pendingCount++;
+          } else {
             violations.push({
-              cycle: endCycle,
-              message: `Configured completion contract failed: HREADY did not go high within 4 cycles of the NONSEQ transfer that started at cycle ${i + 1}.`
+              cycle: finalWindowIndex + 1,
+              message: `Configured service contract failed: the address accepted at cycle ${i + 1} did not complete in following data-phase cycles ${i + 2}-${finalWindowIndex + 1}.`
             });
           }
         }
@@ -46,6 +76,7 @@ function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): Wav
       for (let i = 0; i < cycleCount; i++) {
         // Evaluate WLAST only on valid handshakes for simplicity
         if (wvalid.values[i] === '1' && wready.values[i] === '1') {
+          triggerCount++;
           beatCount++;
           if (beatCount < totalBeats && wlast.values[i] === '1') {
             violations.push({
@@ -65,56 +96,66 @@ function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): Wav
           }
         }
       }
+      completedCount = triggerCount;
     }
   }
 
-  return violations;
+  return { violations, triggerCount, completedCount, cancelledCount, pendingCount };
 }
 
 export default function FormalPropertyPlayground({ data }: { data: FormalPropertyData }) {
-  const [currentWaveform, setCurrentWaveform] = useState<WaveformVisualData>(data.waveform);
+  const [signals, setSignals] = useState(() => data.waveform.signals);
 
-  // Evaluate whenever the waveform data changes
-  const evaluateAndSetWaveform = useCallback((waveform: WaveformVisualData) => {
-    const violations = evaluateFormalProperty(waveform, data.property.evaluatorRule);
-    setCurrentWaveform({
-      ...waveform,
-      violations
-    });
-  }, [data.property.evaluatorRule]);
-
-  // Initial evaluation on mount
   useEffect(() => {
-    evaluateAndSetWaveform(data.waveform);
-  }, [data.waveform, evaluateAndSetWaveform]);
+    setSignals(data.waveform.signals);
+  }, [data.waveform]);
 
-  const handleSignalClick = (signalName: string, cycle: number) => {
+  const waveformForEvaluation = useMemo<WaveformVisualData>(
+    () => ({ ...data.waveform, signals }),
+    [data.waveform, signals],
+  );
+  const evaluation = useMemo(
+    () => evaluateFormalProperty(waveformForEvaluation, data.property.evaluatorRule),
+    [data.property.evaluatorRule, waveformForEvaluation],
+  );
+  const currentWaveform = useMemo<WaveformVisualData>(
+    () => ({ ...waveformForEvaluation, violations: evaluation.violations }),
+    [evaluation.violations, waveformForEvaluation],
+  );
+
+  const handleSignalClick = useCallback((signalName: string, cycle: number) => {
     if (!data.editableSignals.includes(signalName)) {
       return;
     }
 
     const cycleIndex = cycle - 1;
-    const newSignals = currentWaveform.signals.map(sig => {
-      if (sig.name === signalName) {
-        const newValues = [...sig.values];
-        const currentVal = newValues[cycleIndex];
-        // Only flip booleans
-        if (currentVal === '0') newValues[cycleIndex] = '1';
-        else if (currentVal === '1') newValues[cycleIndex] = '0';
-        return { ...sig, values: newValues };
-      }
-      return sig;
-    });
-
-    const newWaveform = { ...currentWaveform, signals: newSignals };
-    evaluateAndSetWaveform(newWaveform);
-  };
+    setSignals(currentSignals => currentSignals.map(sig => {
+      if (sig.name !== signalName) return sig;
+      const newValues = [...sig.values];
+      const currentVal = newValues[cycleIndex];
+      if (currentVal === '0') newValues[cycleIndex] = '1';
+      else if (currentVal === '1') newValues[cycleIndex] = '0';
+      return { ...sig, values: newValues };
+    }));
+  }, [data.editableSignals]);
 
   const handleReset = () => {
-    evaluateAndSetWaveform(data.waveform);
+    setSignals(data.waveform.signals);
   };
 
-  const hasViolations = currentWaveform.violations && currentWaveform.violations.length > 0;
+  const isAhbContract = data.property.evaluatorRule === 'ahb-hready-bounded-liveness';
+  const hasViolations = evaluation.violations.length > 0;
+  const statusText = !isAhbContract
+    ? (hasViolations ? 'FAIL (Property Violation)' : 'PASS (Property Holds)')
+    : hasViolations
+      ? 'FAIL (Configured Service-Contract Violation)'
+      : evaluation.pendingCount > 0
+        ? 'INCONCLUSIVE (Completion Window Extends Beyond Trace)'
+        : evaluation.triggerCount === 0
+          ? 'NOT TRIGGERED (No Accepted Address Phase)'
+          : evaluation.cancelledCount > 0 && evaluation.completedCount === 0
+            ? 'PASS (Obligation Cancelled by Reset)'
+            : 'PASS (Configured Contract Holds)';
 
   return (
     <div className="formal-playground-container">
@@ -125,13 +166,9 @@ export default function FormalPropertyPlayground({ data }: { data: FormalPropert
           <code>{data.property.svaString}</code>
         </div>
         <p className="formal-property-desc">{data.property.description}</p>
-        <div className={`formal-property-status ${hasViolations ? 'has-violations' : 'holds'}`}>
+        <div className={`formal-property-status ${hasViolations ? 'has-violations' : 'holds'}`} role="status" aria-live="polite">
           <strong>Status: </strong>
-          {hasViolations ? (
-            <span className="status-fail">FAIL (Property Violation)</span>
-          ) : (
-            <span className="status-pass">PASS (Property Holds)</span>
-          )}
+          <span className={hasViolations ? 'status-fail' : 'status-pass'}>{statusText}</span>
         </div>
         <div className="formal-property-controls">
           <button 

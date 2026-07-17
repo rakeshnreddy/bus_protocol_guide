@@ -28,13 +28,13 @@ A read transaction only utilizes two channels (AR and R). Let's walk through a 3
 *   **Cycle 4:**
     *   **R Channel:** The first beat (`D0`) transfers with `RID = 5` and `RRESP = OKAY`.
 *   **Cycles 5–6:**
-    *   **R Channel:** The slave offers the second beat (`D1`), but the master deasserts `RREADY`. `RVALID`, `RID`, `RDATA`, `RRESP`, and `RLAST` all remain stable through the stall.
+    *   **R Channel:** The slave offers the second beat (`D1`), but the master deasserts `RREADY`. `RVALID`, `RID`, `RDATA`, `RRESP`, `RLAST`, and `RUSER` when present all remain stable through the stall.
 *   **Cycle 7:**
     *   **R Channel:** `RREADY` returns HIGH and the second beat transfers.
 *   **Cycle 8:**
     *   **R Channel:** The third and final beat (`D2`) transfers with `RLAST = 1` and `RRESP = SLVERR`. A response qualifies every R beat, and an error does not shorten the burst declared by `ARLEN`.
 
 ### Why is RLAST important?
-In AHB, the master drives `HTRANS` on every single cycle to tell the slave whether a burst is continuing or ending. In AXI, the master sends the address *once* (specifying `ARLEN=2` to request 3 beats) and then just waits. 
+In AHB, the active address owner drives `HTRANS` during each address phase; accepted `SEQ`/`NONSEQ` transfers and the fixed/undefined burst context describe progression. In AXI, the master sends the address/control request *once* (`ARLEN=2` requests 3 beats), and the slave returns the declared number of R transfers.
 
-The master relies on the slave to assert `RLAST` on the 3rd beat so its tracking logic can close the transaction for that `RID`. If `RLAST` does not agree with `ARLEN + 1`, the slave has violated the protocol. A monitor must flag the mismatching accepted beat; the receiving implementation's recovery behavior is not defined by AXI and must not be assumed to be a particular hang or reset sequence.
+The master relies on the slave to assert `RLAST` on the 3rd **accepted** beat so its tracking logic can close the transaction for that `RID`. It retires only on `RVALID && RREADY && RLAST`. If `RLAST` does not agree with `ARLEN + 1`, the slave has violated the protocol. A monitor must flag the mismatching accepted beat; recovery is implementation-defined.

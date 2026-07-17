@@ -28,13 +28,13 @@ Signaling an `ERROR` is not as simple as pulling `HRESP` high for one cycle. Bec
 To handle this cleanly, the AHB specification requires `ERROR` responses to take exactly **two clock cycles**:
 
 1. **Cycle 1 (Error Signal):**
-   - The slave drives `HRESP = ERROR` (1).
-   - The slave drives `HREADY = 0` (Wait state).
+   - The owning subordinate drives `HRESP = ERROR` (1).
+   - It drives `HREADYOUT = 0`; the manager observes global `HREADY = 0`.
    - *Why?* This gives the master one cycle to realize an error occurred. Because `HREADY` is low, the pipelined *next* address is stalled.
 
 2. **Cycle 2 (Error Completion):**
-   - The slave keeps `HRESP = ERROR` (1).
-   - The slave drives `HREADY = 1` (Ready).
+   - The subordinate keeps `HRESP = ERROR` (1).
+   - It drives `HREADYOUT = 1`; global `HREADY = 1` completes the failed transfer.
    - *Why?* Driving `HREADY` high officially terminates the failed Data Phase. The extra cycle gives the master time to change `HTRANS` to `IDLE` if it chooses to cancel the pipelined request that was already broadcast.
 
 Inspect which address owns both ERROR cycles. The following address is visible in the pipeline, but it is not the transfer being reported as failed.
@@ -43,4 +43,4 @@ Inspect which address owns both ERROR cycles. The following address is visible i
 
 ## Master Responsibility
 
-When a master receives an `ERROR` response, it **may** cancel the remaining transfers in the burst, but the specification also permits it to continue them. If it cancels, it must drive `HTRANS` to `IDLE` during the two-cycle response. A verification environment must check the implemented master's documented choice without confusing the already-broadcast following address with the data phase that returned the error.
+Ordinary wait cycles can precede ERROR1, but those cycles keep `HRESP=OKAY`; the two ERROR cycles begin only when `HRESP` changes to ERROR. During ERROR1, the normal pending-transfer stability rule has a precise exception: the manager may cancel the remaining transfers by changing the following transfer to `HTRANS=IDLE`. The specification also permits it to continue legal following work. A verification environment must check the implemented documented policy without confusing the visible following address with the data owner that returned the error.

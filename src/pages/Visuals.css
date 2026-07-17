@@ -167,8 +167,8 @@
 .visuals-protocol-filters button:focus-visible,
 .visuals-protocol-filters button.active {
   border-color: var(--visuals-blue);
-  color: var(--brand-contrast);
-  background: var(--visuals-blue);
+  color: var(--brand-ink);
+  background: var(--brand-soft);
   outline: none;
 }
 

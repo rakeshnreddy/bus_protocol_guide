@@ -7,8 +7,11 @@ interface CoverageMapProps {
 }
 
 const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
+  const [configurationId, setConfigurationId] = useState(data.configurations?.[0]?.id ?? 'default');
   const [hoveredBin, setHoveredBin] = useState<{x: string, y: string} | null>(null);
   const [selectedBin, setSelectedBin] = useState<{x: string, y: string} | null>(null);
+
+  const activeConfiguration = data.configurations?.find(configuration => configuration.id === configurationId);
 
   // Helper to get bin state
   const getBin = (x: string, y: string) => {
@@ -17,12 +20,33 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
 
   const activeKey = hoveredBin ?? selectedBin;
   const activeBin = activeKey ? getBin(activeKey.x, activeKey.y) : null;
+  const isIllegal = (bin: CoverageMapData['bins'][number] | undefined) =>
+    Boolean(bin && (bin.illegal || activeConfiguration?.illegalRows?.includes(bin.y)));
 
   return (
     <div className="visual-container">
       <div className="visual-header">
         <h2>{data.title}</h2>
         {data.description && <p className="visual-description">{data.description}</p>}
+        {data.configurations && data.configurations.length > 1 && (
+          <div className="coverage-configuration">
+            <label htmlFor={`${data.id}-configuration`}>Protocol configuration</label>
+            <select
+              id={`${data.id}-configuration`}
+              value={configurationId}
+              onChange={event => {
+                setConfigurationId(event.target.value);
+                setHoveredBin(null);
+                setSelectedBin(null);
+              }}
+            >
+              {data.configurations.map(configuration => (
+                <option key={configuration.id} value={configuration.id}>{configuration.label}</option>
+              ))}
+            </select>
+            {activeConfiguration?.description && <p>{activeConfiguration.description}</p>}
+          </div>
+        )}
         <div className="coverage-legend">
           <span className="legend-item"><span className="legend-color hole"></span> Hole (0 Hits)</span>
           <span className="legend-item"><span className="legend-color hit"></span> Covered</span>
@@ -55,7 +79,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
                     let cellClass = 'coverage-cell ';
                     if (!bin) {
                       cellClass += 'unknown';
-                    } else if (bin.illegal) {
+                    } else if (isIllegal(bin)) {
                       cellClass += 'illegal';
                     } else if (bin.hits === 0) {
                       cellClass += 'hole';
@@ -67,7 +91,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
                     const isSelected = selectedBin?.x === x && selectedBin?.y === y;
                     const stateLabel = !bin
                       ? 'unknown bin'
-                      : bin.illegal
+                      : isIllegal(bin)
                         ? 'illegal combination'
                         : bin.hits === 0
                           ? 'coverage hole, zero hits'
@@ -110,13 +134,18 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ data }) => {
             {activeBin.x} × {activeBin.y}
           </strong>
           <p>
-            {activeBin.illegal 
+            {isIllegal(activeBin)
               ? `Illegal: ${activeBin.tooltip}` 
               : activeBin.hits === 0 
                 ? `Coverage Hole: ${activeBin.tooltip}` 
                 : `Covered (${activeBin.hits} hits): ${activeBin.tooltip}`
             }
           </p>
+          {activeBin.errorBeatHits && (
+            <p>
+              Error beat position: first {activeBin.errorBeatHits.first}, middle {activeBin.errorBeatHits.middle}, final {activeBin.errorBeatHits.final}.
+            </p>
+          )}
         </div>
       )}
     </div>

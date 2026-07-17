@@ -28,7 +28,7 @@ Here is what you need to remember for your next interview, or your next chip tap
 ## For Interviews
 
 1. **How is AXI different from AHB?**
-   "AXI has five independent, decoupled channels. AHB is a shared bus with a strict pipeline. AXI allows out-of-order completion based on transaction IDs; AHB must return data in the exact order it was requested."
+   "AXI has five independently handshaken channels. Original AHB uses a shared, pipelined bus. AXI permits responses for different ID streams to reorder when no tighter destination or system constraint applies; responses sharing an ID preserve request order. AHB completes transfers in its pipelined bus order."
 
 2. **What is the golden rule of AXI ordering?**
    "Read responses sharing one ID and write responses sharing one ID preserve request order. Different IDs permit response reordering when no additional memory, barrier, or system constraint applies. Matching read and write ID values do not by themselves create cross-channel order."

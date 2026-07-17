@@ -29,7 +29,7 @@ The slave is required to mirror that exact ID when it provides the corresponding
 *   **`BID`** must match `AWID` for writes.
 *   **`RID`** must match `ARID` for reads.
 
-When the master receives `BID` or `RID`, it uses that tag to close out the transaction in its internal tracking logic.
+When the master receives `BID` or `RID`, it uses that tag plus the per-ID issue queue to select the transaction. A read retires only on an accepted `RLAST` beat, and a write retires only on an accepted B response.
 
 ![AXI4 writes whose data follows address order while different-ID responses complete in another order](visual:wf-axi-ids-correlation)
 
@@ -41,10 +41,10 @@ Crucially, **the ID width can change as a transaction travels through a system i
 
 If Master 0 issues a transaction with `ARID=0x1`, and Master 1 issues a transaction with `ARID=0x1` at the same time, the interconnect must preserve enough source context to keep them distinct at a shared slave and to route their responses correctly. Physically appending source bits is one common implementation, but an interconnect can instead remap IDs or retain source metadata internally.
 
-When the slave returns data, the interconnect reverses its configured mapping and presents the original master-local ID at the originating interface. The exact internal encoding is an implementation choice, not an AXI-mandated bit layout.
+When the slave returns data, the interconnect reverses its configured mapping and presents the original master-local ID at the originating interface. Verification must check both route ownership and restoration; the exact internal encoding is an implementation choice, not an AXI-mandated bit layout.
 
 Inspect the two routes below: both masters legally use local ID 0x1, while the fabric retains source ownership across request and response paths.
 
 ![AXI crossbar preserving two masters' local ID ownership across concurrent target routes](visual:tp-axi-crossbar)
 
-This means you must never rely on IDs having a fixed, global meaning across an entire SoC. Their meaning is strictly local to the specific point-to-point interface.
+This means you must never rely on IDs having a fixed, global meaning across an entire SoC. Their meaning is local to an interface, and an ID can be reused for multiple queued requests while per-ID order disambiguates them. AXI4 W has no ID and follows AW order; AXI3 uses `WID`. AXI4-Lite normally has no IDs, keeps responses ordered, and still permits multiple outstanding transactions.

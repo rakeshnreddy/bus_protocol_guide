@@ -34,9 +34,9 @@ describe('AHB Batch 4 protocol-accuracy guards', () => {
     const formal = getVisualById('fp-ahb-hready-liveness');
     if (!formal || formal.type !== 'formal-property') throw new Error('Missing liveness visual');
 
-    expect(lessonBody(32)).toMatch(/example teaching contract, not a universal AHB maximum/i);
+    expect(lessonBody(32)).toMatch(/four-cycle window.*teaching contract, not a universal AHB maximum/i);
     expect(lessonBody(32)).toMatch(/AHB does not mandate one fairness policy/i);
-    expect(formal.property.description).toMatch(/configuration bound, not one universal AHB protocol limit/i);
+    expect(formal.property.description).toMatch(/teaching\/configuration bound, not an AHB protocol maximum/i);
   });
 
   // Arm IHI 0033B.b section 5.1.3 permits canceling or continuing after ERROR.

@@ -32,6 +32,7 @@ const visualTypeLabels: Record<VisualData['type'], string> = {
   'coverage-map': 'Coverage map',
   'formal-property': 'Formal property',
   'spec-rule-explorer': 'Rule explorer',
+  'checker-model': 'Executable checker model',
 };
 
 const visualInspectionPrompts: Record<VisualData['type'], string> = {
@@ -42,6 +43,7 @@ const visualInspectionPrompts: Record<VisualData['type'], string> = {
   'coverage-map': 'Inspect covered bins, holes, and exclusions. Explain which transaction context makes each combination meaningful.',
   'formal-property': 'Change the editable scenario, compare pass and fail states, and explain the sampled obligation at the failing edge.',
   'spec-rule-explorer': 'Filter to the relevant rule, then connect its obligation to the waveform symptom and checker evidence.',
+  'checker-model': 'Choose a scenario, execute accepted events, inspect retained state, and connect each result to signoff evidence.',
 };
 
 const ownershipRecallPrompts: Record<Lesson['protocol'], string> = {
