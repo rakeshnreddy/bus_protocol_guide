@@ -410,12 +410,12 @@ describe('production visual rendering', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/Conditional coverage hole.*AxLOCK/i);
   });
 
-  it('lets the formal playground expose early WLAST on accepted beat three', () => {
+  it('lets the transaction-aware formal playground expose early WLAST in the second AW context', () => {
     renderProductionVisual('fp-axi-wlast-exact');
-    fireEvent.click(screen.getByTestId('interaction-WLAST-4'));
+    fireEvent.click(screen.getByTestId('interaction-WLAST-8'));
     expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Inspect cycle 4' }));
-    expect(screen.getByText(/WLAST is asserted early.*beat 3/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Inspect cycle 8' }));
+    expect(screen.getByText(/WLAST is asserted early.*AWID 9.*accepted beat 2 of 3/i)).toBeInTheDocument();
   });
 
   it('opens per-ID signoff evidence from a keyboard-sized explorer control', () => {

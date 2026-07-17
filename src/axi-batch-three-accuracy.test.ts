@@ -31,9 +31,10 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
       'tp-axi-crossbar',
       'tl-axi-qos-arbitration',
       'tp-axi-apb-bridge',
+      'topo-axi-ahb-bridge',
     ];
 
-    expect(getAllVisuals()).toHaveLength(87);
+    expect(getAllVisuals()).toHaveLength(88);
     expectedIds.forEach(id => expect(getVisualById(id), id).toBeDefined());
 
     for (let order = 23; order <= 33; order += 1) {
@@ -138,11 +139,15 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
   it('holds the complete AXI4-Stream final beat stable through backpressure', () => {
     expect(signalValues('wf-axi-stream', 'TVALID').slice(3, 5)).toEqual(['1', '1']);
     expect(signalValues('wf-axi-stream', 'TREADY').slice(3, 5)).toEqual(['0', '1']);
-    for (const signal of ['TDATA', 'TKEEP', 'TLAST', 'TID', 'TDEST']) {
+    for (const signal of ['TDATA', 'TKEEP', 'TSTRB', 'TLAST', 'TID', 'TDEST']) {
       const values = signalValues('wf-axi-stream', signal);
       expect(values[3], signal).toBe(values[4]);
     }
     expect(signalValues('wf-axi-stream', 'TLAST').slice(3, 5)).toEqual(['1', '1']);
+    expect(signalValues('wf-axi-stream', 'TKEEP').slice(3, 5)).toEqual(['0011', '0011']);
+    expect(signalValues('wf-axi-stream', 'TSTRB').slice(3, 5)).toEqual(['0001', '0001']);
+    expect(lesson(29).body).toMatch(/TKEEP=1, TSTRB=0.*position byte/i);
+    expect(lesson(29).body).toMatch(/TSTRB.*absent.*defaults to.*TKEEP/i);
     expect(lesson(29).body).toMatch(/source holds `TVALID` and the payload stable/i);
   });
 
@@ -186,5 +191,21 @@ describe('AXI Batch 3 protocol-accuracy guards', () => {
     expect(lesson(33).body).toMatch(/How much AXI address and write data it accepts.*documented buffering/i);
     expect(lesson(33).body).toMatch(/APB3 and later define optional `PSLVERR`/i);
     expect(lesson(33).body).not.toMatch(/prior to APB4|strict 2-cycle transfers/i);
+  });
+
+  // Arm IHI 0022H A3.4 and IHI 0033B.b 3.7: a legal AXI burst can
+  // cross an AHB 1 KB boundary, so conversion must split the AHB work.
+  it('makes AXI-to-AHB boundary, ordering, response, and attribute conversion explicit', () => {
+    const visual = getVisualById('topo-axi-ahb-bridge');
+    if (!visual || visual.type !== 'topology') throw new Error('Missing AXI/AHB bridge topology');
+
+    expect(visual.annotations?.find(annotation => annotation.nodeId === 'split-serialize')?.message)
+      .toMatch(/AXI burst.*4 KB.*AHB 1 KB.*splits/i);
+    expect(visual.annotations?.find(annotation => annotation.nodeId === 'axi-intake')?.message)
+      .toMatch(/accepting W before AW.*accepted AW.*AXI4 write-address order/i);
+    expect(visual.annotations?.find(annotation => annotation.nodeId === 'response-context')?.message)
+      .toMatch(/RRESP per read beat.*one BRESP.*BID\/RID/i);
+    expect(lesson(33).body).toMatch(/AXI exclusives.*HLOCKx.*HMASTLOCK.*distinct mechanisms/i);
+    expect(lesson(33).body).toMatch(/AxPROT.*HPROT.*HNONSEC/i);
   });
 });

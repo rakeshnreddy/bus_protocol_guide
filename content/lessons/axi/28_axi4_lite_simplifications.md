@@ -19,7 +19,7 @@ Not every peripheral needs the massive throughput of full AXI. If you are design
 
 For these use cases, ARM created **AXI4-Lite**. 
 
-AXI4-Lite retains the five-channel `VALID`/`READY` architecture of AXI4, but strips away all the complexity.
+AXI4-Lite removes bursts, ID-based reordering, exclusive accesses, and cache controls, but retains the five independently handshaken channels, response handling, backpressure, reset obligations, partial writes through `WSTRB`, and implementation-defined outstanding-transaction limits.
 
 ## The Rules of AXI4-Lite
 

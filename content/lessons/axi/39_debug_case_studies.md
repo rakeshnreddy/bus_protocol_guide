@@ -43,13 +43,13 @@ Circular cross-channel progress policy. The shown VALID sources obey their chann
 ![Waveform showing out-of-order read completion](visual:wf-axi-out-of-order)
 
 **The Symptom:**
-The testbench reports a data mismatch on a read transaction. It expected `0xAAAA` but received `0xBBBB`.
+The testbench reports a data mismatch on a read transaction. Its single global queue expected beat `A0`, but the interface returned beat `B0` with `RID=1`.
 
 **The Debug Flow:**
-1. Check the timeline. The master issues `ARADDR=0x100` (`ARID=0`).
-2. The master issues `ARADDR=0x200` (`ARID=1`).
-3. The slave returns data `0xBBBB`. Look closely at the `RID` on this data transfer. It is `RID=1`.
-4. The testbench complains because it expected the data for `0x100` (`0xAAAA`). 
+1. Check the timeline. The master issues transaction A at `ARADDR=0x1000` (`ARID=0`).
+2. The master issues transaction B at `ARADDR=0x2000` (`ARID=1`).
+3. The subordinate returns beats `B0` and `B1` first. Their `RID=1` associates them with transaction B, and `RLAST=1` on `B1` completes that response.
+4. The flawed testbench complains on `B0` because its one global queue still expects transaction A's first beat, `A0`. The later `A0` and `A1` transfers carry `RID=0` and complete A legally.
 
 **The Root Cause:**
 The subordinate completed the responses out of order. This response order is permitted because the IDs differ (`ARID=0` vs `ARID=1`) and no additional system ordering constraint is shown. The bug is in the testbench scoreboard, which used one global issue queue instead of selecting the expected per-ID queue with `RID`.

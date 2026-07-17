@@ -1,0 +1,74 @@
+{
+  "id": "topo-axi-ahb-bridge",
+  "type": "topology",
+  "title": "AXI4-to-AHB5 Bridge Obligations",
+  "description": "Trace accepted AXI4 requests through buffered AW-order association, 4 KB-to-1 KB burst splitting, serialized AHB phases, and ID-aware response reconstruction without equating lock, exclusive, protection, or security mechanisms.",
+  "regions": [
+    { "id": "axi-source", "label": "AXI4 manager side", "x": 30, "y": 55, "width": 250, "height": 460, "tone": "source" },
+    { "id": "bridge-fabric", "label": "Bridge-owned conversion state", "x": 320, "y": 55, "width": 420, "height": 460, "tone": "fabric" },
+    { "id": "ahb-target", "label": "AMBA 5 AHB side", "x": 780, "y": 55, "width": 280, "height": 460, "tone": "target" }
+  ],
+  "nodes": [
+    { "id": "axi-manager", "label": "AXI4 Manager\nAW/W/B + AR/R", "type": "master", "x": 155, "y": 285, "width": 180, "height": 72 },
+    { "id": "axi-intake", "label": "AXI Intake\nAccepted AW/AR queues\nEarly-W buffer", "type": "concept", "x": 430, "y": 160, "width": 200, "height": 84 },
+    { "id": "split-serialize", "label": "Split + Serialize\n4 KB AXI → 1 KB AHB\nAXI4 AW order", "type": "bridge", "x": 575, "y": 285, "width": 210, "height": 84 },
+    { "id": "response-context", "label": "Response + Context\nBID/RID restoration\nBRESP/RRESP mapping", "type": "concept", "x": 430, "y": 410, "width": 210, "height": 84 },
+    { "id": "ahb-path", "label": "AHB Subordinate Path\nAddress/data phases\nHRESP per transfer", "type": "slave", "x": 920, "y": 285, "width": 210, "height": 84 }
+  ],
+  "edges": [
+    {
+      "id": "e-axi-request",
+      "source": "axi-manager",
+      "target": "axi-intake",
+      "label": "Accepted AW/W/AR →",
+      "kind": "request",
+      "tone": "primary",
+      "labelPosition": { "x": 220, "y": 145 }
+    },
+    {
+      "id": "e-intake-translate",
+      "source": "axi-intake",
+      "target": "split-serialize",
+      "kind": "relationship",
+      "tone": "primary"
+    },
+    {
+      "id": "e-ahb-command",
+      "source": "split-serialize",
+      "target": "ahb-path",
+      "label": "AHB address/control/data →",
+      "kind": "channel",
+      "tone": "primary",
+      "labelPosition": { "x": 748, "y": 210 }
+    },
+    {
+      "id": "e-ahb-return",
+      "source": "ahb-path",
+      "target": "response-context",
+      "label": "HREADY/HRESP/HRDATA ←",
+      "kind": "response",
+      "tone": "secondary",
+      "waypoints": [{ "x": 920, "y": 470 }, { "x": 560, "y": 470 }, { "x": 560, "y": 410 }],
+      "labelPosition": { "x": 720, "y": 505 }
+    },
+    {
+      "id": "e-axi-response",
+      "source": "response-context",
+      "target": "axi-manager",
+      "label": "BID/BRESP + RID/RRESP/RLAST ←",
+      "kind": "response",
+      "tone": "secondary",
+      "labelPosition": { "x": 270, "y": 505 }
+    }
+  ],
+  "highlightedPath": ["axi-manager", "e-axi-request", "axi-intake", "e-intake-translate", "split-serialize", "e-ahb-command", "ahb-path", "e-ahb-return", "response-context", "e-axi-response"],
+  "annotations": [
+    { "nodeId": "axi-intake", "message": "The bridge can advertise only the outstanding depth it can preserve. It retains full ID and request context; accepting W before AW requires storage until an accepted AW assigns that data in AXI4 write-address order." },
+    { "nodeId": "split-serialize", "message": "An AXI burst that obeys its 4 KB rule can still cross an AHB 1 KB boundary. The bridge derives addresses and splits the downstream work so every emitted AHB burst remains inside one 1 KB region." },
+    { "nodeId": "response-context", "message": "AHB reports completion per transfer, while AXI returns RRESP per read beat and one BRESP per write transaction. The bridge preserves BID/RID context and applies its documented error aggregation and mapping." },
+    { "nodeId": "ahb-path", "message": "AHB address ownership and data/response ownership remain phase-aware. Serialization, arbitration, and service limits are bridge or system policy, not new AXI protocol rules." },
+    { "edgeId": "e-ahb-command", "message": "Protection and security attributes require an explicit supported mapping, such as appropriate AxPROT information into HPROT/HNONSEC. AxCACHE, AxQOS, and AxREGION have no universal one-to-one AHB encoding." },
+    { "edgeId": "e-ahb-return", "message": "A downstream AHB ERROR is normally surfaced as AXI SLVERR; an upstream decode miss can produce DECERR. The bridge must document the exact mapping and cannot return OKAY after an observed downstream error." },
+    { "edgeId": "e-axi-response", "message": "AXI exclusive access, original-AHB locking, AHB5 HMASTLOCK, AHB5 exclusive signaling, and security attribution are distinct. A bridge maps only mechanisms it implements and otherwise rejects or degrades them according to an explicit contract." }
+  ]
+}

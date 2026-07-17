@@ -37,9 +37,12 @@ AXI-Stream relies entirely on the universal `VALID`/`READY` handshake you alread
 *   **`TREADY`:** Slave can accept data.
 *   **`TDATA`:** The payload (e.g., the video pixel or the network packet payload).
 *   **`TLAST`:** Indicates the boundary of a packet or frame.
-*   **`TKEEP` (optional):** Marks which byte positions contain data, especially on a partial final beat.
+*   **`TKEEP` (optional):** Marks which byte positions must be transported, especially on a partial final beat.
+*   **`TSTRB` (optional):** Distinguishes data bytes from position bytes within the byte positions enabled by `TKEEP`.
 
-![Three-beat AXI4-Stream packet holding TDATA, TKEEP, TLAST, TID, and TDEST stable during backpressure](visual:wf-axi-stream)
+For each byte lane, `TKEEP=1, TSTRB=1` identifies a data byte, while `TKEEP=1, TSTRB=0` identifies a position byte whose location is meaningful but whose data value is not. `TKEEP=0, TSTRB=0` identifies a null byte; `TKEEP=0, TSTRB=1` is reserved. If `TSTRB` is absent, it defaults to the value of `TKEEP`. If both signals are absent, both default HIGH so every lane carries a data byte.
+
+![Three-beat AXI4-Stream packet holding TDATA, TKEEP, TSTRB, TLAST, TID, and TDEST stable during backpressure, with a position byte on the final beat](visual:wf-axi-stream)
 
 ## Sidebands and Packets
 

@@ -11,6 +11,25 @@ type FormalEvaluation = {
   pendingCount: number;
 };
 
+type AxiWriteContext = {
+  acceptedCycle: number;
+  awlen: number;
+  expectedBeats: number;
+  id: string;
+  receivedBeats: number;
+};
+
+type AcceptedWriteBeat = {
+  cycle: number;
+  last: boolean;
+};
+
+function parseAwlen(value: string | undefined): number | null {
+  if (!value || value === '-' || value === 'INV') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 255 ? parsed : null;
+}
+
 // Lightweight, deterministic evaluator for formal-property teaching traces.
 export function evaluateFormalProperty(waveform: WaveformVisualData, rule: string): FormalEvaluation {
   const violations: NonNullable<WaveformVisualData['violations']> = [];
@@ -65,38 +84,79 @@ export function evaluateFormalProperty(waveform: WaveformVisualData, rule: strin
       }
     }
   } else if (rule === 'axi-wlast-exact') {
+    const awvalid = waveform.signals.find(s => s.name === 'AWVALID');
+    const awready = waveform.signals.find(s => s.name === 'AWREADY');
+    const awlen = waveform.signals.find(s => s.name === 'AWLEN');
+    const awid = waveform.signals.find(s => s.name === 'AWID');
     const wvalid = waveform.signals.find(s => s.name === 'WVALID');
     const wready = waveform.signals.find(s => s.name === 'WREADY');
     const wlast = waveform.signals.find(s => s.name === 'WLAST');
-    
-    if (wvalid && wready && wlast) {
-      let beatCount = 0;
-      const totalBeats = 4;
-      
+
+    if (awvalid && awready && awlen && wvalid && wready && wlast) {
+      const acceptedAwQueue: AxiWriteContext[] = [];
+      const bufferedWQueue: AcceptedWriteBeat[] = [];
+
+      const associateAcceptedWriteData = () => {
+        while (acceptedAwQueue.length > 0 && bufferedWQueue.length > 0) {
+          const context = acceptedAwQueue[0];
+          const beat = bufferedWQueue.shift();
+          if (!context || !beat) break;
+
+          context.receivedBeats += 1;
+          const isExpectedLast = context.receivedBeats === context.expectedBeats;
+          const contextLabel = `AWID ${context.id}, accepted at cycle ${context.acceptedCycle}, AWLEN=${context.awlen}`;
+
+          if (beat.last && !isExpectedLast) {
+            violations.push({
+              cycle: beat.cycle,
+              message: `WLAST is asserted early for ${contextLabel}. This is accepted beat ${context.receivedBeats} of ${context.expectedBeats}.`,
+            });
+          } else if (!beat.last && isExpectedLast) {
+            violations.push({
+              cycle: beat.cycle,
+              message: `WLAST is missing on accepted beat ${context.expectedBeats} of ${contextLabel}.`,
+            });
+          }
+
+          if (isExpectedLast) {
+            acceptedAwQueue.shift();
+            completedCount += 1;
+          }
+        }
+      };
+
       for (let i = 0; i < cycleCount; i++) {
-        // Evaluate WLAST only on valid handshakes for simplicity
-        if (wvalid.values[i] === '1' && wready.values[i] === '1') {
-          triggerCount++;
-          beatCount++;
-          if (beatCount < totalBeats && wlast.values[i] === '1') {
+        if (awvalid.values[i] === '1' && awready.values[i] === '1') {
+          triggerCount += 1;
+          const parsedAwlen = parseAwlen(awlen.values[i]);
+
+          if (parsedAwlen === null) {
             violations.push({
               cycle: i + 1,
-              message: `WLAST is asserted early. This is beat ${beatCount}, but the burst requires ${totalBeats} beats.`
+              message: 'An accepted AW transfer needs a numeric AWLEN so its write-data obligation can be evaluated.',
             });
-          } else if (beatCount === totalBeats && wlast.values[i] !== '1') {
-            violations.push({
-              cycle: i + 1,
-              message: `WLAST must be asserted on the final beat (${totalBeats}) of the burst.`
-            });
-          } else if (beatCount > totalBeats && wlast.values[i] === '1') {
-            violations.push({
-              cycle: i + 1,
-              message: `WLAST asserted after burst completion. Burst already reached ${totalBeats} beats.`
+          } else {
+            acceptedAwQueue.push({
+              acceptedCycle: i + 1,
+              awlen: parsedAwlen,
+              expectedBeats: parsedAwlen + 1,
+              id: awid?.values[i] && !['-', 'INV'].includes(awid.values[i]) ? awid.values[i] : 'untracked',
+              receivedBeats: 0,
             });
           }
         }
+
+        if (wvalid.values[i] === '1' && wready.values[i] === '1') {
+          bufferedWQueue.push({ cycle: i + 1, last: wlast.values[i] === '1' });
+        }
+
+        // AXI4 write data follows accepted write-address order. A subordinate can
+        // accept W before AW only if it buffers the beat until this association
+        // context exists, which this queue models explicitly.
+        associateAcceptedWriteData();
       }
-      completedCount = triggerCount;
+
+      pendingCount = acceptedAwQueue.length + (bufferedWQueue.length > 0 ? 1 : 0);
     }
   }
 
@@ -144,10 +204,10 @@ export default function FormalPropertyPlayground({ data }: { data: FormalPropert
   };
 
   const isAhbContract = data.property.evaluatorRule === 'ahb-hready-bounded-liveness';
+  const isAxiWlastContract = data.property.evaluatorRule === 'axi-wlast-exact';
   const hasViolations = evaluation.violations.length > 0;
-  const statusText = !isAhbContract
-    ? (hasViolations ? 'FAIL (Property Violation)' : 'PASS (Property Holds)')
-    : hasViolations
+  const statusText = isAhbContract
+    ? hasViolations
       ? 'FAIL (Configured Service-Contract Violation)'
       : evaluation.pendingCount > 0
         ? 'INCONCLUSIVE (Completion Window Extends Beyond Trace)'
@@ -155,7 +215,16 @@ export default function FormalPropertyPlayground({ data }: { data: FormalPropert
           ? 'NOT TRIGGERED (No Accepted Address Phase)'
           : evaluation.cancelledCount > 0 && evaluation.completedCount === 0
             ? 'PASS (Obligation Cancelled by Reset)'
-            : 'PASS (Configured Contract Holds)';
+            : 'PASS (Configured Contract Holds)'
+    : isAxiWlastContract
+      ? hasViolations
+        ? 'FAIL (Property Violation)'
+        : evaluation.pendingCount > 0
+          ? 'INCONCLUSIVE (Write Association or Burst Is Incomplete)'
+          : evaluation.triggerCount === 0
+            ? 'NOT TRIGGERED (No Accepted Write Address)'
+            : 'PASS (Property Holds)'
+      : hasViolations ? 'FAIL (Property Violation)' : 'PASS (Property Holds)';
 
   return (
     <div className="formal-playground-container">

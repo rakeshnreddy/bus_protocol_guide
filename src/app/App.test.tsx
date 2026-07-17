@@ -26,7 +26,7 @@ describe('App Routing and Lazy Loading', { timeout: 15000 }, () => {
     });
     // Home content is eager
     expect(screen.getByText(/A comprehensive, visual/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Explore 87 visuals' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Explore 88 visuals' })).toBeInTheDocument();
     expect(screen.getByText('interactive visuals').previousElementSibling).toHaveTextContent('87');
   });
 

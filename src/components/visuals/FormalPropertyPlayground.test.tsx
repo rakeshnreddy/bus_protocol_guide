@@ -46,6 +46,10 @@ const mockAxiData: FormalPropertyData = {
     title: 'Base Waveform',
     cycleCount: 6,
     signals: [
+      { name: 'AWVALID', type: 'control', values: ['0', '1', '0', '0', '0', '0'] },
+      { name: 'AWREADY', type: 'control', values: ['1', '1', '1', '1', '1', '1'] },
+      { name: 'AWLEN', type: 'data', values: ['-', '3', '-', '-', '-', '-'] },
+      { name: 'AWID', type: 'data', values: ['-', '7', '-', '-', '-', '-'] },
       { name: 'WVALID', type: 'control', values: ['0', '1', '1', '1', '1', '0'] },
       { name: 'WREADY', type: 'control', values: ['1', '1', '1', '1', '1', '1'] },
       { name: 'WLAST', type: 'control', values: ['0', '0', '0', '0', '1', '0'] }
@@ -191,6 +195,61 @@ describe('FormalPropertyPlayground', () => {
       fireEvent.click(screen.getByTestId('interaction-WLAST-5'));
       
       expect(screen.getByText('FAIL (Property Violation)')).toBeInTheDocument();
+    });
+
+    it('derives each burst length from its accepted AW and supports W-before-AW buffering', () => {
+      const transactionAwareTrace: FormalPropertyData['waveform'] = {
+        id: 'wf-axi-transaction-aware',
+        type: 'waveform',
+        title: 'Two dynamic bursts',
+        cycleCount: 8,
+        signals: [
+          { name: 'AWVALID', type: 'control', values: ['0', '1', '0', '0', '0', '1', '0', '0'] },
+          { name: 'AWREADY', type: 'control', values: ['1', '1', '1', '1', '1', '1', '1', '1'] },
+          { name: 'AWLEN', type: 'data', values: ['-', '0', '-', '-', '-', '2', '-', '-'] },
+          { name: 'AWID', type: 'data', values: ['-', '4', '-', '-', '-', '9', '-', '-'] },
+          { name: 'WVALID', type: 'control', values: ['1', '0', '0', '0', '1', '0', '1', '1'] },
+          { name: 'WREADY', type: 'control', values: ['1', '1', '1', '1', '1', '1', '1', '1'] },
+          { name: 'WLAST', type: 'control', values: ['1', '0', '0', '0', '0', '0', '0', '1'] },
+        ],
+      };
+
+      expect(evaluateFormalProperty(transactionAwareTrace, 'axi-wlast-exact')).toEqual({
+        violations: [],
+        triggerCount: 2,
+        completedCount: 2,
+        cancelledCount: 0,
+        pendingCount: 0,
+      });
+    });
+
+    it('checks exact LAST position separately for each accepted AW-order context', () => {
+      const trace = {
+        ...mockAxiData.waveform,
+        signals: mockAxiData.waveform.signals.map(signal => signal.name === 'AWLEN'
+          ? { ...signal, values: ['-', '1', '-', '-', '-', '-'] }
+          : signal.name === 'WLAST'
+            ? { ...signal, values: ['0', '0', '0', '0', '1', '0'] }
+            : signal),
+      };
+
+      const result = evaluateFormalProperty(trace, 'axi-wlast-exact');
+      expect(result.violations).toEqual([
+        expect.objectContaining({ cycle: 3, message: expect.stringMatching(/AWID 7.*AWLEN=1/i) }),
+      ]);
+      expect(result.pendingCount).toBe(1);
+    });
+
+    it('reports accepted write data without a matching AW as inconclusive', () => {
+      const trace = {
+        ...mockAxiData.waveform,
+        signals: mockAxiData.waveform.signals.map(signal => signal.name === 'AWVALID'
+          ? { ...signal, values: signal.values.map(() => '0') }
+          : signal),
+      };
+
+      render(<FormalPropertyPlayground data={{ ...mockAxiData, waveform: trace }} />);
+      expect(screen.getByText('INCONCLUSIVE (Write Association or Burst Is Incomplete)')).toBeInTheDocument();
     });
   });
 });

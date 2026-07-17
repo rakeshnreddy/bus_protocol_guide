@@ -27,7 +27,7 @@ describe('AXI Batch 4 protocol-accuracy guards', () => {
       'sig-axi-senior-recap',
     ];
 
-    expect(getAllVisuals()).toHaveLength(87);
+    expect(getAllVisuals()).toHaveLength(88);
     expectedIds.forEach(id => expect(getVisualById(id), id).toBeDefined());
 
     for (let order = 34; order <= 44; order += 1) {
@@ -86,10 +86,13 @@ describe('AXI Batch 4 protocol-accuracy guards', () => {
     const visual = getVisualById('fp-axi-wlast-exact');
     if (!visual || visual.type !== 'formal-property') throw new Error('Missing AXI formal visual');
 
-    expect(visual.property.svaString).toMatch(/WVALID && WREADY.*WLAST == \(beat_index == AWLEN\)/i);
+    expect(visual.property.svaString).toMatch(/accepted_aw_queue\.push\(AWID, AWLEN\).*WVALID && WREADY.*head\.accepted_w_index == head\.AWLEN/i);
     expect(visual.property.description).toMatch(/both directions/i);
+    expect(visual.waveform.signals.find(signal => signal.name === 'AWLEN')?.values.filter(value => value !== '-'))
+      .toEqual(['1', '2']);
     expect(visual.waveform.signals.find(signal => signal.name === 'ACCEPTED_BEAT')?.values)
-      .toEqual(['-', '1 of 4', '2 of 4', '3 of 4', '4 of 4', '-', '-']);
+      .toEqual(['-', 'buffered 1', 'AW ID 4', '2 of 2', '-', 'buffered 1', 'AW ID 9', '2 of 3', 'stalled', '3 of 3', '-', '-']);
+    expect(visual.property.description).toMatch(/accepted AW.*buffered before AW.*accepted AW order/i);
     visual.waveform.signals.forEach(signal => {
       expect(signal.values, signal.name).toHaveLength(visual.waveform.cycleCount);
     });
@@ -127,6 +130,9 @@ describe('AXI Batch 4 protocol-accuracy guards', () => {
       .toBe(true);
     expect(wlast.violations?.map(violation => violation.cycle)).toEqual([4, 5]);
     expect(lesson(39).body).toMatch(/rather than automatically a single-interface safety violation/i);
+    expect(lesson(39).body).toMatch(/ARADDR=0x1000[\s\S]*ARADDR=0x2000/i);
+    expect(lesson(39).body).toMatch(/`B0` and `B1`[\s\S]*`A0` and `A1`/i);
+    expect(lesson(39).body).not.toMatch(/0xAAAA|0xBBBB|ARADDR=0x100`|ARADDR=0x200`/i);
   });
 
   it('loads a complete evidence-oriented expert checklist', () => {

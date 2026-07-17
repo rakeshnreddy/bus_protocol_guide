@@ -48,7 +48,7 @@
       "description": "AXI4-Stream is not memory mapped. A source moves an ordered stream of transfer beats to a destination using TVALID and TREADY, with optional packet and byte-qualification sidebands.",
       "direction": "One logical source-to-destination stream; TREADY returns from destination",
       "sampled": "A stream beat transfers on a rising ACLK edge with TVALID and TREADY HIGH",
-      "values": ["No address channels", "TVALID/TREADY", "Optional TLAST/TKEEP/TID/TDEST"],
+      "values": ["No address channels", "TVALID/TREADY", "Optional TLAST/TKEEP/TSTRB/TID/TDEST"],
       "typicalUse": "Video, DSP, networking, and accelerator pipelines",
       "verificationNote": "Do not apply memory-mapped burst, response, or address-ordering rules to an AXI4-Stream interface."
     }

@@ -218,7 +218,7 @@ describe('Visual Loaders', () => {
 
   it('should report a clean production registry with recovered root-level files', () => {
     const report = getVisualRegistryReport();
-    expect(report.totalVisuals).toBe(87);
+    expect(report.totalVisuals).toBe(88);
     expect(report.countByType['checker-model']).toBe(8);
     expect(report.rootLevelVisualsRecovered).toBe(35);
     expect(report.duplicateIds).toEqual([]);

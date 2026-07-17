@@ -2,54 +2,78 @@
   "id": "fp-axi-wlast-exact",
   "type": "formal-property",
   "title": "AXI Safety: WLAST Exact Match",
-  "description": "Toggle WLAST on accepted write-data beats to see why a complete property must reject both early assertion and a missing final indication.",
+  "description": "Toggle WLAST on accepted write-data beats while an accepted-AW queue derives each burst length and associates buffered early W transfers in AXI4 write-address order.",
   "property": {
     "name": "WLAST Exact Match",
-    "description": "On every accepted W transfer, WLAST must equal whether the accepted-beat index has reached AWLEN. This four-beat teaching trace checks both directions; a production property also binds the counter to the correct accepted AW transaction.",
-    "svaString": "assert property (@(posedge ACLK) (WVALID && WREADY) |-> (WLAST == (beat_index == AWLEN)));",
+    "description": "Each accepted AW creates an AWLEN+1 obligation. Accepted W transfers, including transfers buffered before AW, attach to those obligations in accepted AW order; checking both directions requires WLAST to be LOW before and HIGH on each obligation's final accepted beat.",
+    "svaString": "accepted_aw_queue.push(AWID, AWLEN); assert ((WVALID && WREADY) |-> WLAST == (head.accepted_w_index == head.AWLEN));",
     "evaluatorRule": "axi-wlast-exact"
   },
   "editableSignals": ["WLAST"],
   "waveform": {
     "id": "wf-axi-wlast-base",
     "type": "waveform",
-    "title": "Four-Beat AXI Write: Exact WLAST Position",
-    "description": "AWLEN=3 declares four accepted W transfers; the editable WLAST row must be LOW on beats 1–3 and HIGH on beat 4.",
-    "cycleCount": 7,
+    "title": "Two AXI4 Writes: Dynamic AWLEN and W-before-AW",
+    "description": "Two- and three-beat writes use different AWLEN values. In both transactions, the first W transfer is accepted before its AW and buffered until the accepted-address queue supplies association context.",
+    "cycleCount": 12,
     "signals": [
       {
         "name": "ACLK",
         "type": "clock",
-        "values": ["P", "P", "P", "P", "P", "P", "P"]
+        "values": ["P", "P", "P", "P", "P", "P", "P", "P", "P", "P", "P", "P"]
+      },
+      {
+        "name": "AWVALID",
+        "type": "control",
+        "values": ["0", "0", "1", "0", "0", "0", "1", "0", "0", "0", "0", "0"]
+      },
+      {
+        "name": "AWREADY",
+        "type": "control",
+        "values": ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
+      },
+      {
+        "name": "AWLEN",
+        "type": "data",
+        "values": ["-", "-", "1", "-", "-", "-", "2", "-", "-", "-", "-", "-"]
+      },
+      {
+        "name": "AWID",
+        "type": "data",
+        "values": ["-", "-", "4", "-", "-", "-", "9", "-", "-", "-", "-", "-"]
       },
       {
         "name": "WVALID",
         "type": "control",
         "color": "#3b82f6",
-        "values": ["0", "1", "1", "1", "1", "0", "0"]
+        "values": ["0", "1", "0", "1", "0", "1", "0", "1", "1", "1", "0", "0"]
       },
       {
         "name": "WREADY",
         "type": "control",
         "color": "#eab308",
-        "values": ["1", "1", "1", "1", "1", "1", "1"]
+        "values": ["1", "1", "1", "1", "1", "1", "1", "1", "0", "1", "1", "1"]
       },
       {
         "name": "WLAST",
         "type": "control",
         "color": "#8b5cf6",
-        "values": ["0", "0", "0", "0", "1", "0", "0"]
+        "values": ["0", "0", "0", "1", "0", "0", "0", "0", "1", "1", "0", "0"]
       },
       {
         "name": "ACCEPTED_BEAT",
         "type": "sideband",
-        "values": ["-", "1 of 4", "2 of 4", "3 of 4", "4 of 4", "-", "-"]
+        "values": ["-", "buffered 1", "AW ID 4", "2 of 2", "-", "buffered 1", "AW ID 9", "2 of 3", "stalled", "3 of 3", "-", "-"]
       }
     ],
     "annotations": [
-      { "cycle": 2, "message": "Beat 1 is accepted. WLAST must remain LOW because three declared transfers still follow." },
-      { "cycle": 4, "message": "Beat 3 is accepted. Asserting WLAST here would be early; AXI does not support early burst termination." },
-      { "cycle": 5, "message": "Beat 4 is accepted and must carry WLAST=1 because AWLEN=3 declared four transfers." }
+      { "cycle": 2, "message": "A W transfer is accepted before AW. The subordinate must buffer it because AXI4 has no WID and the write-address-order context is not yet available." },
+      { "cycle": 3, "message": "AWID 4 is accepted with AWLEN=1. The buffered W transfer becomes beat 1 of this two-beat obligation." },
+      { "cycle": 4, "message": "The second accepted transfer must carry WLAST=1, completing AWID 4." },
+      { "cycle": 6, "message": "The first W transfer for the next write is accepted early and waits for the next accepted AW context." },
+      { "cycle": 7, "message": "AWID 9 with AWLEN=2 creates a three-beat obligation and claims the buffered transfer in AXI4 AW order." },
+      { "cycle": 9, "message": "WLAST is offered on the third beat, but WREADY is LOW. It is not counted yet and must remain stable." },
+      { "cycle": 10, "message": "The third transfer is accepted with WLAST=1, completing AWID 9." }
     ]
   }
 }

@@ -69,7 +69,7 @@ export default function Home() {
           </p>
           <div className="home-actions">
             <Link className="primary-action" to="/lesson/01_ahb_overview">Start the AHB path</Link>
-            <Link className="secondary-action" to="/visuals">Explore 87 visuals</Link>
+            <Link className="secondary-action" to="/visuals">Explore 88 visuals</Link>
           </div>
           <dl className="home-facts">
             <div><dt>88</dt><dd>lessons</dd></div>

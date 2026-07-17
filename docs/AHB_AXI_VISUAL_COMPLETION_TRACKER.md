@@ -1,10 +1,10 @@
 # AHB/AXI Visual Completion Tracker
 
-Last updated: 2026-07-17
+Last updated: 2026-07-18
 
 ## Current directive
 
-Finish AHB and AXI visual and interactive learning to a high educational standard. All four AHB visual batches, all four AXI visual batches, **Phase V3 — presentation and retention polish**, Phase V4 applied-DV practice, and audit-remediation phases R1-R6 are complete. The closed evidence is in `docs/AUDIT_REMEDIATION_TRACKER.md`. Do not begin APB.
+Finish AHB and AXI visual and interactive learning to a high educational standard. The historical R1-R6 program for audits1-6 passed, but overall closure is reopened for the six Task 7 rows in `docs/AUDIT_REMEDIATION_TRACKER.md`. Task 7 implementation is in progress; do not claim comprehensive completion or begin APB until those rows pass their full gates.
 
 ## Phase V0 — Visual recovery
 
@@ -12,7 +12,7 @@ Status: complete.
 
 - The production registry discovers both `content/visuals/*.json` and recursively nested visual JSON files through one non-duplicating glob.
 - All 43 pre-existing assets are recoverable: 35 legacy root-level files and 8 typed-folder files.
-- AHB/AXI completion and audit remediation have expanded the recovered library to 87 production visuals without duplicating a legacy ID.
+- AHB/AXI completion and the Task 7 AXI-to-AHB topology have expanded the recovered library to 88 production visuals without duplicating a legacy ID.
 - Root files prefer an explicit supported `type`; missing types use only the conservative `wf-`, `tl-`, `topo-`, and `sig-` prefix mapping.
 - Malformed files, missing IDs, unsupported types, and duplicate IDs are isolated with source-path diagnostics. The first valid duplicate is preserved rather than overwritten.
 - Current production diagnostics: 0 duplicate IDs, 0 malformed/missing-ID files, and 0 unsupported files.
@@ -24,7 +24,7 @@ Status: complete.
 | --- | ---: |
 | Waveform | 31 |
 | Timeline | 11 |
-| Topology | 12 |
+| Topology | 13 |
 | Signal explorer | 19 |
 | Coverage map | 2 |
 | Formal property | 2 |
@@ -737,7 +737,7 @@ Browser verification covered AXI lessons 01–26 plus `/visuals`, `/dev/visuals`
 
 ## Audit-remediation closure status
 
-R1-R6 are complete. Preserve the completed AHB/AXI visual system and do not begin APB without an explicit product-directive change.
+R1-R6 are historically complete for audits1-6. Five Task 7 content/runtime packages are code-implemented and pass the complete local automated gate; live changed-route browser verification and the published-main CI run remain open. Preserve the AHB/AXI visual system and do not begin APB.
 
 ## Audit-remediation evidence after R4
 
@@ -812,3 +812,22 @@ Final R6 phase gate:
 Final browser verification rendered all 88 lessons at 1440 × 1000 and exactly 375 × 812, for 176 lesson checks, and rendered eight shared/reference routes at both viewports, for 16 more checks. The matrix found no missing/blank content, page overflow, reduced-motion violation, undersized tested control, console warning or page error. Light/dark/system themes, production search, topology pointer/Enter/Space selection and pressed state, 44 px connector hit areas and mobile internal scrolling passed. Ten representative axe WCAG A/AA scans reported zero serious or critical violations after active sidebar-order and Visuals-filter contrast were corrected.
 
 All 96 audit-remediation tracker rows now have terminal evidence-backed dispositions: 95 Implemented and one Superseded by spec-validated correction. There are zero blocked items and no APB curriculum additions.
+
+## Task 7 follow-up evidence
+
+Task 7 adds one AXI-to-AHB `TopologyViewer` asset, bringing the current registry to 88 visuals (13 topologies), and closes the source-level gaps in AXI 28, 29, 33, 37 and 39. `src/axi-task-seven-closure.test.ts` and the updated Batch 3/4, formal component, production-render, registry and topology suites cover TSTRB byte types, AWLEN-derived WLAST checking with early-W buffering, exact debug values, bridge conversion obligations and the corrected AXI4-Lite scope.
+
+Current local gate:
+
+- Test files: 49
+- Tests: 646 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 404.47 kB
+- Lesson page chunk: 172.01 kB
+- Visual renderer chunk: 318.42 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 404.47 kB, below 500 kB
+
+Live changed-route browser verification is not yet recorded. The in-app Browser runtime failed during bootstrap with `Cannot redefine property: process` before it could navigate to the locally running Vite app. Existing production-render/interaction/geometry tests pass and no CSS was changed, but they do not replace the requested desktop and exactly 375 × 812 live route gate. The new GitHub Actions workflow is also unproven until the verified work is published.
