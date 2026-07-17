@@ -73,7 +73,7 @@ export default function Home() {
           </div>
           <dl className="home-facts">
             <div><dt>88</dt><dd>lessons</dd></div>
-            <div><dt>87</dt><dd>interactive visuals</dd></div>
+            <div><dt>88</dt><dd>interactive visuals</dd></div>
             <div><dt>Local</dt><dd>private by design</dd></div>
           </dl>
         </div>

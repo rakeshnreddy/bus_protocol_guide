@@ -737,7 +737,7 @@ Browser verification covered AXI lessons 01–26 plus `/visuals`, `/dev/visuals`
 
 ## Audit-remediation closure status
 
-R1-R6 are historically complete for audits1-6. Five Task 7 content/runtime packages are code-implemented and pass the complete local automated gate; live changed-route browser verification and the published-main CI run remain open. Preserve the AHB/AXI visual system and do not begin APB.
+R1-R6 are historically complete for audits1-6. Five Task 7 content/runtime packages now pass their complete local automated and live-browser gates; only the published-main CI run remains open. Preserve the AHB/AXI visual system and do not begin APB.
 
 ## Audit-remediation evidence after R4
 
@@ -830,4 +830,4 @@ Current local gate:
 - Search chunk: 27.63 kB
 - Largest chunk: 404.47 kB, below 500 kB
 
-Live changed-route browser verification is not yet recorded. The in-app Browser runtime failed during bootstrap with `Cannot redefine property: process` before it could navigate to the locally running Vite app. Existing production-render/interaction/geometry tests pass and no CSS was changed, but they do not replace the requested desktop and exactly 375 × 812 live route gate. The new GitHub Actions workflow is also unproven until the verified work is published.
+Live changed-route browser verification passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812. TSTRB content, formal dynamic-AWLEN feedback, debug values and the new bridge topology rendered without missing/blank state, console warnings/errors or page overflow. Pointer/Enter/Space, pressed state, 44 px topology-edge hit areas, mobile internal scrolling, light/dark/system themes and reduced motion passed. The new GitHub Actions workflow remains the sole open gate until this verified work is published.

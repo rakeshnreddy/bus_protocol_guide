@@ -20,7 +20,7 @@ Last updated: 2026-07-18
 
 ## AHB/AXI visual and retention status
 
-All four AHB visual batches, all four AXI visual batches, Phase V3 presentation/retention polish, and audit R4 executable models are present. Task 7 closure is reopened for six user-supplied findings, with implementation in progress. Every AHB and AXI lesson retains registry-resolved inline visual support. The production registry now contains 88 visuals:
+All four AHB visual batches, all four AXI visual batches, Phase V3 presentation/retention polish, and audit R4 executable models are present. All six Task 7 packages are implemented; five have complete local automated/browser evidence and the CI package awaits its published-main run. Every AHB and AXI lesson retains registry-resolved inline visual support. The production registry now contains 88 visuals:
 
 | Type | Count |
 | --- | ---: |
@@ -47,7 +47,7 @@ The loader also normalizes historical exercise metadata and rejects malformed la
 
 ## Audit-remediation status
 
-`docs/AUDIT_REMEDIATION_TRACKER.md` now tracks 102 rows: the historical 96-row audits1-6 program plus six Task 7 findings supplied by the user on 2026-07-18. The historical rows remain evidence-backed, but overall closure is not current while AXI-T7-01 through AXI-T7-06 are in progress. The original superseded claim remains the audit recommendation that the selected AHB base address width is configurable; IHI 0011A and IHI 0033B.b both define `HADDR[31:0]`.
+`docs/AUDIT_REMEDIATION_TRACKER.md` now tracks 102 rows: the historical 96-row audits1-6 program plus six Task 7 findings supplied by the user on 2026-07-18. AXI-T7-01 through AXI-T7-05 are terminal with source, test/build and live-browser evidence; AXI-T7-06 waits only for the published-main GitHub Actions run. The original superseded claim remains the audit recommendation that the selected AHB base address width is configurable; IHI 0011A and IHI 0033B.b both define `HADDR[31:0]`.
 
 R3 corrected synchronous channel/dependency terminology, exact WRAP lengths, AXI4-Lite outstanding nuance, optional early-W acceptance and required buffering, full USER payload stability, response independence/prerequisites, per-ID/destination ordering, accepted LAST retirement, AXI3 WID versus AXI4 AW order, lane/WSTRB legality, and exact final-byte/end-exclusive 4 KB math. Ten AXI spec rules now carry IHI 0022H section and requirement-type provenance.
 
@@ -96,10 +96,10 @@ Latest Task 7 local automated results:
 - Search chunk: 27.63 kB
 - Largest chunk: 404.47 kB
 
-The Task 7 changed-route browser rerun is still open. The in-app Browser runtime failed during bootstrap with `Cannot redefine property: process` before opening the locally running app. Production render, formal interaction, keyboard-hit-area, topology collision/routing, registry and full-suite tests pass, and Task 7 changes no CSS, but those results are not recorded as a substitute for the required desktop and exactly 375 × 812 live route matrix.
+The Task 7 browser rerun passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812. The AXI-Stream TSTRB waveform, transaction-aware WLAST failure message, exact debug data, AXI-to-AHB topology and AXI4-Lite wording rendered correctly. Pointer/Enter/Space, pressed state, 44 px topology-edge targets, mobile internal scrolling, light/dark/system themes and reduced motion passed with no page overflow, blank/missing state, console warning or page error.
 
 ## Exact continuation point
 
-Task 7 implementation is locally code-complete for AXI-T7-01 through AXI-T7-05, and `.github/workflows/ci.yml` implements AXI-T7-06. Overall closure remains nonterminal until the live changed-route browser matrix passes and the resulting verified commit is pushed to main so GitHub Actions can reproduce the test/build gate. The user's conditional push instruction has therefore not fired yet. The six source audit reports remain unchanged.
+Task 7 is locally complete and verified. The only nonterminal row is AXI-T7-06: commit the browser evidence, fast-forward the verified commit to the topic branch and `main`, and wait for GitHub Actions to reproduce `npm run test` and `npm run build`. The six source audit reports remain unchanged.
 
-Continue from the current `agent/axi-visual-batches-1-2` worktree. Restore the Browser runtime, verify AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812 across light/dark/system and reduced-motion states, then close all six Task 7 rows, commit, fast-forward main, push, and wait for the GitHub Actions run. Do not reset the existing branch, edit the six audit reports, or begin APB.
+Continue from the current `agent/axi-visual-batches-1-2` worktree. Rerun the complete automated gate, commit the evidence, fast-forward `main`, push, and wait for the GitHub Actions run before marking AXI-T7-06 terminal. Do not reset the existing branch, edit the six audit reports, or begin APB.
