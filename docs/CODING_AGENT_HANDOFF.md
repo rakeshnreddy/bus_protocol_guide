@@ -85,6 +85,6 @@ Latest live browser verification covered every one of the 88 lesson routes at 14
 
 ## Exact continuation point
 
-The audit-remediation program is complete on branch `agent/axi-visual-batches-1-2`. The implementation and tracker changes are intentionally left in the working tree for review; no remediation commit, push or pull request was created. The six source audit reports remain unchanged.
+The audit-remediation program is complete. The implementation was committed on `agent/axi-visual-batches-1-2`, and both that branch and `main` were fast-forwarded on `origin`; no force push or pull request was required. The working tree is clean and the six source audit reports remain unchanged.
 
 Before any future work, preserve the closed evidence in `docs/AUDIT_REMEDIATION_TRACKER.md` and the visual history in `docs/AHB_AXI_VISUAL_COMPLETION_TRACKER.md`. Do not switch to main, reset the existing branch, edit the six audit reports, or begin APB without a new explicit product directive.
