@@ -1,8 +1,11 @@
 {
-  "name": "temp-app",
+  "name": "bus-protocol-dv-academy",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0-rc.1",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -18,7 +21,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.18.1",
+    "react-router-dom": "7.18.1",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
