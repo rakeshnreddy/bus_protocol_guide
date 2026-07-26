@@ -109,7 +109,7 @@ The post-deployment accessibility pass gave the named lesson-progress and visual
 Latest local gate:
 
 - Test files: 50
-- Tests: 651 passed, 0 failed
+- Tests: 654 passed, 0 failed
 - TypeScript errors: 0
 - Vite build warnings: 0
 - Main application chunk: 253.60 kB
@@ -137,8 +137,18 @@ checks. This dry run proves facilitator readiness, not learner comprehension.
 Real results from 3–5 anonymized participants are still required before
 promotion to `v1.0.0`.
 
+`npm run pilot:simulate` adds a deterministic recovery simulation across four
+personas: new-to-AMBA, AHB-experienced, AXI-experienced, and senior mobile/
+keyboard. The simulation executes real content probes, `calculateBurst`,
+`evaluateFormalProperty`, production search, and visual-registry lookup. It
+passes 20/24 synthetic protocol first attempts (83.3%), recovers all four
+seeded misconceptions, completes all eight discovery/mobile attempts, and
+finds zero failed probes. Its result type permanently sets
+`canPromoteRelease: false`; it advances recovery confidence without being
+misrepresented as human evidence.
+
 ## Final publication state
 
 AHB and AXI audit remediation is complete. Both `origin/agent/axi-visual-batches-1-2` and `origin/main` were fast-forwarded to the same verified history without force or a pull request. The six source audit reports remain unchanged.
 
-Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 651-test/build gate, and the protocol distinctions encoded by the remediation suites.
+Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 654-test/build gate, and the protocol distinctions encoded by the remediation suites.

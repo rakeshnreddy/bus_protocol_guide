@@ -34,6 +34,15 @@ npm run verify
 
 This runs the complete Vitest suite followed by the TypeScript and Vite production build.
 
+Run the deterministic synthetic learner sessions separately:
+
+```bash
+npm run pilot:simulate
+```
+
+The simulations verify recovery paths and pilot scoring, but they do not replace
+the real learner sessions required for the stable release decision.
+
 ## Production deployment
 
 The application is a Vite single-page application. `vercel.json` preserves client-side routing when a learner opens a lesson, visual, glossary, or reference URL directly.

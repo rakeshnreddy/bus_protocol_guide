@@ -16,6 +16,8 @@ Confirm that learners can navigate, understand, and apply the completed AHB and 
   finding intake.
 - `docs/LEARNER_PILOT_DRY_RUN_2026-07-27.md` — scripted facilitator readiness
   evidence; it is not a substitute for real participant results.
+- `docs/LEARNER_PILOT_SIMULATION_REPORT_2026-07-27.md` — reproducible
+  four-persona recovery simulation; it cannot authorize a stable release.
 
 ## Participants
 

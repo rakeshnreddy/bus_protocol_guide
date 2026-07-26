@@ -59,6 +59,13 @@ describe('release-candidate readiness', () => {
       `${repositoryRoot}/.github/ISSUE_TEMPLATE/learner-pilot-finding.yml`,
       'utf8',
     );
+    const simulationReport = readFileSync(
+      `${repositoryRoot}/docs/LEARNER_PILOT_SIMULATION_REPORT_2026-07-27.md`,
+      'utf8',
+    );
+    const packageJson = JSON.parse(
+      readFileSync(`${repositoryRoot}/package.json`, 'utf8'),
+    ) as { scripts?: Record<string, string> };
 
     expect(facilitator).toContain('https://busprotocolguide.vercel.app');
     expect(facilitator).toContain('/lesson/03_timing_diagrams');
@@ -80,5 +87,14 @@ describe('release-candidate readiness', () => {
     expect(issueTemplate).toContain('id: severity');
     expect(issueTemplate).toContain('id: protocol_evidence');
     expect(issueTemplate).toContain('id: privacy');
+
+    expect(packageJson.scripts?.['pilot:simulate']).toContain(
+      'learner-pilot-simulation.test.ts',
+    );
+    expect(simulationReport).toContain('Synthetic first-attempt rate');
+    expect(simulationReport).toContain('83.3%');
+    expect(simulationReport).toContain(
+      'No — real learner evidence required',
+    );
   });
 });
