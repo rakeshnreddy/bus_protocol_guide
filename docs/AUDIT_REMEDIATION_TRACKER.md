@@ -219,6 +219,17 @@ These rows correct the scope defect in the original 96-row tracker. They are not
 
 Current Task 7 status: **6/6 Implemented with source, local automated, live-browser and published-main CI evidence**. Overall tracker closure is **102/102 terminal: 101 Implemented and one Superseded by spec-validated correction**, with zero blocked items.
 
+## Post-closure release evidence
+
+The release-candidate production gate does not add or reopen an audit finding. It confirms that the terminal 102-row curriculum ships through the production SPA configuration.
+
+- Production: [busprotocolguide.vercel.app](https://busprotocolguide.vercel.app), Vercel status `Ready`.
+- Local verification: 50 files and 650 tests passed; TypeScript and Vite passed with zero warnings; largest chunk 404.47 kB.
+- Live routes: home, AHB 16, AXI 29, `/visuals`, `/dev/visuals`, `/glossary`, and production search passed at desktop; representative AHB/AXI lessons passed at exactly 375 × 812.
+- Interaction: system/light/dark themes, reduced motion, 44 px controls, internal mobile scrolling, page containment, and console/page cleanliness passed.
+- Accessibility: named lesson-progress and visual-position metadata now use explicit group semantics with regression coverage; the live AXI axe scan reports zero WCAG A/AA violations.
+- Scope: no APB curriculum, route, tracker, or standalone asset was introduced.
+
 ## Decision log
 
 | Date | Decision | Evidence and impact |

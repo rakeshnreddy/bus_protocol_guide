@@ -162,7 +162,11 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
             aria-describedby={contextId}
           >
             <header className="visual-learning-header">
-              <div className="visual-learning-meta" aria-label={`Visual ${visualPosition} of ${visualTotal}`}>
+              <div
+                className="visual-learning-meta"
+                role="group"
+                aria-label={`Visual ${visualPosition} of ${visualTotal}`}
+              >
                 <span>Visual {visualPosition} of {visualTotal}</span>
                 <span>{visualType ? visualTypeLabels[visualType] : 'Interactive visual'}</span>
               </div>
@@ -204,7 +208,11 @@ export default function LessonRenderer({ lesson, body, navigation }: LessonRende
     <article className="lesson-renderer">
       <header className="lesson-header">
         {navigation && (
-          <div className="lesson-progress" aria-label={`Lesson ${navigation.current} of ${navigation.total}`}>
+          <div
+            className="lesson-progress"
+            role="group"
+            aria-label={`Lesson ${navigation.current} of ${navigation.total}`}
+          >
             <span>{lesson.protocol.toUpperCase()} path</span>
             <strong>{String(navigation.current).padStart(2, '0')} / {String(navigation.total).padStart(2, '0')}</strong>
             <span className="lesson-progress-track" aria-hidden="true"><span style={{ width: `${(navigation.current / navigation.total) * 100}%` }} /></span>

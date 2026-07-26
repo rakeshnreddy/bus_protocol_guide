@@ -1,6 +1,6 @@
 # Bus Protocol DV Academy — Coding Agent Handoff
 
-Last updated: 2026-07-18
+Last updated: 2026-07-27
 
 ## Product directive
 
@@ -100,8 +100,29 @@ The Task 7 browser rerun passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visual
 
 GitHub Actions run [29617021398](https://github.com/rakeshnreddy/bus_protocol_guide/actions/runs/29617021398) independently passed locked install, all 646 tests and the production build on `main` in 1m2s with zero job annotations. `actions/setup-node@v7` uses the current action runtime; no warning suppression was introduced.
 
+## Release-candidate production gate
+
+`v1.0.0-rc.1` is deployed at [busprotocolguide.vercel.app](https://busprotocolguide.vercel.app). The Vercel production build reached `Ready`, and the catch-all rewrite served direct AHB, AXI, Visuals Explorer, development visual, and glossary URLs successfully.
+
+The post-deployment accessibility pass gave the named lesson-progress and visual-position metadata explicit group semantics. A focused regression test covers both accessible names.
+
+Latest local gate:
+
+- Test files: 50
+- Tests: 650 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 404.47 kB
+- Lesson page chunk: 172.04 kB
+- Visual renderer chunk: 318.42 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 404.47 kB, below 500 kB
+
+Production checks passed at 1440 × 1000 and exactly 375 × 812 for the home page, representative AHB and AXI lessons, `/visuals`, `/dev/visuals`, `/glossary`, and production search. Direct-route loading, TSTRB content, system/light/dark themes, reduced motion, 44 px controls, internal mobile scrolling, page containment, and console/page cleanliness passed. The live AXI accessibility scan reported zero WCAG A/AA violations.
+
 ## Final publication state
 
 AHB and AXI audit remediation is complete. Both `origin/agent/axi-visual-batches-1-2` and `origin/main` were fast-forwarded to the same verified history without force or a pull request. The six source audit reports remain unchanged.
 
-Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 646-test/build/CI gate, and the protocol distinctions encoded by the remediation suites.
+Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 650-test/build gate, and the protocol distinctions encoded by the remediation suites.

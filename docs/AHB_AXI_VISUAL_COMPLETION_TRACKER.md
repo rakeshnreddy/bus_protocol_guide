@@ -833,3 +833,11 @@ Current local gate:
 Live changed-route browser verification passed AXI 28/29/33/37/39 plus `/visuals`, `/dev/visuals`, `/glossary` and production search at desktop and exactly 375 × 812. TSTRB content, formal dynamic-AWLEN feedback, debug values and the new bridge topology rendered without missing/blank state, console warnings/errors or page overflow. Pointer/Enter/Space, pressed state, 44 px topology-edge hit areas, mobile internal scrolling, light/dark/system themes and reduced motion passed.
 
 GitHub Actions run [29617021398](https://github.com/rakeshnreddy/bus_protocol_guide/actions/runs/29617021398) independently repeated locked installation, all 646 tests and the production build on `main` in 1m2s. Every step passed and the job reported zero annotations.
+
+## Release-candidate production verification
+
+The completed 88-lesson, 88-visual academy is deployed at [busprotocolguide.vercel.app](https://busprotocolguide.vercel.app). The production deployment reached `Ready`; direct AHB, AXI, Visuals Explorer, development visual, and glossary routes all resolve through the SPA rewrite.
+
+The final release hardening pass adds explicit group semantics to the named lesson-progress and visual-position metadata. The full local gate passes 50 files and 650 tests with zero failures, TypeScript errors, or Vite warnings. The largest chunk remains `loaders` at 404.47 kB, below the unchanged 500 kB cap.
+
+Production browser checks at 1440 × 1000 and exactly 375 × 812 passed representative AHB/AXI lessons and all shared release routes. Search, system/light/dark themes, reduced motion, 44 px controls, internal mobile scrolling, page containment, and console/page cleanliness passed. Axe reported zero WCAG A/AA violations on the live AXI lesson after the metadata semantics correction.

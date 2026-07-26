@@ -112,8 +112,25 @@ describe('LessonRenderer', () => {
     expect(screen.getByTestId('mock-visual-wf-1')).toBeInTheDocument();
     expect(document.querySelector('.inline-visual-caption')).toHaveTextContent('Figure Caption');
     expect(screen.getByText('Visual 1 of 1')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Visual 1 of 1' })).toBeInTheDocument();
     expect(screen.getByText('Waveform')).toBeInTheDocument();
     expect(screen.getByText(/Identify the accepting edge, phase owner/i)).toBeInTheDocument();
+  });
+
+  it('exposes named lesson progress as accessible grouped metadata', () => {
+    render(
+      <MemoryRouter>
+        <LessonRenderer
+          lesson={mockLesson}
+          body="Lesson content."
+          navigation={{ current: 1, total: 6 }}
+        />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('group', { name: 'Lesson 1 of 6' })).toHaveTextContent(
+      'FOUNDATIONS path',
+    );
   });
 
   it('provides a visual-first lesson workflow and retrieval prompts', () => {

@@ -38,6 +38,8 @@ This runs the complete Vitest suite followed by the TypeScript and Vite producti
 
 The application is a Vite single-page application. `vercel.json` preserves client-side routing when a learner opens a lesson, visual, glossary, or reference URL directly.
 
+Production: [busprotocolguide.vercel.app](https://busprotocolguide.vercel.app)
+
 ## Protocol evidence
 
 Curriculum corrections and regression evidence are tracked in:
