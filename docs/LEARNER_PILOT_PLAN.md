@@ -18,6 +18,12 @@ Confirm that learners can navigate, understand, and apply the completed AHB and 
   evidence; it is not a substitute for real participant results.
 - `docs/LEARNER_PILOT_SIMULATION_REPORT_2026-07-27.md` — reproducible
   four-persona recovery simulation; it cannot authorize a stable release.
+- `docs/LEARNER_PILOT_DATA_FORMAT.md` and
+  `docs/learner-pilot/session.schema.json` — privacy-safe, versioned session
+  evidence and deterministic release-decision rules.
+- `npm run pilot:aggregate` — validates session files, aggregates task and
+  usability evidence, and prevents synthetic or mixed evidence from
+  authorizing stable promotion.
 
 ## Participants
 
@@ -78,3 +84,5 @@ Promote the release candidate only when:
 - **No go:** any protocol error, broken route, missing learning asset, inaccessible required interaction, or unrecoverable learner misconception remains.
 
 Summarize outcomes in a dated pilot report under `docs/` without including participant names or confidential information.
+Keep raw participant JSON under the ignored `pilot-sessions/` directory and
+commit only the anonymized aggregate when appropriate.

@@ -2,6 +2,9 @@
 
 Copy this file for one participant. Use a pseudonymous ID and remove any
 accidentally recorded confidential information before committing or sharing it.
+After review, capture the scored fields using
+`docs/LEARNER_PILOT_DATA_FORMAT.md`; the aggregator requires the full tested
+commit, production URL, all eight task records, and explicit usability results.
 
 ## Session metadata
 

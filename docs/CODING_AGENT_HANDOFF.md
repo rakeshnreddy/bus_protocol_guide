@@ -147,8 +147,36 @@ finds zero failed probes. Its result type permanently sets
 `canPromoteRelease: false`; it advances recovery confidence without being
 misrepresented as human evidence.
 
+`npm run pilot:aggregate` now validates and aggregates versioned, privacy-safe
+session JSON. It requires all eight task records, explicit recovery and
+usability evidence, one production URL and full tested commit, the 3–5-person
+experience mix, resolved finding IDs, and regression/deployment evidence for a
+fixed release blocker. It fails closed for incomplete records, obvious
+identifying fields, email-like values, mixed targets, and privacy-unsafe
+content. Synthetic or mixed evidence is always `not-eligible`;
+`conditional-go` is limited to open wording/discoverability follow-ups; and
+`canPromoteStable` is true only for a fully eligible human `go`.
+
+The versioned structure is documented in
+`docs/LEARNER_PILOT_DATA_FORMAT.md` and
+`docs/learner-pilot/session.schema.json`. Raw session JSON belongs under the
+ignored `pilot-sessions/` directory and must not be committed.
+
+Latest complete local gate after the evidence-aggregation package:
+
+- Test files: 52
+- Tests: 660 passed, 0 failed
+- TypeScript errors: 0
+- Vite build warnings: 0
+- Main application chunk: 253.60 kB
+- Loader chunk: 404.47 kB
+- Lesson page chunk: 172.04 kB
+- Visual renderer chunk: 318.42 kB
+- Search chunk: 27.63 kB
+- Largest chunk: 404.47 kB, below 500 kB
+
 ## Final publication state
 
 AHB and AXI audit remediation is complete. Both `origin/agent/axi-visual-batches-1-2` and `origin/main` were fast-forwarded to the same verified history without force or a pull request. The six source audit reports remain unchanged.
 
-Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 654-test/build gate, and the protocol distinctions encoded by the remediation suites.
+Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 660-test/build gate, and the protocol distinctions encoded by the remediation suites.

@@ -22,6 +22,9 @@ waveforms. Assign pseudonymous participant IDs such as `P01`.
    answer until the task is scored.
 6. Record hesitation, search terms, backtracking, and accessibility problems.
 7. File each actionable observation using the learner-pilot finding template.
+8. Convert the scored fields to the versioned JSON format in
+   `docs/LEARNER_PILOT_DATA_FORMAT.md`, then run `npm run pilot:aggregate`.
+   Keep raw participant files under the ignored `pilot-sessions/` directory.
 
 ## Task rubric
 

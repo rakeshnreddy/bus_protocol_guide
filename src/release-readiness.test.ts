@@ -63,6 +63,23 @@ describe('release-candidate readiness', () => {
       `${repositoryRoot}/docs/LEARNER_PILOT_SIMULATION_REPORT_2026-07-27.md`,
       'utf8',
     );
+    const dataFormat = readFileSync(
+      `${repositoryRoot}/docs/LEARNER_PILOT_DATA_FORMAT.md`,
+      'utf8',
+    );
+    const sessionSchema = JSON.parse(
+      readFileSync(
+        `${repositoryRoot}/docs/learner-pilot/session.schema.json`,
+        'utf8',
+      ),
+    ) as {
+      title?: string;
+      properties?: Record<string, unknown>;
+    };
+    const aggregator = readFileSync(
+      `${repositoryRoot}/scripts/aggregate-learner-pilot-results.mjs`,
+      'utf8',
+    );
     const packageJson = JSON.parse(
       readFileSync(`${repositoryRoot}/package.json`, 'utf8'),
     ) as { scripts?: Record<string, string> };
@@ -91,10 +108,22 @@ describe('release-candidate readiness', () => {
     expect(packageJson.scripts?.['pilot:simulate']).toContain(
       'learner-pilot-simulation.test.ts',
     );
+    expect(packageJson.scripts?.['pilot:aggregate']).toContain(
+      'aggregate-learner-pilot-results.mjs',
+    );
     expect(simulationReport).toContain('Synthetic first-attempt rate');
     expect(simulationReport).toContain('83.3%');
     expect(simulationReport).toContain(
       'No — real learner evidence required',
+    );
+    expect(dataFormat).toContain('Synthetic sessions');
+    expect(dataFormat).toContain('can never authorize promotion');
+    expect(sessionSchema.title).toContain('learner pilot session');
+    expect(sessionSchema.properties).toHaveProperty('testedCommit');
+    expect(sessionSchema.properties).toHaveProperty('usabilityChecks');
+    expect(aggregator).toContain("canPromoteStable: decision === 'go'");
+    expect(aggregator).toContain(
+      'release decisions require human-only evidence',
     );
   });
 });

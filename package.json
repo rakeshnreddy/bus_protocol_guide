@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "pilot:simulate": "vitest run src/learner-pilot-simulation.test.ts --reporter=verbose",
+    "pilot:aggregate": "node scripts/aggregate-learner-pilot-results.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "verify": "npm run test && npm run build"

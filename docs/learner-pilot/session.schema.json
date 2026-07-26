@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://busprotocolguide.vercel.app/schemas/learner-pilot-session-1.0.json",
+  "title": "Bus Protocol DV Academy learner pilot session",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "evidenceClass",
+    "participantId",
+    "experienceBand",
+    "testedCommit",
+    "productionUrl",
+    "date",
+    "primaryViewport",
+    "mobileViewport",
+    "tasks",
+    "usabilityChecks",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "evidenceClass": {
+      "enum": ["human", "synthetic"]
+    },
+    "participantId": {
+      "type": "string"
+    },
+    "experienceBand": {
+      "enum": [
+        "new-to-amba",
+        "ahb-experienced",
+        "axi-experienced",
+        "senior-dv"
+      ]
+    },
+    "testedCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "productionUrl": {
+      "const": "https://busprotocolguide.vercel.app"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "primaryViewport": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mobileViewport": {
+      "type": ["string", "null"],
+      "enum": ["375x812", null]
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "route",
+          "completedWithoutHelp",
+          "correctFirstAttempt",
+          "recoverableThroughAcademy",
+          "timeSeconds",
+          "brokenMissingOrInaccessible",
+          "findingIds"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "route": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "completedWithoutHelp": {
+            "type": "boolean"
+          },
+          "correctFirstAttempt": {
+            "type": ["boolean", "null"]
+          },
+          "recoverableThroughAcademy": {
+            "type": ["boolean", "null"]
+          },
+          "timeSeconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "brokenMissingOrInaccessible": {
+            "type": "boolean"
+          },
+          "findingIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^LP-[0-9]{3,}$"
+            },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "usabilityChecks": {
+      "type": "object",
+      "required": [
+        "keyboard",
+        "pointer",
+        "themes",
+        "reducedMotion",
+        "mobile375x812",
+        "consoleClean",
+        "pageContainment"
+      ],
+      "properties": {
+        "keyboard": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "pointer": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "themes": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "reducedMotion": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "mobile375x812": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "consoleClean": {
+          "$ref": "#/$defs/checkResult"
+        },
+        "pageContainment": {
+          "$ref": "#/$defs/checkResult"
+        }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "status",
+          "category",
+          "area",
+          "routeOrAsset",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^LP-[0-9]{3,}$"
+          },
+          "severity": {
+            "enum": [
+              "release-blocker",
+              "important-follow-up",
+              "observation"
+            ]
+          },
+          "status": {
+            "enum": ["open", "fixed", "accepted"]
+          },
+          "category": {
+            "enum": [
+              "protocol",
+              "wording",
+              "discoverability",
+              "visual",
+              "accessibility",
+              "platform"
+            ]
+          },
+          "area": {
+            "type": "string",
+            "minLength": 1
+          },
+          "routeOrAsset": {
+            "type": "string",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "regressionEvidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deploymentEvidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "checkResult": {
+      "enum": ["pass", "fail", "not-tested"]
+    }
+  },
+  "additionalProperties": false
+}

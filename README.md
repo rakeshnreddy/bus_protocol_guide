@@ -43,6 +43,16 @@ npm run pilot:simulate
 The simulations verify recovery paths and pilot scoring, but they do not replace
 the real learner sessions required for the stable release decision.
 
+Validate and aggregate privacy-safe real or synthetic session JSON:
+
+```bash
+npm run pilot:aggregate -- pilot-sessions/P01.json pilot-sessions/P02.json pilot-sessions/P03.json
+```
+
+The aggregator fails closed on incomplete or privacy-unsafe records. Synthetic
+or mixed evidence is always reported as release-ineligible. See
+`docs/LEARNER_PILOT_DATA_FORMAT.md` for the format and decision rules.
+
 ## Production deployment
 
 The application is a Vite single-page application. `vercel.json` preserves client-side routing when a learner opens a lesson, visual, glossary, or reference URL directly.
@@ -59,5 +69,6 @@ Curriculum corrections and regression evidence are tracked in:
 - `docs/RELEASE_SECURITY_REVIEW.md`
 - `docs/LEARNER_PILOT_PLAN.md`
 - `docs/LEARNER_PILOT_FACILITATOR_GUIDE.md`
+- `docs/LEARNER_PILOT_DATA_FORMAT.md`
 
 Primary protocol sources are Arm IHI 0011A, IHI 0033B.b, IHI 0022H, and IHI 0051B.
