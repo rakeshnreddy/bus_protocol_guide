@@ -49,5 +49,6 @@ Curriculum corrections and regression evidence are tracked in:
 - `docs/CODING_AGENT_HANDOFF.md`
 - `docs/RELEASE_SECURITY_REVIEW.md`
 - `docs/LEARNER_PILOT_PLAN.md`
+- `docs/LEARNER_PILOT_FACILITATOR_GUIDE.md`
 
 Primary protocol sources are Arm IHI 0011A, IHI 0033B.b, IHI 0022H, and IHI 0051B.

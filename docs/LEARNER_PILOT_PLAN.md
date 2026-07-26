@@ -4,6 +4,19 @@
 
 Confirm that learners can navigate, understand, and apply the completed AHB and AXI curriculum without facilitator correction before promoting `v1.0.0-rc.1` to `v1.0.0`.
 
+## Pilot kit
+
+- `docs/LEARNER_PILOT_FACILITATOR_GUIDE.md` — exact routes, task prompts,
+  answer rubric, primary-source anchors, scoring, and severity definitions.
+- `docs/LEARNER_PILOT_SESSION_TEMPLATE.md` — anonymized per-participant
+  evidence capture.
+- `docs/LEARNER_PILOT_REPORT_TEMPLATE.md` — aggregate metrics and release
+  decision.
+- `.github/ISSUE_TEMPLATE/learner-pilot-finding.yml` — privacy-safe actionable
+  finding intake.
+- `docs/LEARNER_PILOT_DRY_RUN_2026-07-27.md` — scripted facilitator readiness
+  evidence; it is not a substitute for real participant results.
+
 ## Participants
 
 Recruit 3–5 learners:

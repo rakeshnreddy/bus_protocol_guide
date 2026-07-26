@@ -109,7 +109,7 @@ The post-deployment accessibility pass gave the named lesson-progress and visual
 Latest local gate:
 
 - Test files: 50
-- Tests: 650 passed, 0 failed
+- Tests: 651 passed, 0 failed
 - TypeScript errors: 0
 - Vite build warnings: 0
 - Main application chunk: 253.60 kB
@@ -121,8 +121,24 @@ Latest local gate:
 
 Production checks passed at 1440 × 1000 and exactly 375 × 812 for the home page, representative AHB and AXI lessons, `/visuals`, `/dev/visuals`, `/glossary`, and production search. Direct-route loading, TSTRB content, system/light/dark themes, reduced motion, 44 px controls, internal mobile scrolling, page containment, and console/page cleanliness passed. The live AXI accessibility scan reported zero WCAG A/AA violations.
 
+## Learner pilot readiness
+
+The release candidate now includes a facilitator guide, anonymized session
+template, aggregate report template, and privacy-safe GitHub finding form.
+`src/release-readiness.test.ts` guards the production URL, exact task routes,
+boundary examples, scoring criteria, privacy fields, and APB exclusion.
+
+The dated facilitator dry run exercised all eight pilot tasks on production.
+Both live calculators produced the expected AHB 1 KB and AXI 4 KB/lane results;
+the formal WLAST interaction exposed its AWID 9 accepted-beat diagnostic;
+search and Visuals Explorer discovery succeeded; and the exact `375 × 812`
+repeat passed containment, 44 px, internal-scroll, reduced-motion, and console
+checks. This dry run proves facilitator readiness, not learner comprehension.
+Real results from 3–5 anonymized participants are still required before
+promotion to `v1.0.0`.
+
 ## Final publication state
 
 AHB and AXI audit remediation is complete. Both `origin/agent/axi-visual-batches-1-2` and `origin/main` were fast-forwarded to the same verified history without force or a pull request. The six source audit reports remain unchanged.
 
-Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 650-test/build gate, and the protocol distinctions encoded by the remediation suites.
+Do not begin APB unless the product directive changes. Future work should preserve the 88-lesson/88-visual reference closure, the warning-free 651-test/build gate, and the protocol distinctions encoded by the remediation suites.

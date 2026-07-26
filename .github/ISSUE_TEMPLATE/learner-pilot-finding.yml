@@ -1,0 +1,85 @@
+name: Learner pilot finding
+description: Record an anonymized AHB/AXI learner-pilot observation.
+title: "[Pilot] "
+labels:
+  - learner-pilot
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include participant names, employer details, confidential addresses, proprietary waveforms, or design data.
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Release blocker
+        - Important follow-up
+        - Observation
+    validations:
+      required: true
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Protocol or area
+      options:
+        - Foundations
+        - AHB
+        - AXI
+        - Navigation or search
+        - Visual interaction
+        - Accessibility or responsive layout
+    validations:
+      required: true
+  - type: input
+    id: route
+    attributes:
+      label: Production route
+      placeholder: /lesson/16_wait_states_hready
+    validations:
+      required: true
+  - type: input
+    id: asset
+    attributes:
+      label: Visual, exercise, or checklist ID
+      placeholder: model-ahb-core-checker
+  - type: input
+    id: viewport
+    attributes:
+      label: Device, browser, and viewport
+      placeholder: Safari, 375 × 812
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed learner behavior
+      description: Describe hesitation, answer, navigation, or interaction without identifying the participant.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction and evidence
+      description: List steps, relevant visible text, and the first incorrect or blocked point.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected learner outcome
+      description: State the expected understanding or usable interaction.
+    validations:
+      required: true
+  - type: textarea
+    id: protocol_evidence
+    attributes:
+      label: Primary-source protocol evidence
+      description: Required for protocol-accuracy concerns; cite the applicable Arm specification and section.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed names, employer information, confidential addresses, proprietary waveforms, and design data.
+          required: true
